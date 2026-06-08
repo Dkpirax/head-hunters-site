@@ -24,7 +24,21 @@ const footerLinks = {
   ],
 };
 
-export function Footer() {
+const defaultFooterSettings = {
+  notifyEmails: "hello@headhunters.com.au",
+  whatsappNumber: "",
+  calendlyLink: "",
+  linkedin_url: "https://linkedin.com/company/headhunters",
+  twitter_url: "https://twitter.com/headhunters",
+  facebook_url: "https://facebook.com/headhunters",
+  copyright_text: "© 2026 Head Hunters. All rights reserved.",
+  ios_app_url: "",
+  android_app_url: "",
+};
+
+export function Footer({ settings }: { settings?: any }) {
+  const s = { ...defaultFooterSettings, ...settings };
+
   return (
     <footer className="bg-[#0B0B0C] border-t border-white/8">
       {/* CTA Band */}
@@ -69,27 +83,60 @@ export function Footer() {
             </p>
             <div className="space-y-2.5">
               <a
-                href="mailto:hello@headhunters.com.au"
+                href={`mailto:${s.notifyEmails}`}
                 className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
               >
                 <Mail size={14} className="text-[#04a891] shrink-0" />
-                hello@headhunters.com.au
+                {s.notifyEmails}
               </a>
-              <Link
-                href="/#contact"
+              <a
+                href={s.whatsappNumber ? `https://wa.me/${s.whatsappNumber.replace(/[^0-9]/g, "")}` : "/#contact"}
                 className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
               >
                 <MessageCircle size={14} className="text-[#04a891] shrink-0" />
                 WhatsApp support
-              </Link>
-              <Link
-                href="/#contact"
+              </a>
+              <a
+                href={s.calendlyLink || "/#contact"}
                 className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
               >
                 <CalendarDays size={14} className="text-[#04a891] shrink-0" />
                 Book a call
-              </Link>
+              </a>
             </div>
+
+            <div className="flex items-center gap-4 pt-2 border-t border-white/4 max-w-[260px]">
+              {s.linkedin_url && (
+                <a href={s.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors text-[11px] font-semibold">
+                  LinkedIn
+                </a>
+              )}
+              {s.twitter_url && (
+                <a href={s.twitter_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors text-[11px] font-semibold">
+                  Twitter
+                </a>
+              )}
+              {s.facebook_url && (
+                <a href={s.facebook_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors text-[11px] font-semibold">
+                  Facebook
+                </a>
+              )}
+            </div>
+
+            {(s.ios_app_url || s.android_app_url) && (
+              <div className="flex gap-2 pt-1 max-w-[260px]">
+                {s.ios_app_url && (
+                  <a href={s.ios_app_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-[6px] border border-white/8 bg-white/2 hover:bg-white/5 text-[10px] text-white/60 hover:text-white font-bold transition-all">
+                    iOS App
+                  </a>
+                )}
+                {s.android_app_url && (
+                  <a href={s.android_app_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-[6px] border border-white/8 bg-white/2 hover:bg-white/5 text-[10px] text-white/60 hover:text-white font-bold transition-all">
+                    Android App
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Link columns */}
@@ -118,7 +165,7 @@ export function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/6">
         <div className="max-w-[1200px] mx-auto px-5 py-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/28">
-          <p>T &amp; C Applies © 2026 Fenra. All rights reserved.</p>
+          <p>{s.copyright_text}</p>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="hover:text-white/60 transition-colors">
               Privacy Policy

@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getSettings } from "@/app/actions/settings";
 
 export async function getOrCreateConversation(userId: string) {
   if (!userId) {
@@ -35,7 +36,8 @@ export async function getOrCreateConversation(userId: string) {
     });
 
     // Add initial bot greeting if starting a new conversation
-    const greetingText = "Welcome to Head Hunters. I am your assistant. How can I help you today?";
+    const settings = await getSettings();
+    const greetingText = settings.chatbot_greeting || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
     const initialGreeting = await prisma.message.create({
       data: {
         conversationId: conversation.id,

@@ -52,12 +52,15 @@ export const metadata: Metadata = {
 
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
 import { FloatingButtons } from "@/components/layout/FloatingButtons";
+import { getSettings } from "@/app/actions/settings";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const settings = await getSettings();
+
   return (
     <html lang="en" className={dmSans.variable}>
       <body className={`font-sans antialiased`}>
@@ -65,7 +68,7 @@ export default function RootLayout({
           <div className="grain" aria-hidden="true" />
           <div className="aurora" aria-hidden="true" />
           {children}
-          <FloatingButtons />
+          <FloatingButtons chatbotEnabled={settings.flag_chatbot_enabled} />
         </SmoothScroll>
       </body>
     </html>

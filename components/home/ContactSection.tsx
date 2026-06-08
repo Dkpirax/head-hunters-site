@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Send, CheckCircle } from "lucide-react";
+import { Send, CheckCircle, Mail, MessageCircle, Calendar, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Accordion } from "@/components/ui/Accordion";
 import { createEnquiry } from "@/app/actions/enquiries";
@@ -18,7 +18,7 @@ const FAQS = [
 
 type Tab = "Hiring" | "Candidate" | "General";
 
-export function ContactSection() {
+export function ContactSection({ settings }: { settings: any }) {
   const [activeTab, setActiveTab] = useState<Tab>("Hiring");
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,7 +98,7 @@ export function ContactSection() {
                 className="text-[clamp(32px,5vw,60px)] font-black text-white leading-[0.95] tracking-tight mb-5"
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}>
-                Need to hire well, and quickly? Let us talk.
+                {settings.contact_title}
               </motion.h2>
               <motion.p className="text-white/55 text-[17px] leading-relaxed mb-8"
                 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
@@ -110,24 +110,28 @@ export function ContactSection() {
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }}>
                 {[
-                  { icon: "✉", label: "hello@headhunters.com.au", href: "mailto:hello@headhunters.com.au" },
-                  { icon: "💬", label: "WhatsApp support line", href: "/#contact" },
-                  { icon: "📅", label: "Book a consultant call", href: "/#contact" },
-                ].map((item) => (
-                  <a key={item.label} href={item.href}
-                    className="flex items-center gap-3 p-4 rounded-[12px] border border-white/6 bg-white/3 text-white/70 hover:text-white hover:border-[#04a891]/40 hover:bg-white/5 transition-all duration-200 text-sm font-medium">
-                    <span className="text-lg">{item.icon}</span>
-                    {item.label}
-                  </a>
-                ))}
+                  { icon: Mail, label: settings.notifyEmails, href: `mailto:${settings.notifyEmails}` },
+                  { icon: MessageCircle, label: "WhatsApp support line", href: settings.whatsappNumber ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, "")}` : `mailto:${settings.notifyEmails}` },
+                  { icon: Calendar, label: "Book a consultant call", href: settings.calendlyLink || `mailto:${settings.notifyEmails}` },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <a key={item.label} href={item.href}
+                      className="flex items-center gap-3 p-4 rounded-[12px] border border-white/6 bg-white/3 text-white/70 hover:text-white hover:border-[#04a891]/40 hover:bg-white/5 transition-all duration-200 text-sm font-medium">
+                      <Icon size={14} className="text-[#04a891] shrink-0" />
+                      {item.label}
+                    </a>
+                  );
+                })}
               </motion.div>
 
-              <motion.p
-                className="mt-8 text-xs text-white/30 leading-relaxed p-4 rounded-[10px] border border-white/6"
+              <motion.div
+                className="mt-8 text-xs text-white/35 leading-relaxed p-4 rounded-[10px] border border-white/6 flex items-start gap-3 bg-white/1"
                 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
                 viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }}>
-                🔒 Recruitment fraud notice: Head Hunters will never ask candidates for payment to apply for a role. Report suspicious activity immediately.
-              </motion.p>
+                <Lock size={14} className="text-[#04a891] shrink-0 mt-0.5" />
+                <span>Recruitment fraud notice: Head Hunters will never ask candidates for payment to apply for a role. Report suspicious activity immediately.</span>
+              </motion.div>
             </div>
 
             {/* Right: form */}

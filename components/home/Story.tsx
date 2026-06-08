@@ -10,7 +10,7 @@ const TIMELINE = [
   { year: "Today", event: "A modern workforce partner with service standards, technology, and a clear human-first philosophy." },
 ];
 
-export function Story() {
+export function Story({ settings }: { settings: any }) {
   return (
     <section id="story" className="bg-[#0B0B0C] py-28" aria-labelledby="story-title">
       <div className="max-w-[1200px] mx-auto px-5">
@@ -46,12 +46,12 @@ export function Story() {
               className="text-[clamp(32px,4.5vw,58px)] font-black text-white leading-[0.95] tracking-tight mb-5"
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}>
-              Built on hard work, reliability and long-term relationships.
+              {settings.story_title}
             </motion.h2>
             <motion.p className="text-white/55 text-[17px] leading-relaxed mb-10"
               initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }}>
-              Head Hunters was founded on the principle that recruitment should feel like a genuine partnership — not a transaction. Every placement reflects that commitment.
+              {settings.story_text}
             </motion.p>
 
             {/* Timeline */}

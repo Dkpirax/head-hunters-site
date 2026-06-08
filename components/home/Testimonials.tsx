@@ -25,7 +25,7 @@ const TESTIMONIALS = [
   },
 ];
 
-export function Testimonials() {
+export function Testimonials({ settings }: { settings: any }) {
   return (
     <section className="bg-[#f2f3ef] py-28" aria-labelledby="testimonials-title">
       <div className="max-w-[1200px] mx-auto px-5">
@@ -40,7 +40,7 @@ export function Testimonials() {
             className="text-[clamp(32px,4.5vw,58px)] font-black text-[#111413] leading-[0.95] tracking-tight"
             initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}>
-            What clients and candidates say.
+            {settings.testimonials_title}
           </motion.h2>
         </div>
 

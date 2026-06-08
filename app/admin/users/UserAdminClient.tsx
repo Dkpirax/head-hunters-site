@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Users, Plus, Shield, Mail, Calendar, UserCheck, Trash2, Edit2, Key, X } from "lucide-react";
-import { createAdminUser, updateAdminUser, deleteAdminUser } from "@/app/actions/users";
+import { createAdminUser, updateAdminUser, deleteAdminUser, sendResetEmail } from "@/app/actions/users";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface AdminUser {
@@ -112,6 +112,16 @@ export default function UserAdminClient({
     }
   };
 
+  const handleSendReset = async (userEmail: string) => {
+    try {
+      await sendResetEmail(userEmail);
+      setSuccessMessage(`Password reset instructions sent to ${userEmail}.`);
+      setTimeout(() => setSuccessMessage(""), 5000);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to send reset email.");
+    }
+  };
+
   const handleStartEdit = (user: AdminUser) => {
     setEditingUser(user);
     setEmail(user.email);
@@ -210,6 +220,13 @@ export default function UserAdminClient({
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleSendReset(u.email)}
+                        className="w-8 h-8 rounded-[8px] border border-white/6 bg-white/2 hover:bg-amber-500/10 hover:border-amber-500/20 hover:text-amber-400 text-white/45 flex items-center justify-center transition-all cursor-pointer"
+                        title="Send Password Reset Email"
+                      >
+                        <Key size={12} />
+                      </button>
                       <button
                         onClick={() => handleStartEdit(u)}
                         className="w-8 h-8 rounded-[8px] border border-white/6 bg-white/2 hover:bg-white/8 hover:text-white text-white/50 flex items-center justify-center transition-all cursor-pointer"

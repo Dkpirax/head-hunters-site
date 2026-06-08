@@ -74,7 +74,7 @@ const SERVICES = [
   },
 ];
 
-export function ServicesBento() {
+export function ServicesBento({ settings }: { settings: any }) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export function ServicesBento() {
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
         >
-          A complete system for<br />every workforce need.
+          {settings.services_tagline}
         </motion.h2>
         <motion.p
           className="text-white/55 text-lg max-w-[560px] mx-auto"
@@ -135,7 +135,7 @@ export function ServicesBento() {
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
         >
-          Focused enough to feel premium, complete enough to support employers, candidates and operations teams.
+          {settings.services_description}
         </motion.p>
       </div>
 

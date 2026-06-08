@@ -9,7 +9,7 @@ const REGIONS = [
   { name: "Sri Lanka", desc: "Offshore admin, VA, bookkeeping and customer service teams.", x: "62%", y: "52%" },
 ];
 
-export function GlobalReach() {
+export function GlobalReach({ settings }: { settings: any }) {
   return (
     <section className="bg-[#0B0B0C] py-28 relative overflow-hidden" aria-labelledby="global-title">
       {/* Background grid */}
@@ -35,12 +35,12 @@ export function GlobalReach() {
               className="text-[clamp(34px,5vw,62px)] font-black text-white leading-[0.95] tracking-tight mb-5"
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}>
-              Local execution across three workforce markets.
+              {settings.global_reach_title}
             </motion.h2>
             <motion.p className="text-white/55 text-[17px] leading-relaxed mb-8"
               initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }}>
-              Recruitment support, offshore staffing, payroll, bookkeeping and candidate communication across Australia, New Zealand and Sri Lanka.
+              {settings.global_reach_text}
             </motion.p>
 
             <ul className="space-y-4">

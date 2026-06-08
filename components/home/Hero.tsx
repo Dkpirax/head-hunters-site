@@ -12,7 +12,7 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-export function Hero() {
+export function Hero({ settings }: { settings: any }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // GSAP timeline with proper cleanup
@@ -65,34 +65,32 @@ export function Hero() {
       {/* Animated card stream background — Twelve Labs style */}
       <HeroBackground />
 
-      {/* Animated card stream background — gradient masks managed inside HeroBackground */}
-
       <div className="relative z-20 max-w-[1200px] mx-auto px-5">
         {/* Hero grid: copy + command panel */}
         <div className="grid lg:grid-cols-[1fr_360px] gap-12 items-center min-h-[56vh]">
           {/* Copy */}
           <div>
-
             <h1
               id="hero-title"
               className="flex flex-wrap gap-x-[0.15em] gap-y-[0.05em] m-0 mb-6"
-              aria-label="Hire better. Grow faster."
+              aria-label={settings.hero_headline}
             >
-              {["Hire", "better.", "Grow", "faster."].map((word, i) => (
-                <span
-                  key={i}
-                  className="hh-word inline-block will-change-transform text-[clamp(60px,9.5vw,128px)] font-black leading-[0.88] tracking-tight text-white"
-                  style={word === "better." ? { color: "#04a891" } : undefined}
-                >
-                  {word}
-                </span>
-              ))}
+              {settings.hero_headline.split(" ").map((word: string, i: number) => {
+                const isTeal = word.toLowerCase().includes("better");
+                return (
+                  <span
+                    key={i}
+                    className="hh-word inline-block will-change-transform text-[clamp(60px,9.5vw,128px)] font-black leading-[0.88] tracking-tight text-white"
+                    style={isTeal ? { color: "#04a891" } : undefined}
+                  >
+                    {word}
+                  </span>
+                );
+              })}
             </h1>
 
             <p className="hh-lede max-w-[580px] text-white/70 text-[clamp(17px,2vw,21px)] leading-relaxed mb-8">
-              Head Hunters brings people, precision and progress to executive
-              search, permanent recruitment, labour hire and multi-country
-              workforce support.
+              {settings.hero_subheadline}
             </p>
 
             <div className="hh-cta flex flex-wrap gap-3">
@@ -101,7 +99,7 @@ export function Hero() {
                 id="hero-cta-staff"
                 className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] bg-[#02695e] text-white text-[15px] font-semibold transition-all hover:bg-[#027d6f] hover:shadow-[0_14px_36px_rgba(2,105,94,0.42)] active:scale-[0.98]"
               >
-                Find staff
+                {settings.hero_cta_primary}
                 <ArrowRight size={16} />
               </Link>
               <Link
@@ -109,7 +107,7 @@ export function Hero() {
                 id="hero-cta-jobs"
                 className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] border border-white/14 bg-white/8 text-white text-[15px] font-semibold transition-all hover:bg-white/12 active:scale-[0.98]"
               >
-                Find work
+                {settings.hero_cta_secondary}
               </Link>
             </div>
           </div>
@@ -175,7 +173,6 @@ export function Hero() {
             </ul>
           </div>
         </div>
-
       </div>
     </section>
   );

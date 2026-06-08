@@ -3,20 +3,27 @@ import Link from "next/link";
 import { NavLogo } from "@/components/ui/Logo";
 import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Settings, LogOut, ExternalLink } from "lucide-react";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
+import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = { title: { template: "%s | Admin — Head Hunters", default: "Admin — Head Hunters" } };
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/jobs", label: "Job Listings", icon: Briefcase },
+  { href: "/admin/insights", label: "Insights", icon: FileText },
   { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
   { href: "/admin/chat", label: "Chats", icon: MessageSquare },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/insights", label: "Insights", icon: FileText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  const userName = session?.user?.name || "Admin User";
+  const userEmail = session?.user?.email || "";
+  const initial = userName[0].toUpperCase();
+  const role = (session?.user as { role?: string })?.role || "ADMIN";
+
   return (
     <div className="min-h-screen bg-[#0f1110] flex">
       {/* Sidebar */}
@@ -53,8 +60,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main content */}
       <main className="flex-1 overflow-auto flex flex-col">
-        <header className="h-16 shrink-0 border-b border-white/6 flex items-center justify-end px-8 bg-[#0B0B0C]/40 backdrop-blur-md sticky top-0 z-20">
+        <header className="h-16 shrink-0 border-b border-white/6 flex items-center justify-end px-8 bg-[#0B0B0C]/40 backdrop-blur-md sticky top-0 z-20 gap-4">
           <AdminNotifications />
+          <div className="flex items-center gap-2.5 pl-4 border-l border-white/10">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] grid place-items-center text-white text-xs font-black shadow-sm uppercase cursor-default select-none" title={`${userName} (${userEmail})`}>
+              {initial}
+            </div>
+            <div className="hidden sm:flex flex-col min-w-0">
+              <span className="text-xs font-bold text-white leading-none truncate max-w-[100px]">{userName}</span>
+              <span className="text-[9px] text-white/40 leading-none mt-1 uppercase tracking-wider">{role.replace("_", " ")}</span>
+            </div>
+          </div>
         </header>
         <div className="flex-1 min-h-0 overflow-auto">
           {children}
