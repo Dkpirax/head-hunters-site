@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/lib/auth";
 
 // Merged default settings containing Homepage Copy, Section Toggles, and General configurations
 const defaultSettings = {
@@ -121,6 +122,9 @@ export async function getSettings() {
 }
 
 export async function updateSettings(data: any) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
   try {
     for (const [key, value] of Object.entries(data)) {
       await prisma.content.upsert({

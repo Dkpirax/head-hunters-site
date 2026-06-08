@@ -4,6 +4,7 @@ import { NavLogo } from "@/components/ui/Logo";
 import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Settings, LogOut, ExternalLink } from "lucide-react";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: { template: "%s | Admin — Head Hunters", default: "Admin — Head Hunters" } };
 
@@ -19,6 +20,10 @@ const NAV = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+  if (!session) {
+    redirect("/login");
+  }
+
   const userName = session?.user?.name || "Admin User";
   const userEmail = session?.user?.email || "";
   const initial = userName[0].toUpperCase();

@@ -4,6 +4,46 @@ import { Footer } from "@/components/layout/Footer";
 import { MapPin, Briefcase, Clock, Flame, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const resolvedParams = await params;
+  const job = await prisma.job.findUnique({
+    where: { id: resolvedParams.id },
+  });
+
+  if (!job || job.status !== "ACTIVE") {
+    return {
+      title: "Job Listing Not Found",
+    };
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://headhunters.com.au";
+  const jobUrl = `${siteUrl}/jobs/${job.id}`;
+
+  return {
+    title: `${job.title} | Jobs at Head Hunters`,
+    description: `Apply for the ${job.title} position located in ${job.location}. Learn more and submit your application with Head Hunters today.`,
+    alternates: {
+      canonical: jobUrl,
+    },
+    openGraph: {
+      title: `${job.title} | Head Hunters`,
+      description: `Apply for the ${job.title} position located in ${job.location}. Learn more and submit your application with Head Hunters today.`,
+      url: jobUrl,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${job.title} | Head Hunters`,
+      description: `Apply for the ${job.title} position located in ${job.location}. Learn more and submit your application with Head Hunters today.`,
+    },
+  };
+}
 
 export default async function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -22,8 +62,67 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
     EXECUTIVE: "bg-purple-600 text-white",
   };
 
+  const mapEmploymentType = (type: string) => {
+    switch (type) {
+      case "PERMANENT":
+        return "FULL_TIME";
+      case "CASUAL":
+        return "PART_TIME";
+      case "REMOTE":
+        return "FULL_TIME";
+      case "EXECUTIVE":
+        return "FULL_TIME";
+      default:
+        return "FULL_TIME";
+    }
+  };
+
+  const getCountryCode = (loc: string) => {
+    const l = loc.toLowerCase();
+    if (l.includes("new zealand") || l.includes("nz")) return "NZ";
+    if (l.includes("sri lanka") || l.includes("lk")) return "LK";
+    return "AU";
+  };
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://headhunters.com.au";
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    "title": job.title,
+    "description": job.description,
+    "datePosted": job.createdAt.toISOString(),
+    "employmentType": mapEmploymentType(job.type),
+    "hiringOrganization": {
+      "@type": "Organization",
+      "name": "Head Hunters",
+      "sameAs": siteUrl,
+    },
+    ...(job.type === "REMOTE"
+      ? {
+          jobLocationType: "TELECOMMUTE",
+          applicantLocationRequirements: {
+            "@type": "Country",
+            "name": "Australia",
+          },
+        }
+      : {
+          jobLocation: {
+            "@type": "Place",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": job.location,
+              "addressCountry": getCountryCode(job.location),
+            },
+          },
+        }),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header />
       <main className="min-h-screen bg-[#0B0B0C] pt-32 pb-24">
         <div className="max-w-[800px] mx-auto px-5">

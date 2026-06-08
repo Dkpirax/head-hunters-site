@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getSettings } from "@/app/actions/settings";
+import { auth } from "@/lib/auth";
 
 export async function getOrCreateConversation(userId: string) {
   if (!userId) {
@@ -63,6 +64,13 @@ export async function addChatMessage(
     throw new Error("Missing required fields for message");
   }
 
+  if (senderType === "ADMIN") {
+    const session = await auth();
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+  }
+
   const message = await prisma.message.create({
     data: {
       conversationId,
@@ -83,6 +91,9 @@ export async function addChatMessage(
 }
 
 export async function takeOverConversation(conversationId: string, adminEmail: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
   if (!conversationId || !adminEmail) {
     throw new Error("Missing conversation ID or admin email");
   }
@@ -129,6 +140,9 @@ export async function requestHumanTakeover(conversationId: string) {
 }
 
 export async function getConversationsForAdmin() {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
   return await prisma.conversation.findMany({
     where: {
       status: { in: ["BOT_ACTIVE", "HUMAN_ACTIVE"] },
@@ -143,6 +157,9 @@ export async function getConversationsForAdmin() {
 }
 
 export async function closeConversation(conversationId: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
   if (!conversationId) {
     throw new Error("Missing conversation ID");
   }
@@ -170,6 +187,9 @@ export async function closeConversation(conversationId: string) {
 }
 
 export async function pauseConversation(conversationId: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
   if (!conversationId) {
     throw new Error("Missing conversation ID");
   }
