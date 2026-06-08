@@ -13,8 +13,6 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
 
-  if (isAdmin) return null;
-
   useEffect(() => {
     const onScroll = () => {
       setShowScroll(window.scrollY > 400);
@@ -31,6 +29,8 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
       return () => clearTimeout(timer);
     }
   }, []);
+
+  if (isAdmin) return null;
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });

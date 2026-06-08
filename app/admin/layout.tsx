@@ -5,17 +5,19 @@ import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Sett
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getUserPermissions } from "@/lib/permissions";
+import { SignOutLink } from "@/components/admin/SignOutLink";
 
 export const metadata: Metadata = { title: { template: "%s | Admin — Head Hunters", default: "Admin — Head Hunters" } };
 
 const NAV = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/jobs", label: "Job Listings", icon: Briefcase },
-  { href: "/admin/insights", label: "Insights", icon: FileText },
-  { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
-  { href: "/admin/chat", label: "Chats", icon: MessageSquare },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, permission: null },
+  { href: "/admin/jobs", label: "Job Listings", icon: Briefcase, permission: "manage_jobs" },
+  { href: "/admin/insights", label: "Insights", icon: FileText, permission: "manage_insights" },
+  { href: "/admin/enquiries", label: "Enquiries", icon: Inbox, permission: "view_enquiries" },
+  { href: "/admin/chat", label: "Chats", icon: MessageSquare, permission: "view_chat" },
+  { href: "/admin/users", label: "Users", icon: Users, permission: "manage_users" },
+  { href: "/admin/settings", label: "Settings", icon: Settings, permission: "manage_settings" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +30,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const userEmail = session?.user?.email || "";
   const initial = userName[0].toUpperCase();
   const role = (session?.user as { role?: string })?.role || "ADMIN";
+  const userId = (session?.user as { id?: string })?.id;
+
+  // Load user permissions dynamically if not SUPER_ADMIN
+  let userPermissions = new Set<string>();
+  if (role !== "SUPER_ADMIN" && userId) {
+    userPermissions = await getUserPermissions(userId);
+  }
+
+  // Filter visible nav items based on role / permissions
+  const visibleNav = NAV.filter(({ permission }) => {
+    if (role === "SUPER_ADMIN") return true;
+    if (!permission) return true;
+    return userPermissions.has(permission);
+  });
 
   return (
     <div className="min-h-screen bg-[#0f1110] flex">
@@ -39,7 +55,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5">
-          {NAV.map(({ href, label, icon: Icon }) => (
+          {visibleNav.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -56,10 +72,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-sm font-medium text-white/30 hover:text-white/60 transition-all">
             <ExternalLink size={15} strokeWidth={1.8} /> View live site
           </Link>
-          <Link href="/api/auth/signout"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-400/5 transition-all">
-            <LogOut size={15} strokeWidth={1.8} /> Sign out
-          </Link>
+          <SignOutLink />
         </div>
       </aside>
 

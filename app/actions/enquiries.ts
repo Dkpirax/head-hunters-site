@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/permissions";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -143,8 +143,7 @@ export async function createEnquiry(data: CreateEnquiryInput) {
 }
 
 export async function getEnquiries() {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requirePermission("view_enquiries");
 
   return await prisma.enquiry.findMany({
     orderBy: { createdAt: "desc" },
@@ -152,8 +151,7 @@ export async function getEnquiries() {
 }
 
 export async function updateEnquiryStatus(id: string, status: EnquiryStatus) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requirePermission("view_enquiries");
 
   const updated = await prisma.enquiry.update({
     where: { id },
@@ -167,8 +165,7 @@ export async function updateEnquiryStatus(id: string, status: EnquiryStatus) {
 }
 
 export async function deleteEnquiry(id: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requirePermission("view_enquiries");
 
   const deleted = await prisma.enquiry.delete({
     where: { id },

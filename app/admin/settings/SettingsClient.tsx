@@ -61,13 +61,36 @@ interface SettingsData {
   integration_bullhorn_enabled: boolean;
   integration_bullhorn_api_url: string;
   integration_bullhorn_client_id: string;
+
+  // Maintenance Mode
+  maintenance_mode_enabled: boolean;
+  maintenance_message: string;
+
+  // SEO & AI
+  seo_meta_title_suffix: string;
+  seo_default_description: string;
+  seo_og_image_url: string;
+  ai_chatbot_model: string;
+  ai_job_matching_enabled: boolean;
 }
 
 type TabType = "homepage" | "toggles" | "general";
 
-export default function SettingsClient({ initialSettings }: { initialSettings: SettingsData }) {
+export default function SettingsClient({
+  initialSettings,
+  canManageGeneral = false,
+  canManageHomepage = false,
+  canManageToggles = false,
+}: {
+  initialSettings: SettingsData;
+  canManageGeneral?: boolean;
+  canManageHomepage?: boolean;
+  canManageToggles?: boolean;
+}) {
   const [formData, setFormData] = useState<SettingsData>(initialSettings);
-  const [activeTab, setActiveTab] = useState<TabType>("homepage");
+  const [activeTab, setActiveTab] = useState<TabType>(
+    canManageHomepage ? "homepage" : canManageToggles ? "toggles" : "general"
+  );
   const [status, setStatus] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -96,9 +119,9 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
   };
 
   const tabs = [
-    { id: "homepage" as const, label: "Homepage Copy", icon: FileText },
-    { id: "toggles" as const, label: "Section Toggles", icon: ToggleLeft },
-    { id: "general" as const, label: "General Settings", icon: SettingsIcon },
+    ...(canManageHomepage ? [{ id: "homepage" as const, label: "Homepage Copy", icon: FileText }] : []),
+    ...(canManageToggles ? [{ id: "toggles" as const, label: "Section Toggles", icon: ToggleLeft }] : []),
+    ...(canManageGeneral ? [{ id: "general" as const, label: "General Settings", icon: SettingsIcon }] : []),
   ];
 
   return (
@@ -582,6 +605,97 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                             </div>
                           </div>
                         )}
+                      </div>
+
+                      {/* Maintenance Mode Configuration */}
+                      <div className="p-4 border border-white/8 rounded-[12px] bg-white/2 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-white block">Maintenance Mode</span>
+                            <span className="text-[9px] text-white/45">Bypasses checks for SUPER ADMIN sessions automatically.</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={formData.maintenance_mode_enabled}
+                            onChange={() => handleCheckboxChange("maintenance_mode_enabled")}
+                            className="w-4 h-4 text-[#04a891] border-white/10 rounded cursor-pointer accent-[#02695e]"
+                          />
+                        </div>
+                        {formData.maintenance_mode_enabled && (
+                          <div className="space-y-1 pt-2">
+                            <label className="text-[9px] font-bold text-white/40 uppercase tracking-wider">Maintenance Message</label>
+                            <textarea
+                              rows={2}
+                              value={formData.maintenance_message}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, maintenance_message: e.target.value }))}
+                              className="w-full p-2.5 rounded-[8px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all resize-none"
+                              placeholder="We are currently performing scheduled maintenance..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SEO & AI Configurations */}
+                      <div className="p-4 border border-white/8 rounded-[12px] bg-white/2 space-y-3.5">
+                        <h5 className="text-xs font-bold text-white uppercase tracking-wider">SEO & AI Optimization</h5>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-white/40 uppercase tracking-wider">SEO Title Suffix</label>
+                            <input
+                              type="text"
+                              value={formData.seo_meta_title_suffix}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, seo_meta_title_suffix: e.target.value }))}
+                              className="w-full h-8.5 px-3 rounded-[8px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
+                              placeholder="| Head Hunters Recruitment"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-white/40 uppercase tracking-wider">Default OG Image URL</label>
+                            <input
+                              type="text"
+                              value={formData.seo_og_image_url}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, seo_og_image_url: e.target.value }))}
+                              className="w-full h-8.5 px-3 rounded-[8px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
+                              placeholder="/images/og-default.jpg"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-white/40 uppercase tracking-wider">Default Search Description</label>
+                          <textarea
+                            rows={2}
+                            value={formData.seo_default_description}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, seo_default_description: e.target.value }))}
+                            className="w-full p-2.5 rounded-[8px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all resize-none"
+                            placeholder="Describe your site for search crawlers..."
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-white/40 uppercase tracking-wider">AI Model (Chatbot)</label>
+                            <select
+                              value={formData.ai_chatbot_model}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, ai_chatbot_model: e.target.value }))}
+                              className="w-full h-8.5 px-2.5 rounded-[8px] border border-white/8 bg-[#181a19] text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
+                            >
+                              <option value="gpt-4o-mini">GPT-4o Mini (Default)</option>
+                              <option value="gpt-4o">GPT-4o (High Quality)</option>
+                              <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center justify-between p-2.5 border border-white/8 rounded-[10px] bg-white/2 self-end h-8.5">
+                            <span className="text-[10px] font-bold text-white">AI Job Matching</span>
+                            <input
+                              type="checkbox"
+                              checked={formData.ai_job_matching_enabled}
+                              onChange={() => handleCheckboxChange("ai_job_matching_enabled")}
+                              className="w-4 h-4 text-[#04a891] border-white/10 rounded cursor-pointer accent-[#02695e]"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -23,6 +23,11 @@ export function ContactSection({ settings }: { settings: any }) {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const contactTitle = settings?.contact_title || settings?.contactTitle || "Let’s Talk";
+  const notifyEmails = settings?.email_notify_list || settings?.notifyEmails || "hello@headhunters.com.au";
+  const whatsappNumber = settings?.integration_whatsapp_number || settings?.whatsappNumber || "";
+  const calendlyLink = settings?.integration_calendly_url || settings?.calendlyLink || "";
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -98,7 +103,7 @@ export function ContactSection({ settings }: { settings: any }) {
                 className="text-[clamp(32px,5vw,60px)] font-black text-white leading-[0.95] tracking-tight mb-5"
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}>
-                {settings.contact_title}
+                {contactTitle}
               </motion.h2>
               <motion.p className="text-white/55 text-[17px] leading-relaxed mb-8"
                 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
@@ -110,9 +115,9 @@ export function ContactSection({ settings }: { settings: any }) {
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }}>
                 {[
-                  { icon: Mail, label: settings.notifyEmails, href: `mailto:${settings.notifyEmails}` },
-                  { icon: MessageCircle, label: "WhatsApp support line", href: settings.whatsappNumber ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, "")}` : `mailto:${settings.notifyEmails}` },
-                  { icon: Calendar, label: "Book a consultant call", href: settings.calendlyLink || `mailto:${settings.notifyEmails}` },
+                  { icon: Mail, label: notifyEmails, href: `mailto:${notifyEmails}` },
+                  { icon: MessageCircle, label: "WhatsApp support line", href: whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}` : `mailto:${notifyEmails}` },
+                  { icon: Calendar, label: "Book a consultant call", href: calendlyLink || `mailto:${notifyEmails}` },
                 ].map((item) => {
                   const Icon = item.icon;
                   return (

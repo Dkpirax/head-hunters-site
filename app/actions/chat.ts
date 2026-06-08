@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getSettings } from "@/app/actions/settings";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/permissions";
 
 export async function getOrCreateConversation(userId: string) {
   if (!userId) {
@@ -65,10 +65,7 @@ export async function addChatMessage(
   }
 
   if (senderType === "ADMIN") {
-    const session = await auth();
-    if (!session) {
-      throw new Error("Unauthorized");
-    }
+    await requirePermission("send_chat_messages");
   }
 
   const message = await prisma.message.create({
@@ -91,8 +88,7 @@ export async function addChatMessage(
 }
 
 export async function takeOverConversation(conversationId: string, adminEmail: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requirePermission("send_chat_messages");
 
   if (!conversationId || !adminEmail) {
     throw new Error("Missing conversation ID or admin email");
@@ -140,8 +136,7 @@ export async function requestHumanTakeover(conversationId: string) {
 }
 
 export async function getConversationsForAdmin() {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requirePermission("view_chat");
 
   return await prisma.conversation.findMany({
     where: {
@@ -157,8 +152,7 @@ export async function getConversationsForAdmin() {
 }
 
 export async function closeConversation(conversationId: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requirePermission("send_chat_messages");
 
   if (!conversationId) {
     throw new Error("Missing conversation ID");
@@ -187,8 +181,7 @@ export async function closeConversation(conversationId: string) {
 }
 
 export async function pauseConversation(conversationId: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requirePermission("send_chat_messages");
 
   if (!conversationId) {
     throw new Error("Missing conversation ID");

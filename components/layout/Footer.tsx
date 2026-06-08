@@ -37,7 +37,13 @@ const defaultFooterSettings = {
 };
 
 export function Footer({ settings }: { settings?: any }) {
-  const s = { ...defaultFooterSettings, ...settings };
+  const s = {
+    ...defaultFooterSettings,
+    ...settings,
+    notifyEmails: settings?.email_notify_list || settings?.notifyEmails || defaultFooterSettings.notifyEmails,
+    whatsappNumber: settings?.integration_whatsapp_number || settings?.whatsappNumber || defaultFooterSettings.whatsappNumber,
+    calendlyLink: settings?.integration_calendly_url || settings?.calendlyLink || defaultFooterSettings.calendlyLink,
+  };
 
   return (
     <footer className="bg-[#0B0B0C] border-t border-white/8">

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Users, Plus, Shield, Mail, Calendar, UserCheck, Trash2, Edit2, Key, X } from "lucide-react";
-import { createAdminUser, updateAdminUser, deleteAdminUser, sendResetEmail } from "@/app/actions/users";
+import { createAdminUser, updateAdminUser, deleteAdminUser, sendResetEmail, updateUserPermissions } from "@/app/actions/users";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface AdminUser {
@@ -11,14 +11,17 @@ interface AdminUser {
   name: string | null;
   role: string;
   createdAt: string | Date;
+  permissions?: string[];
 }
 
 export default function UserAdminClient({
   initialUsers,
   currentUserEmail,
+  allPermissions,
 }: {
   initialUsers: AdminUser[];
   currentUserEmail: string;
+  allPermissions: string[];
 }) {
   const [users, setUsers] = useState<AdminUser[]>(initialUsers);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,15 +33,20 @@ export default function UserAdminClient({
   const [name, setName] = useState("");
   const [role, setRole] = useState("ADMIN");
   const [password, setPassword] = useState("");
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const currentUser = users.find((u) => u.email.toLowerCase() === currentUserEmail.toLowerCase());
+  const isCurrentUserSuperAdmin = currentUser?.role === "SUPER_ADMIN";
 
   const resetForm = () => {
     setEmail("");
     setName("");
     setRole("ADMIN");
     setPassword("");
+    setSelectedPermissions([]);
     setErrorMessage("");
     setIsAdding(false);
     setEditingUser(null);
@@ -52,6 +60,11 @@ export default function UserAdminClient({
 
     try {
       const created = await createAdminUser({ email, name, role, password });
+      
+      if (isCurrentUserSuperAdmin && role !== "SUPER_ADMIN") {
+        await updateUserPermissions(created.id, selectedPermissions);
+      }
+
       setUsers((prev) => [
         {
           id: created.id,
@@ -59,6 +72,7 @@ export default function UserAdminClient({
           name: created.name,
           role: created.role,
           createdAt: created.createdAt,
+          permissions: role === "SUPER_ADMIN" ? allPermissions : selectedPermissions,
         },
         ...prev,
       ]);
@@ -80,10 +94,21 @@ export default function UserAdminClient({
 
     try {
       const updated = await updateAdminUser(editingUser.id, { email, name, role, password });
+      
+      if (isCurrentUserSuperAdmin) {
+        await updateUserPermissions(editingUser.id, role === "SUPER_ADMIN" ? [] : selectedPermissions);
+      }
+
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editingUser.id
-            ? { ...u, email: updated.email, name: updated.name, role: updated.role }
+            ? { 
+                ...u, 
+                email: updated.email, 
+                name: updated.name, 
+                role: updated.role, 
+                permissions: role === "SUPER_ADMIN" ? allPermissions : selectedPermissions 
+              }
             : u
         )
       );
@@ -128,6 +153,7 @@ export default function UserAdminClient({
     setName(user.name || "");
     setRole(user.role);
     setPassword(""); // Keep blank unless resetting
+    setSelectedPermissions(user.permissions || []);
     setErrorMessage("");
     setIsAdding(true);
   };
@@ -306,10 +332,41 @@ export default function UserAdminClient({
                       onChange={(e) => setRole(e.target.value)}
                       className="w-full h-9 px-3.5 rounded-[8px] border border-white/8 bg-[#181a19] text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
                     >
+                      <option value="USER">USER</option>
                       <option value="ADMIN">ADMIN</option>
                       <option value="SUPER_ADMIN">SUPER ADMIN</option>
                     </select>
                   </div>
+
+                  {isCurrentUserSuperAdmin && role !== "SUPER_ADMIN" && (
+                    <div className="space-y-2 mt-4 border-t border-white/6 pt-3">
+                      <label className="text-[10px] font-bold text-white/40 uppercase tracking-wide">
+                        Assign Permissions
+                      </label>
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                        {allPermissions.map((perm) => {
+                          const isChecked = selectedPermissions.includes(perm);
+                          return (
+                            <label key={perm} className="flex items-center gap-2 text-white/70 hover:text-white text-xs cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedPermissions((prev) => [...prev, perm]);
+                                  } else {
+                                    setSelectedPermissions((prev) => prev.filter((p) => p !== perm));
+                                  }
+                                }}
+                                className="w-3.5 h-3.5 text-[#04a891] border-white/10 rounded accent-[#02695e]"
+                              />
+                              <span className="capitalize">{perm.replace(/_/g, " ")}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">

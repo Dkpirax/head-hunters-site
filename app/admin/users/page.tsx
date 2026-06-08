@@ -1,25 +1,42 @@
 import type { Metadata } from "next";
-import { getAdminUsers } from "@/app/actions/users";
+import { getAdminUsers, getPermissionsList } from "@/app/actions/users";
 import { auth } from "@/lib/auth";
 import UserAdminClient from "./UserAdminClient";
+import { checkPermission } from "@/lib/permissions";
+import { AccessDenied } from "@/components/admin/AccessDenied";
 
 export const metadata: Metadata = { title: "Users" };
 
 export default async function AdminUsersPage() {
+  const hasAccess = await checkPermission("manage_users");
+  if (!hasAccess) {
+    return <AccessDenied permission="manage_users" />;
+  }
+
   const session = await auth();
   const currentUserEmail = session?.user?.email || "admin@headhunters.com.au";
 
-  // Fetch admin logins from SQLite
+  // Fetch admin logins and available permissions
   const rawUsers = await getAdminUsers();
+  const rawPermissions = await getPermissionsList();
   
-  // Format dates so they can be passed as props safely to Client Component
+  // Format dates and map user permissions safely to pass to Client Component
   const formattedUsers = rawUsers.map((u) => ({
     id: u.id,
     email: u.email,
     name: u.name,
     role: u.role,
     createdAt: u.createdAt.toISOString(),
+    permissions: u.permissions.map((up) => up.permission.name),
   }));
 
-  return <UserAdminClient initialUsers={formattedUsers} currentUserEmail={currentUserEmail} />;
+  const allPermissions = rawPermissions.map((p) => p.name);
+
+  return (
+    <UserAdminClient
+      initialUsers={formattedUsers}
+      currentUserEmail={currentUserEmail}
+      allPermissions={allPermissions}
+    />
+  );
 }

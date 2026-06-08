@@ -103,12 +103,29 @@ model Message {
 }
 
 model AdminUser {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String           @id @default(cuid())
+  email        String           @unique
   passwordHash String
   name         String?
-  role         String   @default("ADMIN") // "ADMIN" | "SUPER_ADMIN"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         String           @default("ADMIN") // "SUPER_ADMIN" | "ADMIN" | "USER"
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  permissions  UserPermission[]
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  userPermissions UserPermission[]
+}
+
+model UserPermission {
+  userId       String
+  user         AdminUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
 }
 

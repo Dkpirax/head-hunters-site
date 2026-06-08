@@ -5,29 +5,25 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { Resend } from "resend";
+import { requirePermission } from "@/lib/permissions";
 
-// Helper function to verify the current logged-in user is a SUPER_ADMIN
+// Helper function to verify the current logged-in user is a SUPER_ADMIN or has user management permissions
 async function checkSuperAdmin() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    throw new Error("Unauthorized");
-  }
-  const admin = await prisma.adminUser.findUnique({
-    where: { email: session.user.email.toLowerCase() },
-  });
-  if (admin?.role !== "SUPER_ADMIN") {
-    throw new Error("Insufficient permissions (SUPER_ADMIN only)");
-  }
+  await requirePermission("manage_users");
 }
 
 export async function getAdminUsers() {
-  const session = await auth();
-  if (!session?.user) {
-    throw new Error("Unauthorized");
-  }
+  await requirePermission("manage_users");
 
   return await prisma.adminUser.findMany({
     orderBy: { createdAt: "desc" },
+    include: {
+      permissions: {
+        include: {
+          permission: true,
+        },
+      },
+    },
   });
 }
 
@@ -174,5 +170,51 @@ export async function sendResetEmail(email: string) {
     `
   });
 
+  return { success: true };
+}
+
+export async function getPermissionsList() {
+  await requirePermission("manage_users");
+
+  return await prisma.permission.findMany({
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getUserPermissionsList(userId: string) {
+  await requirePermission("manage_users");
+
+  const userPerms = await prisma.userPermission.findMany({
+    where: { userId },
+    select: { permission: { select: { name: true } } },
+  });
+
+  return userPerms.map((up) => up.permission.name);
+}
+
+export async function updateUserPermissions(userId: string, permissionNames: string[]) {
+  await requirePermission("manage_users");
+
+  // 1. Delete all existing user permissions
+  await prisma.userPermission.deleteMany({
+    where: { userId },
+  });
+
+  // 2. Resolve permissionIds
+  const permissions = await prisma.permission.findMany({
+    where: { name: { in: permissionNames } },
+  });
+
+  // 3. Create new user permissions in bulk
+  if (permissions.length > 0) {
+    await prisma.userPermission.createMany({
+      data: permissions.map((p) => ({
+        userId,
+        permissionId: p.id,
+      })),
+    });
+  }
+
+  revalidatePath("/admin/users");
   return { success: true };
 }

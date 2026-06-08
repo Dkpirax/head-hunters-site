@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
+import { requirePermission, checkPermission } from "@/lib/permissions";
 
 // Merged default settings containing Homepage Copy, Section Toggles, and General configurations
 const defaultSettings = {
@@ -62,6 +62,17 @@ const defaultSettings = {
   integration_bullhorn_enabled: false,
   integration_bullhorn_api_url: "",
   integration_bullhorn_client_id: "",
+
+  // Maintenance Mode
+  maintenance_mode_enabled: false,
+  maintenance_message: "We are currently performing scheduled maintenance. Please check back soon.",
+
+  // SEO & AI
+  seo_meta_title_suffix: " | Head Hunters Recruitment",
+  seo_default_description: "Head Hunters provides executive search, permanent recruitment, and talent solutions across Australia, New Zealand, and Sri Lanka.",
+  seo_og_image_url: "/images/og-default.jpg",
+  ai_chatbot_model: "gpt-4o-mini",
+  ai_job_matching_enabled: false,
 };
 
 export async function getSettings() {
@@ -121,12 +132,46 @@ export async function getSettings() {
   }
 }
 
+const HOMEPAGE_COPY_KEYS = [
+  "hero_headline", "hero_subheadline", "hero_cta_primary", "hero_cta_secondary",
+  "services_tagline", "services_description", "story_title", "story_text",
+  "global_reach_title", "global_reach_text", "testimonials_title",
+  "contact_title", "copyright_text", "linkedin_url", "twitter_url",
+  "facebook_url", "ios_app_url", "android_app_url"
+];
+
+const SECTION_TOGGLE_KEYS = [
+  "show_hero", "show_stats", "show_services", "show_standards",
+  "show_employer_flow", "show_jobs", "show_story", "show_global_reach",
+  "show_testimonials", "show_contact"
+];
+
 export async function updateSettings(data: any) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const canManageGeneral = await checkPermission("manage_settings");
+  const canManageHomepage = await checkPermission("manage_homepage_copy");
+  const canManageToggles = await checkPermission("manage_section_toggles");
+
+  if (!canManageGeneral && !canManageHomepage && !canManageToggles) {
+    throw new Error("Forbidden: You do not have permission to modify settings.");
+  }
+
+  const filteredData: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (canManageGeneral) {
+      filteredData[key] = value;
+    } else if (canManageHomepage && HOMEPAGE_COPY_KEYS.includes(key)) {
+      filteredData[key] = value;
+    } else if (canManageToggles && SECTION_TOGGLE_KEYS.includes(key)) {
+      filteredData[key] = value;
+    }
+  }
+
+  if (Object.keys(filteredData).length === 0) {
+    throw new Error("Forbidden: You do not have permission to update these fields.");
+  }
 
   try {
-    for (const [key, value] of Object.entries(data)) {
+    for (const [key, value] of Object.entries(filteredData)) {
       await prisma.content.upsert({
         where: { key },
         update: { value: String(value) },

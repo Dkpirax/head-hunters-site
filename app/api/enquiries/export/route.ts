@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/permissions";
 
 export async function GET() {
-  const session = await auth();
-  if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+  try {
+    await requirePermission("export_data");
+  } catch (err: any) {
+    if (err.message === "Unauthorized") {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+    return new NextResponse("Forbidden", { status: 403 });
   }
 
   try {
