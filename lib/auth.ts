@@ -1,5 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -12,21 +14,46 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const adminEmail = process.env.ADMIN_EMAIL ?? "admin@headhunters.com.au";
-        const adminPassword = process.env.ADMIN_PASSWORD ?? "headhunters2024";
+        const email = String(credentials.email).toLowerCase();
+        const password = String(credentials.password);
 
-        if (
-          credentials.email !== adminEmail ||
-          credentials.password !== adminPassword
-        ) {
-          return null;
+        // 1. Try to find the user in the database
+        let user = await prisma.adminUser.findUnique({
+          where: { email },
+        });
+
+        // 2. Fallback auto-seeding if no admin users exist in the database yet
+        if (!user) {
+          const count = await prisma.adminUser.count();
+          if (count === 0) {
+            const fallbackEmail = (process.env.ADMIN_EMAIL ?? "admin@headhunters.com.au").toLowerCase();
+            const fallbackPassword = process.env.ADMIN_PASSWORD ?? "headhunters2024";
+
+            if (email === fallbackEmail && password === fallbackPassword) {
+              const passwordHash = await bcrypt.hash(fallbackPassword, 10);
+              user = await prisma.adminUser.create({
+                data: {
+                  email: fallbackEmail,
+                  passwordHash,
+                  name: "Head Hunters Admin",
+                  role: "SUPER_ADMIN",
+                },
+              });
+            }
+          }
         }
 
+        if (!user) return null;
+
+        // 3. Verify password
+        const isValid = await bcrypt.compare(password, user.passwordHash);
+        if (!isValid) return null;
+
         return {
-          id: "1",
-          email: adminEmail,
-          name: "Head Hunters Admin",
-          role: "admin",
+          id: user.id,
+          email: user.email,
+          name: user.name ?? "Admin User",
+          role: user.role,
         };
       },
     }),

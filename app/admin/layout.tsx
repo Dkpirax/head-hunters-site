@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { NavLogo } from "@/components/ui/Logo";
-import { LayoutDashboard, Briefcase, Inbox, FileText, Settings, LogOut, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Settings, LogOut, ExternalLink } from "lucide-react";
+import { AdminNotifications } from "@/components/admin/AdminNotifications";
 
 export const metadata: Metadata = { title: { template: "%s | Admin — Head Hunters", default: "Admin — Head Hunters" } };
 
@@ -9,6 +10,8 @@ const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/jobs", label: "Job Listings", icon: Briefcase },
   { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
+  { href: "/admin/chat", label: "Chats", icon: MessageSquare },
+  { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/insights", label: "Insights", icon: FileText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
@@ -49,7 +52,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 overflow-auto flex flex-col">
+        <header className="h-16 shrink-0 border-b border-white/6 flex items-center justify-end px-8 bg-[#0B0B0C]/40 backdrop-blur-md sticky top-0 z-20">
+          <AdminNotifications />
+        </header>
+        <div className="flex-1 min-h-0 overflow-auto">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Send, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Accordion } from "@/components/ui/Accordion";
+import { createEnquiry } from "@/app/actions/enquiries";
 
 const FAQS = [
   { question: "How fast can Head Hunters respond to a staffing request?", answer: "Sales consultant response is designed around a 1-hour target, with quotes provided within 24 hours where the brief is clear and complete." },
@@ -20,13 +21,41 @@ type Tab = "Hiring" | "Candidate" | "General";
 export function ContactSection() {
   const [activeTab, setActiveTab] = useState<Tab>("Hiring");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Demo submit — in production this POSTs to /api/contact
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitted(true);
+    setIsSubmitting(true);
+
+    try {
+      const target = e.currentTarget;
+      const name = (target.querySelector("#contact-name") as HTMLInputElement).value;
+      const email = (target.querySelector("#contact-email") as HTMLInputElement).value;
+      const phone = (target.querySelector("#contact-phone") as HTMLInputElement).value;
+      const message = (target.querySelector("#contact-message") as HTMLTextAreaElement).value;
+
+      // Map tab value to db type
+      let type: "HIRING" | "CANDIDATE" | "GENERAL" = "GENERAL";
+      if (activeTab === "Hiring") type = "HIRING";
+      else if (activeTab === "Candidate") type = "CANDIDATE";
+
+      await createEnquiry({
+        name,
+        email,
+        phone: phone || undefined,
+        type,
+        message,
+      });
+
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Failed to submit contact enquiry:", error);
+      alert("Failed to submit enquiry. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
 
   return (
     <>
@@ -174,9 +203,9 @@ export function ContactSection() {
                     />
                   </div>
 
-                  <Button type="submit" variant="solid" size="lg" className="w-full justify-center gap-2.5">
-                    Send enquiry
-                    <Send size={15} />
+                  <Button type="submit" variant="solid" size="lg" disabled={isSubmitting} className="w-full justify-center gap-2.5">
+                    {isSubmitting ? "Sending..." : "Send enquiry"}
+                    {!isSubmitting && <Send size={15} />}
                   </Button>
                 </form>
               )}

@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+export async function GET() {
+  try {
+    // 1. Get new enquiries (status is NEW)
+    const newEnquiries = await prisma.enquiry.findMany({
+      where: { status: "NEW" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // 2. Get active conversations that need human assistance (needsHuman is true)
+    const takeoverConversations = await prisma.conversation.findMany({
+      where: { needsHuman: true },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    // 3. Map to standard notification format
+    const notifications = [
+      ...newEnquiries.map((e) => ({
+        id: `enquiry-${e.id}`,
+        type: "ENQUIRY" as const,
+        title: "New Enquiry Received",
+        description: `${e.name} (${e.type})`,
+        message: e.message,
+        createdAt: e.createdAt.toISOString(),
+        link: `/admin/enquiries?id=${e.id}`,
+      })),
+      ...takeoverConversations.map((c) => {
+        const lastMsg = c.messages[0]?.content || "No messages yet";
+        const visitorName = `Visitor #${c.userId.substring(c.userId.length - 4)}`;
+        return {
+          id: `chat-${c.id}`,
+          type: "CHAT" as const,
+          title: "Takeover Requested",
+          description: visitorName,
+          message: lastMsg,
+          createdAt: c.updatedAt.toISOString(),
+          link: `/admin/chat?select=${c.id}`,
+        };
+      }),
+    ];
+
+    // Sort notifications by date descending (newest first)
+    notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return NextResponse.json({ notifications });
+  } catch (error) {
+    console.error("Error fetching admin notifications:", error);
+    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
+  }
+}

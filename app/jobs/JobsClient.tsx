@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, ArrowRight, Flame, MapPin, Clock, Briefcase } from "lucide-react";
 import Link from "next/link";
@@ -24,17 +24,23 @@ const BADGE_STYLES: Record<string, string> = {
   "EXECUTIVE": "bg-purple-600 text-white",
 };
 
+function getPostedDays(createdAt: Date | string): number {
+  const nowMs = new Date().getTime();
+  const createdMs = new Date(createdAt).getTime();
+  return Math.max(0, Math.floor((nowMs - createdMs) / (1000 * 60 * 60 * 24)));
+}
+
 export function JobsClient({ initialJobs }: { initialJobs: Job[] }) {
   const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
+  const q = searchParams ? searchParams.get("q") || "" : "";
+  const [searchQuery, setSearchQuery] = useState(q);
+  const [prevQ, setPrevQ] = useState(q);
   const [activeFilter, setActiveFilter] = useState("All roles");
 
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) {
-      setSearchQuery(q);
-    }
-  }, [searchParams]);
+  if (q !== prevQ) {
+    setSearchQuery(q);
+    setPrevQ(q);
+  }
 
   const filteredJobs = useMemo(() => {
     return initialJobs.filter((job) => {
@@ -126,7 +132,7 @@ export function JobsClient({ initialJobs }: { initialJobs: Job[] }) {
               </div>
             ) : (
               filteredJobs.map((job) => {
-                const postedDays = Math.max(0, Math.floor((Date.now() - new Date(job.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+                const postedDays = getPostedDays(job.createdAt);
                 const badge = job.isHot ? "Red Hot" : job.type;
                 
                 return (

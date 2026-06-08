@@ -1,4 +1,5 @@
-// @ts-ignore - Supressing ghost TS error from locked dev server
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - Suppressing ghost TS error from locked dev server
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
