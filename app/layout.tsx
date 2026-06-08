@@ -52,6 +52,7 @@ export const metadata: Metadata = {
 
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
 import { FloatingButtons } from "@/components/layout/FloatingButtons";
+import { Analytics } from "@vercel/analytics/next";
 import { getSettings } from "@/app/actions/settings";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
@@ -108,6 +109,7 @@ export default async function RootLayout({
           <div className="aurora" aria-hidden="true" />
           {children}
           <FloatingButtons chatbotEnabled={settings.flag_chatbot_enabled} />
+        <Analytics />
         </SmoothScroll>
       </body>
     </html>

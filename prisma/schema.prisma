@@ -8,8 +8,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Job {
@@ -111,6 +111,26 @@ model AdminUser {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   permissions  UserPermission[]
+}
+
+model Candidate {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  name               String?
+  dateOfBirth        DateTime
+  parentalConsent    Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Employer {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  name               String?
+  dateOfBirth        DateTime
+  parentalConsent    Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Permission {
