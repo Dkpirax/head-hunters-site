@@ -1,4 +1,4 @@
-import prisma from "./prisma";
+import { prisma } from "./prisma";
 import { auth } from "./auth";
 import bcrypt from "bcryptjs";
 
