@@ -66,7 +66,7 @@ echo.
 
 REM Zip the deployment files
 echo [4/4] Zipping deploy files...
-powershell -command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory('spaceship_deploy', 'spaceship_deploy.zip')"
+tar -a -c -f spaceship_deploy.zip -C spaceship_deploy .
 if errorlevel 1 (
     echo ERROR: Zipping failed!
     pause
@@ -78,7 +78,7 @@ echo.
 REM Clean up temporary deployment folder
 echo Cleaning up temporary files...
 if exist "spaceship_deploy" (
-   REM rmdir /s /q spaceship_deploy
+    rmdir /s /q spaceship_deploy
 )
 
 echo ========================================
