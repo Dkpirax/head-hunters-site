@@ -143,6 +143,23 @@ head-hunters-site/
 └── README.md           # This file
 ```
 
+## 🗄️ Database Access
+
+This project uses PostgreSQL hosted on [Neon](https://neon.tech) and Prisma ORM. There are a few ways to access and manage your database:
+
+### 1. Prisma Studio (Recommended)
+You can launch a local web-based interface to view and edit your data safely. Run the following command in your terminal:
+```bash
+npx prisma studio
+```
+This opens a dashboard (usually at `http://localhost:5555`) where you can interact with all your tables.
+
+### 2. Neon Console
+Log in to your account at [console.neon.tech](https://console.neon.tech) to view your project, run raw SQL queries, and monitor database health.
+
+### 3. SQL Desktop Client
+Use a client like DBeaver, TablePlus, or pgAdmin to connect directly using the `DATABASE_URL` found in your `.env` file.
+
 ## 🎨 Design System
 
 - **Color Scheme**: Dark theme with teal (#1FB8A0) accent colors

@@ -97,19 +97,28 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 rounded-[10px] bg-[#02695e] text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#027d6f] transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer mt-2"
-            >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>Sign in <LogIn size={15} /></>
-              )}
-            </button>
-          </form>
-        </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 rounded-[10px] bg-[#02695e] text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#027d6f] transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer mt-2"
+              >
+                {loading ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>Sign in <LogIn size={15} /></>
+                )}
+              </button>
+            </form>
+            
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => router.push("/forgot-password")}
+                className="text-xs text-white/50 hover:text-white transition-colors cursor-pointer"
+              >
+                Forgot your password?
+              </button>
+            </div>
+          </div>
 
         <p className="text-center text-xs text-white/25 mt-6">
           T &amp; C Applies © 2026 Fenra · Head Hunters Admin
