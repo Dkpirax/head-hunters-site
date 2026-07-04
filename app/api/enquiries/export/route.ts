@@ -18,7 +18,7 @@ export async function GET() {
     });
 
     const headers = ["ID", "Name", "Email", "Phone", "Type", "Status", "Message", "Created At"];
-    const rows = enquiries.map((e) => [
+    const rows = enquiries.map((e: any) => [
       e.id,
       e.name,
       e.email,

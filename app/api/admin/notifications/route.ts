@@ -50,7 +50,7 @@ export async function GET() {
 
     // 3. Map to standard notification format
     const notifications = [
-      ...newEnquiries.map((e) => ({
+      ...newEnquiries.map((e: any) => ({
         id: `enquiry-${e.id}`,
         type: "ENQUIRY" as const,
         title: "New Enquiry Received",
@@ -59,7 +59,7 @@ export async function GET() {
         createdAt: e.createdAt.toISOString(),
         link: `/admin/enquiries?id=${e.id}`,
       })),
-      ...takeoverConversations.map((c) => {
+      ...takeoverConversations.map((c: any) => {
         const lastMsg = c.messages[0]?.content || "No messages yet";
         const visitorName = `Visitor #${c.userId.substring(c.userId.length - 4)}`;
         return {

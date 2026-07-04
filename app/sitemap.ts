@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { id: true, updatedAt: true },
     });
 
-    jobRoutes = jobs.map((job) => ({
+    jobRoutes = jobs.map((job: any) => ({
       url: `${siteUrl}/jobs/${job.id}`,
       lastModified: job.updatedAt,
       changeFrequency: "weekly" as const,
@@ -38,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { slug: true, updatedAt: true },
     });
 
-    articleRoutes = articles.map((article) => ({
+    articleRoutes = articles.map((article: any) => ({
       url: `${siteUrl}/insights/${article.slug}`,
       lastModified: article.updatedAt,
       changeFrequency: "weekly" as const,

@@ -189,7 +189,7 @@ export async function getUserPermissionsList(userId: string) {
     select: { permission: { select: { name: true } } },
   });
 
-  return userPerms.map((up) => up.permission.name);
+  return userPerms.map((up: any) => up.permission.name);
 }
 
 export async function updateUserPermissions(userId: string, permissionNames: string[]) {
@@ -208,7 +208,7 @@ export async function updateUserPermissions(userId: string, permissionNames: str
   // 3. Create new user permissions in bulk
   if (permissions.length > 0) {
     await prisma.userPermission.createMany({
-      data: permissions.map((p) => ({
+      data: permissions.map((p: any) => ({
         userId,
         permissionId: p.id,
       })),

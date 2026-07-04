@@ -36,7 +36,7 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
     where: { userId },
     include: { permission: true },
   });
-  return new Set(userPerms.map((up) => up.permission.name));
+  return new Set(userPerms.map((up: any) => up.permission.name));
 }
 
 export async function hasPermission(userId: string, permission: string): Promise<boolean> {

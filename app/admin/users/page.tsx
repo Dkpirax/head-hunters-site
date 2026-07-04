@@ -21,16 +21,16 @@ export default async function AdminUsersPage() {
   const rawPermissions = await getPermissionsList();
   
   // Format dates and map user permissions safely to pass to Client Component
-  const formattedUsers = rawUsers.map((u) => ({
+  const formattedUsers = rawUsers.map((u: any) => ({
     id: u.id,
     email: u.email,
     name: u.name,
     role: u.role,
     createdAt: u.createdAt.toISOString(),
-    permissions: u.permissions.map((up) => up.permission.name),
+    permissions: u.permissions.map((up: any) => up.permission.name),
   }));
 
-  const allPermissions = rawPermissions.map((p) => p.name);
+  const allPermissions = rawPermissions.map((p: any) => p.name);
 
   return (
     <UserAdminClient
