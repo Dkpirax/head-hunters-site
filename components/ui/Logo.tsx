@@ -8,11 +8,11 @@ interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl";
 }
 
-const heights = {
-  sm: 24,
-  md: 36,
-  lg: 48,
-  xl: 64,
+const sizeClasses = {
+  sm: "h-[24px]",
+  md: "h-[36px]",
+  lg: "h-[48px]",
+  xl: "h-[64px]",
 };
 
 // Composite logo using your uploaded image
@@ -20,7 +20,7 @@ export function Logo({
   className,
   size = "md",
 }: LogoProps) {
-  const h = heights[size];
+  const sizeClass = sizeClasses[size];
 
   return (
     <div className={cn("inline-flex items-center", className)}>
@@ -29,8 +29,7 @@ export function Logo({
         alt="Head Hunters Logo" 
         width={400} 
         height={100} 
-        className="w-auto object-contain"
-        style={{ height: h }}
+        className={cn("w-auto object-contain", sizeClass)}
         priority
       />
     </div>

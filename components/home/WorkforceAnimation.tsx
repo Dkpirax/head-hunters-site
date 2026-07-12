@@ -8,11 +8,7 @@ export function WorkforceAnimation() {
     <div className="mt-12 relative h-[220px] w-full rounded-[16px] bg-white border border-black/5 overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
       {/* Background pattern */}
       <div 
-        className="absolute inset-0 opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(#02695e 1px, transparent 1px), linear-gradient(90deg, #02695e 1px, transparent 1px)`,
-          backgroundSize: "24px 24px"
-        }}
+        className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(#02695e_1px,transparent_1px),linear-gradient(90deg,#02695e_1px,transparent_1px)] bg-[size:24px_24px]"
       />
       
       <div className="absolute inset-0 flex items-center justify-between px-10 md:px-16">

@@ -13,7 +13,7 @@ function ResetPasswordContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -123,7 +123,7 @@ function ResetPasswordContent() {
                   </button>
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="confirm-password" className="block text-xs font-semibold text-white/45 mb-1.5 uppercase tracking-wider">
                   Confirm Password

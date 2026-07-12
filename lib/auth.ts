@@ -18,9 +18,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = String(credentials.password);
 
         // 1. Try to find the user in the database
-        let user = await prisma.adminUser.findUnique({
-          where: { email },
-        });
+        let user = null;
+        try {
+          user = await prisma.adminUser.findUnique({
+            where: { email },
+          });
+        } catch (dbError) {
+          console.error("Database error (Did you run prisma db push?):", dbError);
+          return null;
+        }
 
         // 2. Fallback auto-seeding if no admin users exist in the database yet
         if (!user) {

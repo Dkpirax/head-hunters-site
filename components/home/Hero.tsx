@@ -4,9 +4,12 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { HeroBackground } from "@/components/home/HeroBackground";
+import dynamic from "next/dynamic";
+
+const HeroBackground = dynamic(() => import("@/components/home/HeroBackground").then(mod => mod.HeroBackground), { ssr: false });
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -80,8 +83,7 @@ export function Hero({ settings }: { settings: any }) {
                 return (
                   <span
                     key={i}
-                    className="hh-word inline-block will-change-transform text-[clamp(60px,9.5vw,128px)] font-black leading-[0.88] tracking-tight text-white"
-                    style={isTeal ? { color: "#04a891" } : undefined}
+                    className={cn("hh-word inline-block will-change-transform text-[clamp(60px,9.5vw,128px)] font-black leading-[0.88] tracking-tight text-white", isTeal && "text-[#04a891]")}
                   >
                     {word}
                   </span>

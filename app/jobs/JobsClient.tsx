@@ -68,8 +68,7 @@ export function JobsClient({ initialJobs }: { initialJobs: Job[] }) {
     <>
       {/* Hero & Search area */}
       <section className="pt-36 pb-16 relative overflow-hidden" aria-labelledby="jobs-page-title">
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
-          style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(2,105,94,0.22), transparent 60%)" }} />
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_0%,rgba(2,105,94,0.22),transparent_60%)]" aria-hidden="true" />
         <div className="max-w-[1200px] mx-auto px-5 relative text-center">
           <p className="eyebrow mb-5">Open Roles</p>
           <h1 id="jobs-page-title" className="text-[clamp(42px,7vw,96px)] font-black text-white leading-[0.9] tracking-tight mb-5">

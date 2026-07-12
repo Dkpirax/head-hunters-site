@@ -101,9 +101,18 @@ export function Header() {
                 "text-lg font-semibold text-white/80 hover:text-white",
                 "border border-white/6 hover:border-[#04a891]/30 hover:bg-white/4",
                 "transition-all duration-200",
-                isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+                isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0",
+                [
+                  "delay-[0ms]",
+                  "delay-[40ms]",
+                  "delay-[80ms]",
+                  "delay-[120ms]",
+                  "delay-[160ms]",
+                  "delay-[200ms]",
+                  "delay-[240ms]",
+                  "delay-[280ms]"
+                ][i]
               )}
-              style={{ transitionDelay: `${i * 40}ms` }}
             >
               {link.label}
               <ArrowRight size={16} className="text-[#04a891]" />

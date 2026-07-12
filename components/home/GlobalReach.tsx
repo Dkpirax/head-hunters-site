@@ -14,12 +14,8 @@ export function GlobalReach({ settings }: { settings: any }) {
     <section className="bg-[#0B0B0C] py-28 relative overflow-hidden" aria-labelledby="global-title">
       {/* Background grid */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] bg-[size:60px_60px]"
         aria-hidden="true"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-        }}
       />
 
       <div className="max-w-[1200px] mx-auto px-5 relative">

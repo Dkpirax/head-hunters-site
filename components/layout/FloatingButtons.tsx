@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { ArrowUp, MessageSquare, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Chatbot } from "@/components/chatbot/Chatbot";
+import dynamic from "next/dynamic";
+
+const Chatbot = dynamic(() => import("@/components/chatbot/Chatbot").then(mod => mod.Chatbot), { ssr: false });
 import { usePathname } from "next/navigation";
 
 export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: boolean }) {

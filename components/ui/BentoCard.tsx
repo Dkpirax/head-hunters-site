@@ -44,8 +44,8 @@ export function BentoCard({ children, className, wide, tall, accent }: BentoCard
         accent
           ? "bg-gradient-to-br from-[#02695e]/40 via-[#02695e]/15 to-white/3"
           : "bg-gradient-to-br from-white/7 to-white/2",
-        wide && "col-span-2",
-        tall && "row-span-2",
+        wide && "sm:col-span-2",
+        tall && "sm:row-span-2",
         className
       )}
     >
