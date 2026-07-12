@@ -44,8 +44,13 @@ export async function hasPermission(userId: string, permission: string): Promise
   return perms.has(permission);
 }
 
+let permissionsSeeded = false;
+
 export async function checkPermission(permission: string): Promise<boolean> {
-  await seedPermissions();
+  if (!permissionsSeeded) {
+    await seedPermissions();
+    permissionsSeeded = true;
+  }
 
   const session = await auth();
   if (!session?.user?.email) return false;
@@ -94,7 +99,10 @@ export async function checkPermission(permission: string): Promise<boolean> {
 
 export async function requirePermission(permission: string) {
   // Ensure default permissions are seeded in database
-  await seedPermissions();
+  if (!permissionsSeeded) {
+    await seedPermissions();
+    permissionsSeeded = true;
+  }
 
   const session = await auth();
   if (!session?.user?.email) throw new Error("Unauthorized");

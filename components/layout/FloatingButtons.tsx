@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 
 const Chatbot = dynamic(() => import("@/components/chatbot/Chatbot").then(mod => mod.Chatbot), { ssr: false });
 import { usePathname } from "next/navigation";
+import { playSound } from "@/lib/sounds";
 
 export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: boolean }) {
   const pathname = usePathname();
@@ -32,18 +33,20 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
     }
   }, []);
 
-  if (isAdmin) return null;
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleToggleChat = () => {
-    setIsChatOpen(!isChatOpen);
     if (!isChatOpen) {
+      playSound("open");
       setHasUnread(false);
       localStorage.setItem("hh_chat_read_timestamp", Date.now().toString());
+    } else {
+      playSound("close");
     }
+    setIsChatOpen(!isChatOpen);
   };
 
   useEffect(() => {
@@ -56,6 +59,8 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
       document.body.style.overflow = 'unset';
     };
   }, [isChatOpen]);
+
+  if (isAdmin) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">

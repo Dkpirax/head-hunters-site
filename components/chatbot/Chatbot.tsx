@@ -5,6 +5,7 @@ import { Send, X, RotateCcw, Bot, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { getOrCreateConversation, addChatMessage, closeConversation, requestHumanTakeover } from "@/app/actions/chat";
 import { createEnquiry, EnquiryType } from "@/app/actions/enquiries";
+import { playSound } from "@/lib/sounds";
 import type { Message as PrismaMessage } from "@prisma/client";
 
 interface Message {
@@ -70,6 +71,7 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevStatusRef = useRef<string>("BOT_ACTIVE");
 
   // Initialize UUID and load conversation
   useEffect(() => {
@@ -84,6 +86,7 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
         const conversation = await getOrCreateConversation(userUuid);
         setConversationId(conversation.id);
         setChatStatus(conversation.status);
+        prevStatusRef.current = conversation.status;
         
         // Map messages to local model
         const mappedMsgs: Message[] = conversation.messages.map((m: PrismaMessage) => ({
@@ -143,7 +146,14 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
         };
         
         if (active) {
+          if (result.status === "HUMAN_ACTIVE" && prevStatusRef.current !== "HUMAN_ACTIVE") {
+            playSound("connected");
+          } else if (result.status === "BOT_ACTIVE" && prevStatusRef.current === "HUMAN_ACTIVE") {
+            playSound("reverted");
+          }
+          prevStatusRef.current = result.status;
           setChatStatus(result.status);
+          
           const polledMsgs: Message[] = result.messages.map((m) => ({
             id: m.id,
             senderType: m.senderType as "USER" | "ADMIN" | "BOT",

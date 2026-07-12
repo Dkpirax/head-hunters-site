@@ -25,73 +25,51 @@ export default async function AdminDashboard() {
   const role = (session?.user as { role?: string })?.role || "ADMIN";
   const userId = (session?.user as { id?: string })?.id;
 
-  // Check permissions
-  const showJobs = await checkPermission("manage_jobs");
-  const showEnquiries = await checkPermission("view_enquiries");
-  const showChats = await checkPermission("view_chat");
-  const showSettings = await checkPermission("manage_settings");
-  const canExport = await checkPermission("export_data");
-
-  // Load user permissions dynamically for action filtering
+  // Load user permissions dynamically ONCE
   let userPermissions = new Set<string>();
   if (role !== "SUPER_ADMIN" && userId) {
     userPermissions = await getUserPermissions(userId);
   }
 
-  // Query live database counts conditionally to avoid unused DB overhead
-  let openJobsCount = 0;
-  if (showJobs) {
-    openJobsCount = await prisma.job.count({
-      where: { status: "ACTIVE" }
-    });
-  }
+  const hasPerm = (p: string) => role === "SUPER_ADMIN" || userPermissions.has(p);
 
-  let totalEnquiriesCount = 0;
-  let unreadEnquiriesCount = 0;
-  let cvsCount = 0;
-  let recentEnquiries: any[] = [];
-  if (showEnquiries) {
-    totalEnquiriesCount = await prisma.enquiry.count();
-    unreadEnquiriesCount = await prisma.enquiry.count({
-      where: { status: "NEW" }
-    });
-    cvsCount = await prisma.enquiry.count({
-      where: { type: "CANDIDATE" }
-    });
-    recentEnquiries = await prisma.enquiry.findMany({
-      orderBy: { createdAt: "desc" },
+  const showJobs = hasPerm("manage_jobs");
+  const showEnquiries = hasPerm("view_enquiries");
+  const showChats = hasPerm("view_chat");
+  const showSettings = hasPerm("manage_settings");
+  const canExport = hasPerm("export_data");
+
+  // Query live database counts in parallel to minimize load time
+  const [
+    openJobsCount,
+    totalEnquiriesCount,
+    unreadEnquiriesCount,
+    cvsCount,
+    recentEnquiries,
+    recentChats,
+    conversationsForStats,
+  ] = await Promise.all([
+    showJobs ? prisma.job.count({ where: { status: "ACTIVE" } }) : Promise.resolve(0),
+    showEnquiries ? prisma.enquiry.count() : Promise.resolve(0),
+    showEnquiries ? prisma.enquiry.count({ where: { status: "NEW" } }) : Promise.resolve(0),
+    showEnquiries ? prisma.enquiry.count({ where: { type: "CANDIDATE" } }) : Promise.resolve(0),
+    showEnquiries ? prisma.enquiry.findMany({ orderBy: { createdAt: "desc" }, take: 4 }) : Promise.resolve([]),
+    showChats ? prisma.conversation.findMany({
+      where: { status: { in: ["BOT_ACTIVE", "HUMAN_ACTIVE"] } },
+      include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } },
+      orderBy: { updatedAt: "desc" },
       take: 4
-    });
-  }
+    }) : Promise.resolve([]),
+    showChats ? prisma.conversation.findMany({
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    }) : Promise.resolve([]),
+  ]);
 
-  let recentChats: any[] = [];
   let avgResponseMin = 0;
   let avgResponseText = "Under 5m";
   let avgResponseDelta = "Under 1h target ✓";
+  
   if (showChats) {
-    recentChats = await prisma.conversation.findMany({
-      where: {
-        status: { in: ["BOT_ACTIVE", "HUMAN_ACTIVE"] }
-      },
-      include: {
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1
-        }
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 4
-    });
-
-    // Calculate Avg Response time from messages
-    const conversationsForStats = await prisma.conversation.findMany({
-      include: {
-        messages: {
-          orderBy: { createdAt: "asc" },
-        },
-      },
-    });
-
     let totalDiffMins = 0;
     let sampleCount = 0;
 
@@ -117,8 +95,24 @@ export default async function AdminDashboard() {
     }
 
     avgResponseMin = sampleCount > 0 ? Math.round(totalDiffMins / sampleCount) : 0;
-    avgResponseText = avgResponseMin > 0 ? `${avgResponseMin}m` : "Under 5m";
-    avgResponseDelta = avgResponseMin < 60 ? "Under 1h target ✓" : "Above 1h target";
+    
+    if (avgResponseMin === 0) {
+      avgResponseText = "Under 5m";
+    } else if (avgResponseMin < 60) {
+      avgResponseText = `${avgResponseMin}m`;
+    } else {
+      const d = Math.floor(avgResponseMin / (24 * 60));
+      const h = Math.floor((avgResponseMin % (24 * 60)) / 60);
+      const m = avgResponseMin % 60;
+      
+      if (d > 0) {
+        avgResponseText = `${d}d ${h}h`;
+      } else {
+        avgResponseText = `${h}h ${m}m`;
+      }
+    }
+    
+    avgResponseDelta = avgResponseMin <= 60 ? "Under 1h target ✓" : "Above 1h target";
   }
 
   // Construct dynamic statistics array

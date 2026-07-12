@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { MessageSquare, Send, Check, User, Bot, ShieldAlert, CheckCircle2 } from "lucide-react";
-import { addChatMessage, takeOverConversation, closeConversation, pauseConversation } from "@/app/actions/chat";
+import { takeOverConversation, closeConversation, pauseConversation, addChatMessage } from "@/app/actions/chat";
+import { playSound } from "@/lib/sounds";
 import { useSearchParams } from "next/navigation";
 
 interface Message {
@@ -116,12 +117,19 @@ export default function ChatAdminClient({
   // Dynamic check: also update the conversations list counts and last messages by polling the general list endpoint
   useEffect(() => {
     let active = true;
+    // Keep track of the highest number of conversations to detect new users
+    let lastCount = conversations.length;
+
     async function pollList() {
       try {
         const res = await fetch("/api/chat/messages/active_list");
         if (res.ok) {
           const list = await res.json();
           if (active) {
+            if (list.length > lastCount) {
+              playSound("new_user");
+            }
+            lastCount = list.length;
             setConversations(list);
           }
         }

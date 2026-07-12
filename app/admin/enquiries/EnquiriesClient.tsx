@@ -79,7 +79,8 @@ export default function AdminEnquiriesPage() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [isRefreshing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // Call loadEnquiries at the end of microtask to avoid synchronous setState warning
@@ -194,12 +195,10 @@ export default function AdminEnquiriesPage() {
               loadEnquiries();
             }}
             disabled={isRefreshing}
-            className={`inline-flex items-center justify-center w-9 h-9 rounded-[9px] border border-white/10 bg-white/5 text-white/60 hover:text-white hover:border-white/20 transition-all cursor-pointer ${
-              isRefreshing ? "animate-spin" : ""
-            }`}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-[9px] border border-white/10 bg-white/5 text-white/60 hover:text-white hover:border-white/20 transition-all cursor-pointer"
             title="Refresh list"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
           </button>
           
           <button
