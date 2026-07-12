@@ -151,8 +151,10 @@ export async function getConversationsForAdmin() {
   });
 }
 
-export async function closeConversation(conversationId: string) {
-  await requirePermission("send_chat_messages");
+export async function closeConversation(conversationId: string, closedBy: "USER" | "ADMIN" = "ADMIN") {
+  if (closedBy === "ADMIN") {
+    await requirePermission("send_chat_messages");
+  }
 
   if (!conversationId) {
     throw new Error("Missing conversation ID");

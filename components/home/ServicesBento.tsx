@@ -140,7 +140,7 @@ export function ServicesBento({ settings }: { settings: any }) {
       </div>
 
       {/* Bento grid */}
-      <div className="max-w-[1200px] mx-auto px-5">
+      <div className="max-w-[1200px] mx-auto px-6 md:px-8 lg:px-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(220px,auto)] gap-3.5 grid-flow-row-dense">
           {SERVICES.map((service, i) => {
             if (service.type === "image") {
@@ -151,6 +151,7 @@ export function ServicesBento({ settings }: { settings: any }) {
                       src={service.image}
                       alt={service.imageAlt}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                       className="object-cover saturate-75"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#111413] via-[#111413]/40 to-transparent opacity-80" />

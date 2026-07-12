@@ -46,6 +46,17 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
     }
   };
 
+  useEffect(() => {
+    if (isChatOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isChatOpen]);
+
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
       <AnimatePresence>
@@ -61,7 +72,7 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
             onClick={scrollToTop}
-            className="w-12 h-12 rounded-full bg-[#0B0B0C]/80 backdrop-blur-md border border-white/10 text-white flex items-center justify-center shadow-lg hover:bg-[#02695e] hover:border-[#02695e] transition-colors cursor-pointer"
+            className={`w-12 h-12 rounded-full bg-[#0B0B0C]/80 backdrop-blur-md border border-white/10 text-white flex items-center justify-center shadow-lg hover:bg-[#02695e] hover:border-[#02695e] transition-colors cursor-pointer ${isChatOpen ? 'hidden md:flex' : ''}`}
             aria-label="Scroll to top"
           >
             <ArrowUp size={20} />
@@ -72,7 +83,7 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
       {chatbotEnabled && (
         <button
           onClick={handleToggleChat}
-          className="w-14 h-14 rounded-full bg-[#04a891] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(4,168,145,0.4)] hover:scale-105 hover:bg-[#039682] transition-all cursor-pointer z-50 relative"
+          className={`w-14 h-14 rounded-full bg-[#04a891] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(4,168,145,0.4)] hover:scale-105 hover:bg-[#039682] transition-all cursor-pointer z-50 relative ${isChatOpen ? 'hidden md:flex' : ''}`}
           aria-label={isChatOpen ? "Close chat" : "Open chat"}
         >
           {isChatOpen ? <X size={22} /> : <MessageSquare size={22} />}
@@ -86,5 +97,6 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
     </div>
   );
 }
+
 
 

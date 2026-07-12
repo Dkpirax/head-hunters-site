@@ -66,7 +66,13 @@ export async function requestPasswordReset(email: string) {
         `
       });
     } else {
-      console.warn("No RESEND_API_KEY provided. Password reset token generated:", token);
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const resetLink = `${siteUrl}/reset-password?token=${token}`;
+      console.warn("No RESEND_API_KEY provided. Password reset link:", resetLink);
+      
+      if (process.env.NODE_ENV === 'development') {
+        return { success: true, mockLink: resetLink };
+      }
     }
 
     return { success: true };

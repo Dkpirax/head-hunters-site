@@ -24,7 +24,11 @@ export default function ForgotPasswordPage() {
     setLoading(false);
 
     if (result.success) {
-      setMessage("If an account exists, a password reset link has been sent to your email.");
+      if ((result as any).mockLink) {
+        setMessage(`[Dev Mode] No email provider configured. Click here to reset: ${(result as any).mockLink}`);
+      } else {
+        setMessage("If an account exists, a password reset link has been sent to your email.");
+      }
     } else {
       setError(result.error || "Something went wrong.");
     }

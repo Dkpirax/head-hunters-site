@@ -197,7 +197,7 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
     if (!conversationId) return;
     setIsSubmitting(true);
     try {
-      await closeConversation(conversationId);
+      await closeConversation(conversationId, "USER");
       
       // Clear localStorage session
       const userUuid = generateUuid();
@@ -748,10 +748,18 @@ Ready to submit?`;
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 25, scale: 0.96 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute bottom-18 right-0 w-[380px] max-w-[calc(100vw-32px)] h-[540px] max-h-[calc(100vh-100px)] rounded-[24px] bg-white/90 backdrop-blur-2xl border border-white/60 shadow-[0_24px_60px_rgba(2,105,94,0.16)] flex flex-col overflow-hidden z-50 text-slate-800 font-sans"
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.2}
+      onDragEnd={(e, info) => {
+        if (Math.abs(info.offset.x) > 100) {
+          onClose();
+        }
+      }}
+      className="fixed top-0 left-0 w-full h-[100dvh] rounded-none md:absolute md:top-auto md:left-auto md:bottom-18 md:right-0 md:w-[380px] md:h-[540px] md:max-w-[calc(100vw-32px)] md:max-h-[calc(100vh-100px)] md:rounded-[24px] bg-white/95 md:bg-white/90 backdrop-blur-2xl md:border border-white/60 shadow-[0_24px_60px_rgba(2,105,94,0.16)] flex flex-col overflow-hidden z-40 md:z-[100] text-slate-800 font-sans"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-[#02695e]/10 bg-gradient-to-r from-[#02695e]/5 via-[#04a891]/4 to-[#02695e]/3 flex items-center justify-between">
+      <div className="px-5 py-4 pt-[max(env(safe-area-inset-top,1rem),1rem)] md:pt-4 border-b border-[#02695e]/10 bg-gradient-to-r from-[#02695e]/5 via-[#04a891]/4 to-[#02695e]/3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] flex items-center justify-center shadow-[0_4px_12px_rgba(4,168,145,0.25)]">
             <Bot size={16} className="text-white" />
@@ -824,7 +832,7 @@ Ready to submit?`;
               </div>
               
               <div className="max-w-[75%] space-y-1">
-                <div className={`px-4 py-2.5 text-[13px] leading-relaxed font-medium ${
+                <div className={`px-4 py-2.5 text-xs md:text-[13px] leading-relaxed font-medium ${
                   m.senderType === "USER" 
                     ? "bg-[#02695e] text-white rounded-[16px] rounded-tr-[4px] shadow-[0_4px_12px_rgba(2,105,94,0.14)]" 
                     : m.senderType === "ADMIN"
@@ -852,7 +860,7 @@ Ready to submit?`;
                           key={opt}
                           onClick={() => handleSelectOption(opt)}
                           disabled={isSubmitting}
-                          className="text-left w-full px-4 py-2.5 text-xs font-bold rounded-[14px] border border-[#02695e]/15 bg-white/80 text-[#02695e] hover:bg-[#02695e] hover:text-white hover:border-[#02695e] shadow-[0_2px_6px_rgba(2,105,94,0.03)] hover:shadow-[0_4px_12px_rgba(2,105,94,0.15)] hover:-translate-y-[1px] transition-all duration-200 cursor-pointer"
+                          className="text-left w-full px-4 py-2.5 text-[11px] md:text-xs font-bold rounded-[14px] border border-[#02695e]/15 bg-white/80 text-[#02695e] hover:bg-[#02695e] hover:text-white hover:border-[#02695e] shadow-[0_2px_6px_rgba(2,105,94,0.03)] hover:shadow-[0_4px_12px_rgba(2,105,94,0.15)] hover:-translate-y-[1px] transition-all duration-200 cursor-pointer"
                         >
                           {opt}
                         </button>
@@ -892,6 +900,7 @@ Ready to submit?`;
         }}
         className="p-3.5 border-t border-[#02695e]/8 bg-white/75 backdrop-blur-md flex gap-2 items-center"
       >
+
         <input
           type="text"
           value={inputVal}

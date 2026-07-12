@@ -18,8 +18,8 @@ export function GlobalReach({ settings }: { settings: any }) {
         aria-hidden="true"
       />
 
-      <div className="max-w-[1200px] mx-auto px-5 relative">
-        <div className="grid lg:grid-cols-[1fr_1fr] gap-16 items-center">
+      <div className="max-w-[1200px] mx-auto px-6 md:px-8 lg:px-12 relative w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
           <div>
             <motion.p className="eyebrow mb-4"
               initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
@@ -28,7 +28,7 @@ export function GlobalReach({ settings }: { settings: any }) {
             </motion.p>
             <motion.h2
               id="global-title"
-              className="text-[clamp(34px,5vw,62px)] font-black text-white leading-[0.95] tracking-tight mb-5"
+              className="text-[clamp(32px,8vw,62px)] font-black text-white leading-[1.05] tracking-tight mb-5"
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}>
               {settings.global_reach_title}
@@ -47,9 +47,9 @@ export function GlobalReach({ settings }: { settings: any }) {
                   initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 + 0.3 }}>
                   <span className="w-2 h-2 mt-1.5 rounded-full bg-[#04a891] shadow-[0_0_10px_#04a891] shrink-0" />
-                  <div>
-                    <p className="text-white font-semibold text-sm mb-0.5">{r.name}</p>
-                    <p className="text-white/45 text-xs leading-relaxed">{r.desc}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm mb-0.5 truncate">{r.name}</p>
+                    <p className="text-white/45 text-xs leading-relaxed break-words whitespace-normal">{r.desc}</p>
                   </div>
                 </motion.li>
               ))}

@@ -30,8 +30,8 @@ const CARD_POOL = [
 // ─── Build diagonal streaming grid ───────────────────────────────────────────
 // 6 streams × 7 depth levels
 // Each stream is a diagonal line of cards streaming from far-left (tiny/faint) to near-right (large/clear)
-const STREAMS = 6;
-const DEPTH = 7;
+const STREAMS = 3;
+const DEPTH = 4;
 
 interface CardItem {
   id: string;

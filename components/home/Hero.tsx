@@ -62,15 +62,15 @@ export function Hero({ settings }: { settings: any }) {
   return (
     <section
       ref={containerRef}
-      className="hh-hero relative min-h-[100vh] flex flex-col justify-center pt-24 pb-20 overflow-hidden"
+      className="hh-hero relative min-h-[100dvh] flex flex-col justify-center pt-24 pb-20 overflow-hidden"
       aria-labelledby="hero-title"
     >
       {/* Animated card stream background — Twelve Labs style */}
       <HeroBackground />
 
-      <div className="relative z-20 max-w-[1200px] mx-auto px-5">
+      <div className="relative z-20 w-full max-w-[1200px] mx-auto px-5">
         {/* Hero grid: copy + command panel */}
-        <div className="grid lg:grid-cols-[1fr_360px] gap-12 items-center min-h-[56vh]">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-12 items-center min-h-[56vh] w-full">
           {/* Copy */}
           <div>
             <h1
