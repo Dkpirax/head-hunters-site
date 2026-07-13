@@ -25,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // 2. Fallback auto-seeding if no admin users exist in the database yet
         if (!user) {
-          const countRes = await db.select({ count: sql<number>\`count(*)\` }).from(adminUser);
+          const countRes = await db.select({ count: sql<number>`count(*)` }).from(adminUser);
           if (countRes[0].count === 0) {
             const fallbackEmail = (process.env.ADMIN_EMAIL ?? "admin@headhunters.com.au").toLowerCase();
             const fallbackPassword = process.env.ADMIN_PASSWORD ?? "headhunters2024";

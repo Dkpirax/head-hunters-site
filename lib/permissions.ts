@@ -4,6 +4,8 @@ import { eq, sql } from "drizzle-orm";
 import { auth } from "./auth";
 import bcrypt from "bcryptjs";
 
+let permissionsSeeded = false;
+
 export async function seedPermissions() {
   const defaultPermissions = [
     "manage_users",
