@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/enquiries/export/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"D:\\GIT\\head-hunters-site\\app\\api\\enquiries\\export\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

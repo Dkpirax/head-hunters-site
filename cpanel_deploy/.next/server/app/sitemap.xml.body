@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>https://headhunters.com.au</loc>
+<lastmod>2026-07-13T05:35:07.411Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>1</priority>
+</url>
+<url>
+<loc>https://headhunters.com.au/jobs</loc>
+<lastmod>2026-07-13T05:35:07.411Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.8</priority>
+</url>
+<url>
+<loc>https://headhunters.com.au/insights</loc>
+<lastmod>2026-07-13T05:35:07.411Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.8</priority>
+</url>
+<url>
+<loc>https://headhunters.com.au/privacy</loc>
+<lastmod>2026-07-13T05:35:07.411Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.8</priority>
+</url>
+<url>
+<loc>https://headhunters.com.au/terms</loc>
+<lastmod>2026-07-13T05:35:07.411Z</lastmod>
+<changefreq>daily</changefreq>
+<priority>0.8</priority>
+</url>
+</urlset>
