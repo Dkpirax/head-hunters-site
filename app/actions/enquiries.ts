@@ -1,12 +1,11 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { enquiry } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
 import { headers } from "next/headers";
 import { requirePermission } from "@/lib/permissions";
+import { EnquiryType, EnquiryStatus } from "@prisma/client";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -35,9 +34,6 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-export type EnquiryType = "HIRING" | "CANDIDATE" | "GENERAL";
-export type EnquiryStatus = "NEW" | "READ" | "ASSIGNED" | "ARCHIVED";
-
 export interface CreateEnquiryInput {
   name: string;
   email: string;
@@ -47,7 +43,6 @@ export interface CreateEnquiryInput {
 }
 
 export async function createEnquiry(data: CreateEnquiryInput) {
-  // Rate limiting check
   const headerList = await headers();
   const ip = headerList.get("x-forwarded-for") || headerList.get("x-real-ip") || "127.0.0.1";
   
@@ -55,26 +50,21 @@ export async function createEnquiry(data: CreateEnquiryInput) {
     throw new Error("Too many enquiries from this IP. Please wait up to 1 hour before trying again.");
   }
 
-  // Validate basic inputs
   if (!data.name || !data.email || !data.type || !data.message) {
     throw new Error("Missing required fields for enquiry.");
   }
 
-  // Create the record in SQLite via Prisma (now MySQL via Drizzle)
-  const [createdId] = await db.insert(enquiry).values({
-    name: data.name,
-    email: data.email,
-    phone: data.phone || null,
-    type: data.type,
-    message: data.message,
-    status: "NEW",
+  const newEnquiry = await prisma.enquiry.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      phone: data.phone || null,
+      type: data.type,
+      message: data.message,
+      status: "NEW",
+    }
   });
-  // Note: mysql2 returns { insertId: number } or we have to query the newly created if we use cuid. 
-  // Since we use cuid, let's generate it before inserting, or Drizzle handles it.
-  const newEnquiries = await db.select().from(enquiry).orderBy(desc(enquiry.createdAt)).limit(1);
-  const newEnquiry = newEnquiries[0];
 
-  // Attempt to notify team via email using Resend
   if (resend) {
     try {
       const emailFrom = process.env.EMAIL_FROM || "Head Hunters <noreply@headhunters.com.au>";
@@ -139,7 +129,6 @@ export async function createEnquiry(data: CreateEnquiryInput) {
     }
   }
 
-  // Revalidate pages to update content dynamically
   revalidatePath("/admin/enquiries");
   revalidatePath("/admin");
 
@@ -149,30 +138,34 @@ export async function createEnquiry(data: CreateEnquiryInput) {
 export async function getEnquiries() {
   await requirePermission("view_enquiries");
 
-  return await db.select().from(enquiry).orderBy(desc(enquiry.createdAt));
+  return await prisma.enquiry.findMany({
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function updateEnquiryStatus(id: string, status: EnquiryStatus) {
   await requirePermission("view_enquiries");
 
-  await db.update(enquiry).set({ status }).where(eq(enquiry.id, id));
-
-  const updated = await db.select().from(enquiry).where(eq(enquiry.id, id));
+  const updated = await prisma.enquiry.update({
+    where: { id },
+    data: { status },
+  });
 
   revalidatePath("/admin/enquiries");
   revalidatePath("/admin");
 
-  return updated[0];
+  return updated;
 }
 
 export async function deleteEnquiry(id: string) {
   await requirePermission("view_enquiries");
 
-  const toDelete = await db.select().from(enquiry).where(eq(enquiry.id, id));
-  await db.delete(enquiry).where(eq(enquiry.id, id));
+  const toDelete = await prisma.enquiry.delete({
+    where: { id },
+  });
 
   revalidatePath("/admin/enquiries");
   revalidatePath("/admin");
 
-  return toDelete[0];
+  return toDelete;
 }

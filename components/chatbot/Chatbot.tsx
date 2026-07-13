@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send, X, RotateCcw, Bot, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { getOrCreateConversation, addChatMessage, closeConversation, requestHumanTakeover } from "@/app/actions/chat";
-import { createEnquiry, EnquiryType } from "@/app/actions/enquiries";
+import { createEnquiry } from "@/app/actions/enquiries";
 import { playSound } from "@/lib/sounds";
-import type { Message as PrismaMessage } from "@prisma/client";
+import type { Message as PrismaMessage, EnquiryType } from "@prisma/client";
 
 interface Message {
   id: string;

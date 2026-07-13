@@ -1,8 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
-import { content } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePermission, checkPermission } from "@/lib/permissions";
 
@@ -79,7 +77,7 @@ const defaultSettings = {
 
 export async function getSettings() {
   try {
-    const settings = await db.select().from(content);
+    const settings = await prisma.content.findMany();
     const settingsMap: Record<string, string> = {};
     for (const s of settings) {
       // Normalize: strip "settings." prefix to match schema keys
@@ -174,12 +172,11 @@ export async function updateSettings(data: any) {
 
   try {
     for (const [key, value] of Object.entries(filteredData)) {
-      const existing = await db.select().from(content).where(eq(content.key, key));
-      if (existing.length > 0) {
-        await db.update(content).set({ value: String(value) }).where(eq(content.key, key));
-      } else {
-        await db.insert(content).values({ key, value: String(value) });
-      }
+      await prisma.content.upsert({
+        where: { key },
+        update: { value: String(value) },
+        create: { key, value: String(value) },
+      });
     }
 
     revalidatePath("/");
