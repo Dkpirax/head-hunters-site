@@ -33,13 +33,6 @@ export async function seedPermissions() {
 }
 
 export async function getUserPermissions(userId: string): Promise<Set<string>> {
-<<<<<<< HEAD
-  const userPerms = await prisma.userPermission.findMany({
-    where: { userId },
-    include: { permission: true },
-  });
-  return new Set(userPerms.map((up: any) => up.permission.name));
-=======
   const userPerms = await db
     .select({ name: permission.name })
     .from(userPermission)
@@ -47,7 +40,6 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
     .where(eq(userPermission.userId, userId));
 
   return new Set(userPerms.map((up) => up.name));
->>>>>>> cfab2b7a799b5094737354d38780fd7bf7ae6135
 }
 
 export async function hasPermission(userId: string, perm: string): Promise<boolean> {
@@ -55,18 +47,8 @@ export async function hasPermission(userId: string, perm: string): Promise<boole
   return perms.has(perm);
 }
 
-<<<<<<< HEAD
-let permissionsSeeded = false;
-
-export async function checkPermission(permission: string): Promise<boolean> {
-  if (!permissionsSeeded) {
-    await seedPermissions();
-    permissionsSeeded = true;
-  }
-=======
 export async function checkPermission(perm: string): Promise<boolean> {
   await seedPermissions();
->>>>>>> cfab2b7a799b5094737354d38780fd7bf7ae6135
 
   const session = await auth();
   if (!session?.user?.email) return false;
@@ -162,7 +144,7 @@ export async function requirePermission(perm: string) {
   if (user.role === "SUPER_ADMIN") return true;
 
   const has = await hasPermission(user.id, perm);
-  if (!has) throw new Error(`Forbidden: missing ${perm}`);
+  if (!has) throw new Error(`Forbidden: missing ${ perm }`);
 
   return true;
 }
