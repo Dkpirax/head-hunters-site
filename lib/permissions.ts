@@ -1,6 +1,4 @@
-import { db } from "./db";
-import { adminUser, permission, userPermission } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import prisma from "@/lib/prisma";
 import { auth } from "./auth";
 import bcrypt from "bcryptjs";
 
@@ -24,10 +22,11 @@ export async function seedPermissions() {
 
   try {
     for (const name of defaultPermissions) {
-      const existing = await db.select().from(permission).where(eq(permission.name, name));
-      if (existing.length === 0) {
-        await db.insert(permission).values({ name });
-      }
+      await prisma.permission.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      });
     }
   } catch (error) {
     console.error("Failed to seed permissions:", error);
@@ -35,13 +34,12 @@ export async function seedPermissions() {
 }
 
 export async function getUserPermissions(userId: string): Promise<Set<string>> {
-  const userPerms = await db
-    .select({ name: permission.name })
-    .from(userPermission)
-    .innerJoin(permission, eq(userPermission.permissionId, permission.id))
-    .where(eq(userPermission.userId, userId));
+  const userPerms = await prisma.userPermission.findMany({
+    where: { userId },
+    include: { permission: true },
+  });
 
-  return new Set(userPerms.map((up) => up.name));
+  return new Set(userPerms.map((up) => up.permission.name));
 }
 
 export async function hasPermission(userId: string, perm: string): Promise<boolean> {
@@ -50,41 +48,45 @@ export async function hasPermission(userId: string, perm: string): Promise<boole
 }
 
 export async function checkPermission(perm: string): Promise<boolean> {
-  await seedPermissions();
+  if (!permissionsSeeded) {
+    await seedPermissions();
+    permissionsSeeded = true;
+  }
 
   const session = await auth();
   if (!session?.user?.email) return false;
 
-  const users = await db.select().from(adminUser).where(eq(adminUser.email, session.user.email.toLowerCase()));
-  let user = users[0];
+  let user = await prisma.adminUser.findUnique({
+    where: { email: session.user.email.toLowerCase() },
+  });
 
   if (!user) {
-    const adminCountRes = await db.select({ count: sql<number>\`count(*)\` }).from(adminUser);
-    if (adminCountRes[0].count === 0) {
+    const adminCount = await prisma.adminUser.count();
+    if (adminCount === 0) {
       const fallbackEmail = (process.env.ADMIN_EMAIL ?? "admin@headhunters.com.au").toLowerCase();
       const fallbackPassword = process.env.ADMIN_PASSWORD ?? "headhunters2024";
       const passwordHash = await bcrypt.hash(fallbackPassword, 10);
 
-      await db.insert(adminUser).values({
-        email: fallbackEmail,
-        passwordHash,
-        name: "Head Hunters Admin",
-        role: "SUPER_ADMIN",
-      });
-      const fallbackAdmins = await db.select().from(adminUser).where(eq(adminUser.email, fallbackEmail));
-      const fallbackAdmin = fallbackAdmins[0];
-
-      if (session.user.email.toLowerCase() === fallbackEmail) {
-        user = fallbackAdmin;
-      } else {
-        await db.insert(adminUser).values({
-          email: session.user.email.toLowerCase(),
+      user = await prisma.adminUser.upsert({
+        where: { email: fallbackEmail },
+        update: {},
+        create: {
+          email: fallbackEmail,
           passwordHash,
-          name: session.user.name || "Session Admin",
+          name: "Head Hunters Admin",
           role: "SUPER_ADMIN",
+        },
+      });
+
+      if (session.user.email.toLowerCase() !== fallbackEmail) {
+        user = await prisma.adminUser.create({
+          data: {
+            email: session.user.email.toLowerCase(),
+            passwordHash,
+            name: session.user.name || "Session Admin",
+            role: "SUPER_ADMIN",
+          },
         });
-        const sessionAdmins = await db.select().from(adminUser).where(eq(adminUser.email, session.user.email.toLowerCase()));
-        user = sessionAdmins[0];
       }
     } else {
       return false;
@@ -97,7 +99,6 @@ export async function checkPermission(perm: string): Promise<boolean> {
 }
 
 export async function requirePermission(perm: string) {
-  // Ensure default permissions are seeded in database
   if (!permissionsSeeded) {
     await seedPermissions();
     permissionsSeeded = true;
@@ -106,47 +107,47 @@ export async function requirePermission(perm: string) {
   const session = await auth();
   if (!session?.user?.email) throw new Error("Unauthorized");
 
-  const users = await db.select().from(adminUser).where(eq(adminUser.email, session.user.email.toLowerCase()));
-  let user = users[0];
+  let user = await prisma.adminUser.findUnique({
+    where: { email: session.user.email.toLowerCase() },
+  });
 
   if (!user) {
-    const adminCountRes = await db.select({ count: sql<number>\`count(*)\` }).from(adminUser);
-    if (adminCountRes[0].count === 0) {
+    const adminCount = await prisma.adminUser.count();
+    if (adminCount === 0) {
       const fallbackEmail = (process.env.ADMIN_EMAIL ?? "admin@headhunters.com.au").toLowerCase();
       const fallbackPassword = process.env.ADMIN_PASSWORD ?? "headhunters2024";
       const passwordHash = await bcrypt.hash(fallbackPassword, 10);
 
-      await db.insert(adminUser).values({
-        email: fallbackEmail,
-        passwordHash,
-        name: "Head Hunters Admin",
-        role: "SUPER_ADMIN",
-      });
-      const fallbackAdmins = await db.select().from(adminUser).where(eq(adminUser.email, fallbackEmail));
-      const fallbackAdmin = fallbackAdmins[0];
-
-      if (session.user.email.toLowerCase() === fallbackEmail) {
-        user = fallbackAdmin;
-      } else {
-        await db.insert(adminUser).values({
-          email: session.user.email.toLowerCase(),
+      user = await prisma.adminUser.upsert({
+        where: { email: fallbackEmail },
+        update: {},
+        create: {
+          email: fallbackEmail,
           passwordHash,
-          name: session.user.name || "Session Admin",
+          name: "Head Hunters Admin",
           role: "SUPER_ADMIN",
+        },
+      });
+
+      if (session.user.email.toLowerCase() !== fallbackEmail) {
+        user = await prisma.adminUser.create({
+          data: {
+            email: session.user.email.toLowerCase(),
+            passwordHash,
+            name: session.user.name || "Session Admin",
+            role: "SUPER_ADMIN",
+          },
         });
-        const sessionAdmins = await db.select().from(adminUser).where(eq(adminUser.email, session.user.email.toLowerCase()));
-        user = sessionAdmins[0];
       }
     } else {
       throw new Error("User not found");
     }
   }
 
-  // SUPER_ADMIN has global privileges
   if (user.role === "SUPER_ADMIN") return true;
 
   const has = await hasPermission(user.id, perm);
-  if (!has) throw new Error(`Forbidden: missing ${ perm }`);
+  if (!has) throw new Error(`Forbidden: missing ${perm}`);
 
   return true;
 }
