@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Clock, Mail, Check, Archive, Download, AlertCircle, RefreshCw, Trash2, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getEnquiries, updateEnquiryStatus, deleteEnquiry } from "@/app/actions/enquiries";
-// @ts-ignore - Suppressing ghost TS error from locked dev server
-import type { Enquiry, EnquiryStatus } from "@prisma/client";
+type EnquiryStatus = "NEW" | "READ" | "ASSIGNED" | "ARCHIVED";
+type Enquiry = any;
 import { useSearchParams } from "next/navigation";
 
 const STATUS_STYLES: Record<string, string> = {

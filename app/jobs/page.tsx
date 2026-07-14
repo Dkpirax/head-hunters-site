@@ -3,7 +3,9 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Suspense } from "react";
 import { JobsClient } from "./JobsClient";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { job } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Browse Jobs",
@@ -11,10 +13,11 @@ export const metadata: Metadata = {
 };
 
 export default async function JobsPage() {
-  const jobs = await prisma.job.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: { createdAt: "desc" }
-  });
+  const jobs = await db
+    .select()
+    .from(job)
+    .where(eq(job.status, "ACTIVE"))
+    .orderBy(desc(job.createdAt));
 
   return (
     <>

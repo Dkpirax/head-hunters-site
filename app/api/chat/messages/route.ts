@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { message, conversation as conversationTable } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,16 +15,22 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const messages = await prisma.message.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: "asc" },
-    });
+    const messages = await db
+      .select()
+      .from(message)
+      .where(eq(message.conversationId, conversationId))
+      .orderBy(asc(message.createdAt));
 
     // Also fetch the conversation's takeover/status to update the client UI
-    const conversation = await prisma.conversation.findUnique({
-      where: { id: conversationId },
-      select: { status: true, takenBy: true, needsHuman: true },
-    });
+    const conversations = await db
+      .select({
+        status: conversationTable.status,
+        takenBy: conversationTable.takenBy,
+        needsHuman: conversationTable.needsHuman,
+      })
+      .from(conversationTable)
+      .where(eq(conversationTable.id, conversationId));
+    const conversation = conversations[0];
 
     return NextResponse.json({
       messages,

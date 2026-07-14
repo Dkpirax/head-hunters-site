@@ -1,5 +1,7 @@
 import { MetadataRoute } from "next";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { job as jobsTable, article as articleTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://headhunters.com.au";
@@ -15,10 +17,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic jobs
   let jobRoutes: MetadataRoute.Sitemap = [];
   try {
-    const jobs = await prisma.job.findMany({
-      where: { status: "ACTIVE" },
-      select: { id: true, updatedAt: true },
-    });
+    const jobs = await db
+      .select({ id: jobsTable.id, updatedAt: jobsTable.updatedAt })
+      .from(jobsTable)
+      .where(eq(jobsTable.status, "ACTIVE"));
 
     jobRoutes = jobs.map((job: any) => ({
       url: `${siteUrl}/jobs/${job.id}`,
@@ -33,10 +35,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic insights/articles
   let articleRoutes: MetadataRoute.Sitemap = [];
   try {
-    const articles = await prisma.article.findMany({
-      where: { isPublished: true },
-      select: { slug: true, updatedAt: true },
-    });
+    const articles = await db
+      .select({ slug: articleTable.slug, updatedAt: articleTable.updatedAt })
+      .from(articleTable)
+      .where(eq(articleTable.isPublished, true));
 
     articleRoutes = articles.map((article: any) => ({
       url: `${siteUrl}/insights/${article.slug}`,

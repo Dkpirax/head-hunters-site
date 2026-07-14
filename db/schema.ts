@@ -109,6 +109,13 @@ export const userPermission = mysqlTable('UserPermission', {
   }
 });
 
+export const passwordResetToken = mysqlTable('PasswordResetToken', {
+  token: varchar('token', { length: 191 }).primaryKey(),
+  email: varchar('email', { length: 191 }).notNull(),
+  expires: datetime('expires').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
 // Relations
 export const conversationRelations = relations(conversation, ({ many }) => ({
   messages: many(message),

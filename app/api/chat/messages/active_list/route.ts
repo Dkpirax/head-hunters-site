@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import type { Conversation, Message } from "@prisma/client";
+import { db } from "@/lib/db";
+import { conversation, message } from "@/db/schema";
+import { inArray, desc, asc } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 
 export async function GET() {
@@ -14,24 +15,22 @@ export async function GET() {
   }
 
   try {
-    const conversations = await prisma.conversation.findMany({
-      where: {
-        status: { in: ["BOT_ACTIVE", "HUMAN_ACTIVE"] },
-      },
-      include: {
+    const conversations = await db.query.conversation.findMany({
+      where: inArray(conversation.status, ["BOT_ACTIVE", "HUMAN_ACTIVE"]),
+      with: {
         messages: {
-          orderBy: { createdAt: "asc" },
+          orderBy: [asc(message.createdAt)],
         },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: [desc(conversation.updatedAt)],
     });
 
     // Format dates to avoid JSON parsing issues
-    const formatted = conversations.map((c: Conversation & { messages: Message[] }) => ({
+    const formatted = conversations.map((c: any) => ({
       ...c,
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
-      messages: c.messages.map((m: Message) => ({
+      messages: c.messages.map((m: any) => ({
         ...m,
         createdAt: m.createdAt.toISOString(),
       })),

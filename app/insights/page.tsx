@@ -3,7 +3,9 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ArrowRight, FileText, BarChart, BookOpen } from "lucide-react";
 import Link from "next/link";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { article } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Insights & Case Studies",
@@ -11,10 +13,11 @@ export const metadata: Metadata = {
 };
 
 export default async function InsightsPage() {
-  const articles = await prisma.article.findMany({
-    where: { isPublished: true },
-    orderBy: { createdAt: "desc" }
-  });
+  const articles = await db
+    .select()
+    .from(article)
+    .where(eq(article.isPublished, true))
+    .orderBy(desc(article.createdAt));
 
   const getIcon = (cat: string) => {
     if (cat === "Case Study") return BarChart;

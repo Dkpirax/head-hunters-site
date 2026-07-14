@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { enquiry } from "@/db/schema";
+import { desc } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 
 export async function GET() {
@@ -13,9 +15,10 @@ export async function GET() {
   }
 
   try {
-    const enquiries = await prisma.enquiry.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const enquiries = await db
+      .select()
+      .from(enquiry)
+      .orderBy(desc(enquiry.createdAt));
 
     const headers = ["ID", "Name", "Email", "Phone", "Type", "Status", "Message", "Created At"];
     const rows = enquiries.map((e: any) => [

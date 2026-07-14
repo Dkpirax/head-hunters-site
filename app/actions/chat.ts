@@ -1,6 +1,8 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { conversation, message } from "@/db/schema";
+import { eq, desc, asc, inArray, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getSettings } from "@/app/actions/settings";
 import { requirePermission } from "@/lib/permissions";
@@ -11,48 +13,56 @@ export async function getOrCreateConversation(userId: string) {
   }
 
   // Find an active conversation for this user
-  let conversation = await prisma.conversation.findFirst({
-    where: {
-      userId: userId,
-      status: { in: ["BOT_ACTIVE", "HUMAN_ACTIVE"] },
-    },
-    orderBy: { updatedAt: "desc" },
-    include: {
+  let conversations = await db.query.conversation.findMany({
+    where: and(
+      eq(conversation.userId, userId),
+      inArray(conversation.status, ["BOT_ACTIVE", "HUMAN_ACTIVE"])
+    ),
+    orderBy: [desc(conversation.updatedAt)],
+    with: {
       messages: {
-        orderBy: { createdAt: "asc" },
+        orderBy: [asc(message.createdAt)],
       },
     },
   });
+  let conv = conversations[0];
 
   // If not found, create a new one
-  if (!conversation) {
-    conversation = await prisma.conversation.create({
-      data: {
-        userId: userId,
-        status: "BOT_ACTIVE",
-      },
-      include: {
-        messages: true,
+  if (!conv) {
+    await db.insert(conversation).values({
+      userId: userId,
+      status: "BOT_ACTIVE",
+    });
+
+    conversations = await db.query.conversation.findMany({
+      where: and(
+        eq(conversation.userId, userId),
+        inArray(conversation.status, ["BOT_ACTIVE", "HUMAN_ACTIVE"])
+      ),
+      orderBy: [desc(conversation.updatedAt)],
+      with: {
+        messages: {
+          orderBy: [asc(message.createdAt)],
+        },
       },
     });
+    conv = conversations[0];
 
     // Add initial bot greeting if starting a new conversation
     const settings = await getSettings();
     const greetingText = settings.chatbot_greeting || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
-    const initialGreeting = await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        senderType: "BOT",
-        content: greetingText,
-      },
+    await db.insert(message).values({
+      conversationId: conv.id,
+      senderType: "BOT",
+      content: greetingText,
     });
-
-    conversation.messages = [initialGreeting];
+    
+    conv.messages = [{ senderType: "BOT", content: greetingText } as any];
     
     revalidatePath("/admin/chat");
   }
 
-  return conversation;
+  return conv;
 }
 
 export async function addChatMessage(
@@ -68,23 +78,21 @@ export async function addChatMessage(
     await requirePermission("send_chat_messages");
   }
 
-  const message = await prisma.message.create({
-    data: {
-      conversationId,
-      senderType,
-      content,
-    },
+  await db.insert(message).values({
+    conversationId,
+    senderType,
+    content,
   });
 
+  const msgs = await db.select().from(message).where(and(eq(message.conversationId, conversationId), eq(message.content, content))).orderBy(desc(message.createdAt));
+  const newMsg = msgs[0];
+
   // Touch the conversation's updatedAt timestamp
-  await prisma.conversation.update({
-    where: { id: conversationId },
-    data: { updatedAt: new Date() },
-  });
+  await db.update(conversation).set({ updatedAt: new Date() }).where(eq(conversation.id, conversationId));
 
   revalidatePath("/admin/chat");
 
-  return message;
+  return newMsg;
 }
 
 export async function takeOverConversation(conversationId: string, adminEmail: string) {
@@ -94,27 +102,24 @@ export async function takeOverConversation(conversationId: string, adminEmail: s
     throw new Error("Missing conversation ID or admin email");
   }
 
-  const conversation = await prisma.conversation.update({
-    where: { id: conversationId },
-    data: {
-      status: "HUMAN_ACTIVE",
-      takenBy: adminEmail,
-      needsHuman: false,
-    },
-  });
+  await db.update(conversation).set({
+    status: "HUMAN_ACTIVE",
+    takenBy: adminEmail,
+    needsHuman: false,
+  }).where(eq(conversation.id, conversationId));
+
+  const updatedConvs = await db.select().from(conversation).where(eq(conversation.id, conversationId));
 
   // Post system bot message indicating handover
-  await prisma.message.create({
-    data: {
-      conversationId,
-      senderType: "BOT",
-      content: "A consultant has joined the chat.",
-    },
+  await db.insert(message).values({
+    conversationId,
+    senderType: "BOT",
+    content: "A consultant has joined the chat.",
   });
 
   revalidatePath("/admin/chat");
 
-  return conversation;
+  return updatedConvs[0];
 }
 
 export async function requestHumanTakeover(conversationId: string) {
@@ -122,32 +127,29 @@ export async function requestHumanTakeover(conversationId: string) {
     throw new Error("Missing conversation ID");
   }
 
-  const conversation = await prisma.conversation.update({
-    where: { id: conversationId },
-    data: {
-      needsHuman: true,
-      updatedAt: new Date(),
-    },
-  });
+  await db.update(conversation).set({
+    needsHuman: true,
+    updatedAt: new Date(),
+  }).where(eq(conversation.id, conversationId));
+
+  const updatedConvs = await db.select().from(conversation).where(eq(conversation.id, conversationId));
 
   revalidatePath("/admin/chat");
 
-  return conversation;
+  return updatedConvs[0];
 }
 
 export async function getConversationsForAdmin() {
   await requirePermission("view_chat");
 
-  return await prisma.conversation.findMany({
-    where: {
-      status: { in: ["BOT_ACTIVE", "HUMAN_ACTIVE"] },
-    },
-    include: {
+  return await db.query.conversation.findMany({
+    where: inArray(conversation.status, ["BOT_ACTIVE", "HUMAN_ACTIVE"]),
+    with: {
       messages: {
-        orderBy: { createdAt: "asc" },
+        orderBy: [asc(message.createdAt)],
       },
     },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [desc(conversation.updatedAt)],
   });
 }
 
@@ -160,26 +162,23 @@ export async function closeConversation(conversationId: string, closedBy: "USER"
     throw new Error("Missing conversation ID");
   }
 
-  const conversation = await prisma.conversation.update({
-    where: { id: conversationId },
-    data: {
-      status: "CLOSED",
-      needsHuman: false,
-    },
-  });
+  await db.update(conversation).set({
+    status: "CLOSED",
+    needsHuman: false,
+  }).where(eq(conversation.id, conversationId));
+
+  const updatedConvs = await db.select().from(conversation).where(eq(conversation.id, conversationId));
 
   // Post system bot message indicating closed
-  await prisma.message.create({
-    data: {
-      conversationId,
-      senderType: "BOT",
-      content: "Conversation resolved and closed.",
-    },
+  await db.insert(message).values({
+    conversationId,
+    senderType: "BOT",
+    content: "Conversation resolved and closed.",
   });
 
   revalidatePath("/admin/chat");
 
-  return conversation;
+  return updatedConvs[0];
 }
 
 export async function pauseConversation(conversationId: string) {
@@ -189,24 +188,21 @@ export async function pauseConversation(conversationId: string) {
     throw new Error("Missing conversation ID");
   }
 
-  const conversation = await prisma.conversation.update({
-    where: { id: conversationId },
-    data: {
-      status: "BOT_ACTIVE",
-      needsHuman: false,
-    },
-  });
+  await db.update(conversation).set({
+    status: "BOT_ACTIVE",
+    needsHuman: false,
+  }).where(eq(conversation.id, conversationId));
+
+  const updatedConvs = await db.select().from(conversation).where(eq(conversation.id, conversationId));
 
   // Post system bot message indicating pause
-  await prisma.message.create({
-    data: {
-      conversationId,
-      senderType: "BOT",
-      content: "Live support paused. Bot active.",
-    },
+  await db.insert(message).values({
+    conversationId,
+    senderType: "BOT",
+    content: "Live support paused. Bot active.",
   });
 
   revalidatePath("/admin/chat");
 
-  return conversation;
+  return updatedConvs[0];
 }

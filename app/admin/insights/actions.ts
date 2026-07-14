@@ -1,18 +1,17 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { article } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getArticles() {
-  return await prisma.article.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  return await db.select().from(article).orderBy(desc(article.createdAt));
 }
 
 export async function getArticleBySlug(slug: string) {
-  return await prisma.article.findUnique({
-    where: { slug },
-  });
+  const articles = await db.select().from(article).where(eq(article.slug, slug));
+  return articles[0] || null;
 }
 
 export async function createArticle(data: {
@@ -23,9 +22,8 @@ export async function createArticle(data: {
   content: string;
   isPublished: boolean;
 }) {
-  const result = await prisma.article.create({
-    data,
-  });
+  await db.insert(article).values(data);
+  const result = data;
   revalidatePath("/admin/insights");
   revalidatePath("/insights");
   return result;
@@ -42,10 +40,8 @@ export async function updateArticle(
     isPublished: boolean;
   }
 ) {
-  const result = await prisma.article.update({
-    where: { id },
-    data,
-  });
+  await db.update(article).set(data).where(eq(article.id, id));
+  const result = { id, ...data };
   revalidatePath("/admin/insights");
   revalidatePath("/insights");
   revalidatePath(`/insights/${data.slug}`);
@@ -53,9 +49,7 @@ export async function updateArticle(
 }
 
 export async function deleteArticle(id: string) {
-  await prisma.article.delete({
-    where: { id },
-  });
+  await db.delete(article).where(eq(article.id, id));
   revalidatePath("/admin/insights");
   revalidatePath("/insights");
 }

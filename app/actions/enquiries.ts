@@ -1,11 +1,14 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { enquiry } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
 import { headers } from "next/headers";
 import { requirePermission } from "@/lib/permissions";
-import { EnquiryType, EnquiryStatus } from "@prisma/client";
+type EnquiryType = "HIRING" | "CANDIDATE" | "GENERAL";
+type EnquiryStatus = "NEW" | "READ" | "ASSIGNED" | "ARCHIVED";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -54,16 +57,17 @@ export async function createEnquiry(data: CreateEnquiryInput) {
     throw new Error("Missing required fields for enquiry.");
   }
 
-  const newEnquiry = await prisma.enquiry.create({
-    data: {
-      name: data.name,
-      email: data.email,
-      phone: data.phone || null,
-      type: data.type,
-      message: data.message,
-      status: "NEW",
-    }
+  await db.insert(enquiry).values({
+    name: data.name,
+    email: data.email,
+    phone: data.phone || null,
+    type: data.type,
+    message: data.message,
+    status: "NEW",
   });
+
+  const newEnqs = await db.select().from(enquiry).orderBy(desc(enquiry.createdAt));
+  const newEnquiry = newEnqs[0];
 
   if (resend) {
     try {
@@ -138,34 +142,27 @@ export async function createEnquiry(data: CreateEnquiryInput) {
 export async function getEnquiries() {
   await requirePermission("view_enquiries");
 
-  return await prisma.enquiry.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  return await db.select().from(enquiry).orderBy(desc(enquiry.createdAt));
 }
 
 export async function updateEnquiryStatus(id: string, status: EnquiryStatus) {
   await requirePermission("view_enquiries");
 
-  const updated = await prisma.enquiry.update({
-    where: { id },
-    data: { status },
-  });
+  await db.update(enquiry).set({ status }).where(eq(enquiry.id, id));
 
   revalidatePath("/admin/enquiries");
   revalidatePath("/admin");
 
-  return updated;
+  return { id, status };
 }
 
 export async function deleteEnquiry(id: string) {
   await requirePermission("view_enquiries");
 
-  const toDelete = await prisma.enquiry.delete({
-    where: { id },
-  });
+  await db.delete(enquiry).where(eq(enquiry.id, id));
 
   revalidatePath("/admin/enquiries");
   revalidatePath("/admin");
 
-  return toDelete;
+  return { id };
 }

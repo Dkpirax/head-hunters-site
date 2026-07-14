@@ -6,8 +6,8 @@ import { motion } from "framer-motion";
 import { getOrCreateConversation, addChatMessage, closeConversation, requestHumanTakeover } from "@/app/actions/chat";
 import { createEnquiry } from "@/app/actions/enquiries";
 import { playSound } from "@/lib/sounds";
-import type { Message as PrismaMessage, EnquiryType } from "@prisma/client";
-
+type EnquiryType = "HIRING" | "CANDIDATE" | "GENERAL";
+type PrismaMessage = { id: string; senderType: string; content: string; createdAt: Date };
 interface Message {
   id: string;
   senderType: "USER" | "ADMIN" | "BOT";

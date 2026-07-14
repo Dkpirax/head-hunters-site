@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inbox, Briefcase, Users, TrendingUp, ArrowRight, Clock, MessageSquare, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { job, enquiry, conversation, message } from "@/db/schema";
+import { eq, desc, asc, inArray, count } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { checkPermission, getUserPermissions } from "@/lib/permissions";
 
@@ -41,29 +43,34 @@ export default async function AdminDashboard() {
 
   // Query live database counts in parallel to minimize load time
   const [
-    openJobsCount,
-    totalEnquiriesCount,
-    unreadEnquiriesCount,
-    cvsCount,
+    openJobsCountRes,
+    totalEnquiriesCountRes,
+    unreadEnquiriesCountRes,
+    cvsCountRes,
     recentEnquiries,
     recentChats,
     conversationsForStats,
   ] = await Promise.all([
-    showJobs ? prisma.job.count({ where: { status: "ACTIVE" } }) : Promise.resolve(0),
-    showEnquiries ? prisma.enquiry.count() : Promise.resolve(0),
-    showEnquiries ? prisma.enquiry.count({ where: { status: "NEW" } }) : Promise.resolve(0),
-    showEnquiries ? prisma.enquiry.count({ where: { type: "CANDIDATE" } }) : Promise.resolve(0),
-    showEnquiries ? prisma.enquiry.findMany({ orderBy: { createdAt: "desc" }, take: 4 }) : Promise.resolve([]),
-    showChats ? prisma.conversation.findMany({
-      where: { status: { in: ["BOT_ACTIVE", "HUMAN_ACTIVE"] } },
-      include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } },
-      orderBy: { updatedAt: "desc" },
-      take: 4
+    showJobs ? db.select({ count: count() }).from(job).where(eq(job.status, "ACTIVE")) : Promise.resolve([{ count: 0 }]),
+    showEnquiries ? db.select({ count: count() }).from(enquiry) : Promise.resolve([{ count: 0 }]),
+    showEnquiries ? db.select({ count: count() }).from(enquiry).where(eq(enquiry.status, "NEW")) : Promise.resolve([{ count: 0 }]),
+    showEnquiries ? db.select({ count: count() }).from(enquiry).where(eq(enquiry.type, "CANDIDATE")) : Promise.resolve([{ count: 0 }]),
+    showEnquiries ? db.select().from(enquiry).orderBy(desc(enquiry.createdAt)).limit(4) : Promise.resolve([]),
+    showChats ? db.query.conversation.findMany({
+      where: inArray(conversation.status, ["BOT_ACTIVE", "HUMAN_ACTIVE"]),
+      with: { messages: { orderBy: [desc(message.createdAt)], limit: 1 } },
+      orderBy: [desc(conversation.updatedAt)],
+      limit: 4
     }) : Promise.resolve([]),
-    showChats ? prisma.conversation.findMany({
-      include: { messages: { orderBy: { createdAt: "asc" } } },
+    showChats ? db.query.conversation.findMany({
+      with: { messages: { orderBy: [asc(message.createdAt)] } },
     }) : Promise.resolve([]),
   ]);
+
+  const openJobsCount = openJobsCountRes[0]?.count || 0;
+  const totalEnquiriesCount = totalEnquiriesCountRes[0]?.count || 0;
+  const unreadEnquiriesCount = unreadEnquiriesCountRes[0]?.count || 0;
+  const cvsCount = cvsCountRes[0]?.count || 0;
 
   let avgResponseMin = 0;
   let avgResponseText = "Under 5m";

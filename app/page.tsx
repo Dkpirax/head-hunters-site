@@ -12,7 +12,9 @@ import { EmployerSection } from "@/components/home/EmployerSection";
 import { JobsSection } from "@/components/home/JobsSection";
 import { ContactSection } from "@/components/home/ContactSection";
 import { WorkforceAnimation } from "@/components/home/WorkforceAnimation";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { job } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { getSettings } from "@/app/actions/settings";
 
 export const metadata: Metadata = {
@@ -22,11 +24,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const latestJobs = await prisma.job.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    take: 3
-  });
+  const latestJobs = await db
+    .select()
+    .from(job)
+    .where(eq(job.status, "ACTIVE"))
+    .orderBy(desc(job.createdAt))
+    .limit(3);
 
   const settings = await getSettings();
 

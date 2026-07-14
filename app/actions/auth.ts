@@ -1,6 +1,8 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { adminUser, passwordResetToken } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 import { randomUUID } from "crypto";
@@ -9,9 +11,8 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 export async function requestPasswordReset(email: string) {
   try {
-    const user = await prisma.adminUser.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    const users = await db.select().from(adminUser).where(eq(adminUser.email, email.toLowerCase()));
+    const user = users[0];
 
     if (!user) {
       // Return success anyway to prevent email enumeration
@@ -22,12 +23,10 @@ export async function requestPasswordReset(email: string) {
     const token = randomUUID();
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-    await prisma.passwordResetToken.create({
-      data: {
-        email: user.email,
-        token,
-        expires,
-      },
+    await db.insert(passwordResetToken).values({
+      email: user.email,
+      token,
+      expires,
     });
 
     if (resend) {
@@ -84,29 +83,25 @@ export async function requestPasswordReset(email: string) {
 
 export async function resetPassword(token: string, newPassword: string) {
   try {
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
-    });
+    const tokens = await db.select().from(passwordResetToken).where(eq(passwordResetToken.token, token));
+    const resetToken = tokens[0];
 
     if (!resetToken) {
       return { success: false, error: "Invalid or expired token." };
     }
 
     if (resetToken.expires < new Date()) {
-      await prisma.passwordResetToken.delete({ where: { token } });
+      await db.delete(passwordResetToken).where(eq(passwordResetToken.token, token));
       return { success: false, error: "Token has expired." };
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
     // Update the user's password
-    await prisma.adminUser.update({
-      where: { email: resetToken.email },
-      data: { passwordHash },
-    });
+    await db.update(adminUser).set({ passwordHash }).where(eq(adminUser.email, resetToken.email));
 
     // Delete the used token
-    await prisma.passwordResetToken.delete({ where: { token } });
+    await db.delete(passwordResetToken).where(eq(passwordResetToken.token, token));
 
     return { success: true };
   } catch (error) {

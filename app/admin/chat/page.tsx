@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getConversationsForAdmin } from "@/app/actions/chat";
 import { auth } from "@/lib/auth";
-import type { Conversation, Message } from "@prisma/client";
+type Conversation = any;
+type Message = any;
 import ChatAdminClient from "./ChatAdminClient";
 import { checkPermission } from "@/lib/permissions";
 import { AccessDenied } from "@/components/admin/AccessDenied";

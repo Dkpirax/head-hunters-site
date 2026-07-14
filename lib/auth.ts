@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { adminUser } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -18,27 +20,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = String(credentials.password);
 
         // 1. Try to find the user in the database
-        let user = await prisma.adminUser.findUnique({
-          where: { email },
-        });
+        const users = await db.select().from(adminUser).where(eq(adminUser.email, email));
+        let user = users[0];
 
         // 2. Fallback auto-seeding if no admin users exist in the database yet
         if (!user) {
-          const count = await prisma.adminUser.count();
+          const allUsers = await db.select({ id: adminUser.id }).from(adminUser);
+          const count = allUsers.length;
           if (count === 0) {
             const fallbackEmail = (process.env.ADMIN_EMAIL ?? "admin@headhunters.com.au").toLowerCase();
             const fallbackPassword = process.env.ADMIN_PASSWORD ?? "headhunters2024";
 
             if (email === fallbackEmail && password === fallbackPassword) {
               const passwordHash = await bcrypt.hash(fallbackPassword, 10);
-              user = await prisma.adminUser.create({
-                data: {
-                  email: fallbackEmail,
-                  passwordHash,
-                  name: "Head Hunters Admin",
-                  role: "SUPER_ADMIN",
-                }
+              await db.insert(adminUser).values({
+                email: fallbackEmail,
+                passwordHash,
+                name: "Head Hunters Admin",
+                role: "SUPER_ADMIN",
               });
+              const newUsers = await db.select().from(adminUser).where(eq(adminUser.email, fallbackEmail));
+              user = newUsers[0];
             } else {
               return null; // Don't let random people in, only fallback matches
             }

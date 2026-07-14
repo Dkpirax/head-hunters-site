@@ -1,6 +1,8 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { adminUser, permission, userPermission } from "@/db/schema";
+import { eq, desc, asc, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
@@ -15,11 +17,11 @@ async function checkSuperAdmin() {
 export async function getAdminUsers() {
   await requirePermission("manage_users");
 
-  return await prisma.adminUser.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
+  return await db.query.adminUser.findMany({
+    orderBy: [desc(adminUser.createdAt)],
+    with: {
       permissions: {
-        include: {
+        with: {
           permission: true,
         },
       },
@@ -36,27 +38,26 @@ export async function createAdminUser(data: {
   await checkSuperAdmin();
 
   // Self-protection: check email duplication
-  const existing = await prisma.adminUser.findUnique({
-    where: { email: data.email.toLowerCase() },
-  });
-  if (existing) {
+  const existing = await db.select().from(adminUser).where(eq(adminUser.email, data.email.toLowerCase()));
+  if (existing.length > 0) {
     throw new Error("User with this email already exists.");
   }
 
   const defaultPassword = data.password || "headhunters2026";
   const passwordHash = await bcrypt.hash(defaultPassword, 10);
 
-  const newUser = await prisma.adminUser.create({
-    data: {
-      email: data.email.toLowerCase(),
-      name: data.name || null,
-      role: data.role || "ADMIN",
-      passwordHash,
-    },
+  await db.insert(adminUser).values({
+    email: data.email.toLowerCase(),
+    name: data.name || null,
+    role: data.role || "ADMIN",
+    passwordHash,
   });
 
+  const createdUsers = await db.select().from(adminUser).where(eq(adminUser.email, data.email.toLowerCase()));
+  const createdUser = createdUsers[0];
+
   revalidatePath("/admin/users");
-  return newUser;
+  return createdUser;
 }
 
 export async function updateAdminUser(
@@ -71,10 +72,8 @@ export async function updateAdminUser(
   await checkSuperAdmin();
 
   // Check email conflict
-  const existing = await prisma.adminUser.findUnique({
-    where: { email: data.email.toLowerCase() },
-  });
-  if (existing && existing.id !== id) {
+  const existing = await db.select().from(adminUser).where(eq(adminUser.email, data.email.toLowerCase()));
+  if (existing.length > 0 && existing[0].id !== id) {
     throw new Error("Email is already in use by another admin.");
   }
 
@@ -88,13 +87,13 @@ export async function updateAdminUser(
     updateData.passwordHash = await bcrypt.hash(data.password, 10);
   }
 
-  const updated = await prisma.adminUser.update({
-    where: { id },
-    data: updateData,
-  });
+  await db.update(adminUser).set(updateData).where(eq(adminUser.id, id));
+
+  const updatedUsers = await db.select().from(adminUser).where(eq(adminUser.id, id));
+  const updatedUser = updatedUsers[0];
 
   revalidatePath("/admin/users");
-  return updated;
+  return updatedUser;
 }
 
 export async function deleteAdminUser(id: string) {
@@ -102,19 +101,15 @@ export async function deleteAdminUser(id: string) {
   const session = await auth();
 
   // Self-deletion check
-  const currentUser = await prisma.adminUser.findUnique({
-    where: { email: session!.user!.email ?? "" },
-  });
-  if (currentUser && currentUser.id === id) {
+  const currentUser = await db.select().from(adminUser).where(eq(adminUser.email, session!.user!.email ?? ""));
+  if (currentUser.length > 0 && currentUser[0].id === id) {
     throw new Error("You cannot delete your own logged-in administrator account.");
   }
 
-  const deleted = await prisma.adminUser.delete({
-    where: { id },
-  });
+  await db.delete(adminUser).where(eq(adminUser.id, id));
 
   revalidatePath("/admin/users");
-  return deleted;
+  return { success: true };
 }
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -125,9 +120,8 @@ export async function sendResetEmail(email: string) {
     throw new Error("Unauthorized");
   }
 
-  const user = await prisma.adminUser.findUnique({
-    where: { email: email.toLowerCase() },
-  });
+  const users = await db.select().from(adminUser).where(eq(adminUser.email, email.toLowerCase()));
+  const user = users[0];
   if (!user) {
     throw new Error("User not found.");
   }
@@ -176,17 +170,15 @@ export async function sendResetEmail(email: string) {
 export async function getPermissionsList() {
   await requirePermission("manage_users");
 
-  return await prisma.permission.findMany({
-    orderBy: { name: "asc" },
-  });
+  return await db.select().from(permission).orderBy(asc(permission.name));
 }
 
 export async function getUserPermissionsList(userId: string) {
   await requirePermission("manage_users");
 
-  const userPerms = await prisma.userPermission.findMany({
-    where: { userId },
-    select: { permission: { select: { name: true } } },
+  const userPerms = await db.query.userPermission.findMany({
+    where: eq(userPermission.userId, userId),
+    with: { permission: { columns: { name: true } } },
   });
 
   return userPerms.map((up: any) => up.permission.name);
@@ -196,23 +188,17 @@ export async function updateUserPermissions(userId: string, permissionNames: str
   await requirePermission("manage_users");
 
   // 1. Delete all existing user permissions
-  await prisma.userPermission.deleteMany({
-    where: { userId },
-  });
+  await db.delete(userPermission).where(eq(userPermission.userId, userId));
 
   // 2. Resolve permissionIds
-  const permissions = await prisma.permission.findMany({
-    where: { name: { in: permissionNames } },
-  });
+  const permissions = await db.select().from(permission).where(inArray(permission.name, permissionNames));
 
   // 3. Create new user permissions in bulk
   if (permissions.length > 0) {
-    await prisma.userPermission.createMany({
-      data: permissions.map((p: any) => ({
-        userId,
-        permissionId: p.id,
-      })),
-    });
+    await db.insert(userPermission).values(permissions.map((p: any) => ({
+      userId,
+      permissionId: p.id,
+    })));
   }
 
   revalidatePath("/admin/users");

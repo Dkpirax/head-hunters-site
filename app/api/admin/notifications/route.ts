@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { adminUser, enquiry, conversation, message } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 
@@ -9,9 +11,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.adminUser.findUnique({
-    where: { email: session.user.email.toLowerCase() }
-  });
+  const users = await db
+    .select()
+    .from(adminUser)
+    .where(eq(adminUser.email, session.user.email.toLowerCase()));
+  const user = users[0];
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -28,23 +32,20 @@ export async function GET() {
   try {
     // 1. Get new enquiries (status is NEW)
     const newEnquiries = canViewEnquiries
-      ? await prisma.enquiry.findMany({
-          where: { status: "NEW" },
-          orderBy: { createdAt: "desc" },
-        })
+      ? await db.select().from(enquiry).where(eq(enquiry.status, "NEW")).orderBy(desc(enquiry.createdAt))
       : [];
 
     // 2. Get active conversations that need human assistance (needsHuman is true)
     const takeoverConversations = canViewChat
-      ? await prisma.conversation.findMany({
-          where: { needsHuman: true },
-          orderBy: { updatedAt: "desc" },
-          include: {
+      ? await db.query.conversation.findMany({
+          where: eq(conversation.needsHuman, true),
+          with: {
             messages: {
-              orderBy: { createdAt: "desc" },
-              take: 1,
+              orderBy: [desc(message.createdAt)],
+              limit: 1,
             },
           },
+          orderBy: [desc(conversation.updatedAt)],
         })
       : [];
 

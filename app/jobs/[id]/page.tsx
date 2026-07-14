@@ -3,7 +3,9 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MapPin, Briefcase, Clock, Flame, ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { job as jobsTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -12,9 +14,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const resolvedParams = await params;
-  const job = await prisma.job.findUnique({
-    where: { id: resolvedParams.id },
-  });
+  const jobs = await db.select().from(jobsTable).where(eq(jobsTable.id, resolvedParams.id));
+  const job = jobs[0];
 
   if (!job || job.status !== "ACTIVE") {
     return {
@@ -47,9 +48,8 @@ export async function generateMetadata({
 
 export default async function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  const job = await prisma.job.findUnique({
-    where: { id: resolvedParams.id },
-  });
+  const jobs = await db.select().from(jobsTable).where(eq(jobsTable.id, resolvedParams.id));
+  const job = jobs[0];
 
   if (!job || job.status !== "ACTIVE") {
     notFound();

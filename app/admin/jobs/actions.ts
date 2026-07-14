@@ -1,12 +1,12 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { job } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getJobs() {
-  return await prisma.job.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  return await db.select().from(job).orderBy(desc(job.createdAt));
 }
 
 export async function createJob(data: {
@@ -17,9 +17,7 @@ export async function createJob(data: {
   isHot: boolean;
   description: string;
 }) {
-  await prisma.job.create({
-    data,
-  });
+  await db.insert(job).values(data);
   revalidatePath("/admin/jobs");
   revalidatePath("/jobs");
 }
@@ -35,19 +33,14 @@ export async function updateJob(
     description: string;
   }
 ) {
-  await prisma.job.update({
-    where: { id },
-    data,
-  });
+  await db.update(job).set(data).where(eq(job.id, id));
   revalidatePath("/admin/jobs");
   revalidatePath("/jobs");
   revalidatePath(`/jobs/${id}`);
 }
 
 export async function deleteJob(id: string) {
-  await prisma.job.delete({
-    where: { id },
-  });
+  await db.delete(job).where(eq(job.id, id));
   revalidatePath("/admin/jobs");
   revalidatePath("/jobs");
 }

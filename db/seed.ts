@@ -1,4 +1,6 @@
-import prisma from "../lib/prisma";
+import { db } from "../lib/db";
+import { permission, adminUser } from "./schema";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 async function main() {
@@ -21,28 +23,26 @@ async function main() {
 
   console.log("Seeding permissions...");
   for (const name of defaultPermissions) {
-    await prisma.permission.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
+    const existing = await db.select().from(permission).where(eq(permission.name, name));
+    if (existing.length === 0) {
+      await db.insert(permission).values({ name });
+    }
   }
 
   console.log("Checking for admin user...");
-  const adminCount = await prisma.adminUser.count();
+  const users = await db.select().from(adminUser);
+  const adminCount = users.length;
   if (adminCount === 0) {
     console.log("Creating default admin user...");
     const fallbackEmail = (process.env.ADMIN_EMAIL || "admin@headhunters.com.au").toLowerCase();
     const fallbackPassword = process.env.ADMIN_PASSWORD || "headhunters2024";
     const passwordHash = await bcrypt.hash(fallbackPassword, 10);
 
-    await prisma.adminUser.create({
-      data: {
-        email: fallbackEmail,
-        passwordHash,
-        name: "Head Hunters Admin",
-        role: "SUPER_ADMIN",
-      }
+    await db.insert(adminUser).values({
+      email: fallbackEmail,
+      passwordHash,
+      name: "Head Hunters Admin",
+      role: "SUPER_ADMIN",
     });
 
     console.log(`Default admin created: ${fallbackEmail}`);

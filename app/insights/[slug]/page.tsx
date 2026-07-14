@@ -3,13 +3,14 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ChevronLeft, Calendar } from "lucide-react";
 import Link from "next/link";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { article as articleTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const article = await prisma.article.findUnique({
-    where: { slug: resolvedParams.slug },
-  });
+  const articles = await db.select().from(articleTable).where(eq(articleTable.slug, resolvedParams.slug));
+  const article = articles[0];
 
   if (!article || !article.isPublished) {
     notFound();
