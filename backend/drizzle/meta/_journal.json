@@ -1,12 +1,12 @@
 {
   "version": "7",
-  "dialect": "postgresql",
+  "dialect": "mysql",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1784116968339,
-      "tag": "0000_eminent_overlord",
+      "version": "5",
+      "when": 1784129356863,
+      "tag": "0000_mean_sentry",
       "breakpoints": true
     }
   ]

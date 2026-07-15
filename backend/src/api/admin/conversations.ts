@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { db } from '../../lib/db';
 import { conversation, message } from '../../db/schema';
-import { eq, inArray, desc, asc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { requireAuth } from '../../middleware/auth';
+import { createId } from '@paralleldrive/cuid2';
 
 export const adminConversationsRouter = Router();
 
@@ -58,15 +59,26 @@ adminConversationsRouter.post('/:id/messages', async (req, res) => {
       return res.status(400).json({ error: 'Message content is required' });
     }
     
-    const newMsg = await db.insert(message).values({
-      conversationId: id,
-      content,
-      senderType: senderType || 'ADMIN',
-    }).returning();
+    const newMsg = await db.transaction(async (tx) => {
+      const messageId = createId();
+      await tx.insert(message).values({
+        id: messageId,
+        conversationId: id,
+        content,
+        senderType: senderType || 'ADMIN',
+      });
+
+      await tx.update(conversation).set({ updatedAt: new Date() }).where(eq(conversation.id, id));
+
+      const [createdMessage] = await tx.select()
+        .from(message)
+        .where(eq(message.id, messageId))
+        .limit(1);
+
+      return createdMessage;
+    });
     
-    await db.update(conversation).set({ updatedAt: new Date() }).where(eq(conversation.id, id));
-    
-    return res.json(newMsg[0]);
+    return res.json(newMsg);
   } catch (error) {
     console.error('Failed to add message:', error);
     return res.status(500).json({ error: 'Internal server error' });

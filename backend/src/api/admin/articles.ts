@@ -3,6 +3,7 @@ import { db } from '../../lib/db';
 import { article } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { requireAuth } from '../../middleware/auth';
+import { createId } from '@paralleldrive/cuid2';
 
 export const adminArticlesRouter = Router();
 
@@ -31,16 +32,23 @@ adminArticlesRouter.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Slug already exists' });
     }
     
-    const newArt = await db.insert(article).values({
+    const articleId = createId();
+    await db.insert(article).values({
+      id: articleId,
       title,
       slug,
       category,
       excerpt: excerpt || '',
       content: content || '',
       isPublished: isPublished || false,
-    }).returning();
+    });
+
+    const [newArt] = await db.select()
+      .from(article)
+      .where(eq(article.id, articleId))
+      .limit(1);
     
-    return res.json(newArt[0]);
+    return res.json(newArt);
   } catch (error) {
     console.error('Failed to create article:', error);
     return res.status(500).json({ error: 'Internal server error' });

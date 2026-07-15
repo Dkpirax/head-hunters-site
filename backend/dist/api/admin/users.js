@@ -10,6 +10,7 @@ const schema_1 = require("../../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const auth_1 = require("../../middleware/auth");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const cuid2_1 = require("@paralleldrive/cuid2");
 exports.adminUsersRouter = (0, express_1.Router)();
 exports.adminUsersRouter.use(auth_1.requireAuth);
 exports.adminUsersRouter.get('/', async (req, res) => {
@@ -56,25 +57,31 @@ exports.adminUsersRouter.post('/', async (req, res) => {
             return res.status(400).json({ error: 'User already exists' });
         }
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
-        const newUser = await db_1.db.insert(schema_1.adminUser).values({
+        const userId = (0, cuid2_1.createId)();
+        await db_1.db.insert(schema_1.adminUser).values({
+            id: userId,
             email,
             name,
             role,
             passwordHash: hashedPassword,
-        }).returning();
+        });
+        const [newUser] = await db_1.db.select()
+            .from(schema_1.adminUser)
+            .where((0, drizzle_orm_1.eq)(schema_1.adminUser.id, userId))
+            .limit(1);
         // Assign permissions
         if (permissions && permissions.length > 0 && role !== 'SUPER_ADMIN') {
             const allPerms = await db_1.db.select().from(schema_1.permission);
             const permMap = Object.fromEntries(allPerms.map(p => [p.name, p.id]));
             const insertData = permissions.map((pName) => ({
-                userId: newUser[0].id,
+                userId: newUser.id,
                 permissionId: permMap[pName]
             })).filter((p) => p.permissionId);
             if (insertData.length > 0) {
                 await db_1.db.insert(schema_1.userPermission).values(insertData);
             }
         }
-        return res.json(newUser[0]);
+        return res.json(newUser);
     }
     catch (error) {
         console.error('Failed to create user:', error);

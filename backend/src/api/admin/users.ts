@@ -4,6 +4,7 @@ import { adminUser, permission, userPermission } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { requireAuth } from '../../middleware/auth';
 import bcrypt from 'bcryptjs';
+import { createId } from '@paralleldrive/cuid2';
 
 export const adminUsersRouter = Router();
 
@@ -60,12 +61,19 @@ adminUsersRouter.post('/', async (req, res) => {
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    const newUser = await db.insert(adminUser).values({
+    const userId = createId();
+    await db.insert(adminUser).values({
+      id: userId,
       email,
       name,
       role,
       passwordHash: hashedPassword,
-    }).returning();
+    });
+
+    const [newUser] = await db.select()
+      .from(adminUser)
+      .where(eq(adminUser.id, userId))
+      .limit(1);
     
     // Assign permissions
     if (permissions && permissions.length > 0 && role !== 'SUPER_ADMIN') {
@@ -73,7 +81,7 @@ adminUsersRouter.post('/', async (req, res) => {
       const permMap = Object.fromEntries(allPerms.map(p => [p.name, p.id]));
       
       const insertData = permissions.map((pName: string) => ({
-        userId: newUser[0].id,
+        userId: newUser.id,
         permissionId: permMap[pName]
       })).filter((p: any) => p.permissionId);
       
@@ -82,7 +90,7 @@ adminUsersRouter.post('/', async (req, res) => {
       }
     }
     
-    return res.json(newUser[0]);
+    return res.json(newUser);
   } catch (error) {
     console.error('Failed to create user:', error);
     return res.status(500).json({ error: 'Internal server error' });

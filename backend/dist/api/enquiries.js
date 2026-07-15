@@ -5,6 +5,8 @@ const express_1 = require("express");
 const db_1 = require("../lib/db");
 const schema_1 = require("../db/schema");
 const email_1 = require("../lib/email");
+const drizzle_orm_1 = require("drizzle-orm");
+const cuid2_1 = require("@paralleldrive/cuid2");
 exports.enquiriesRouter = (0, express_1.Router)();
 // Simple in-memory IP rate limiter (10 per hour per IP)
 const ipCache = new Map();
@@ -36,14 +38,20 @@ exports.enquiriesRouter.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields for enquiry.' });
         }
         // Save to DB first
-        const newEnquiry = await db_1.db.insert(schema_1.enquiry).values({
+        const enquiryId = (0, cuid2_1.createId)();
+        await db_1.db.insert(schema_1.enquiry).values({
+            id: enquiryId,
             name,
             email,
             phone: phone || null,
             type,
             message,
             status: 'NEW',
-        }).returning();
+        });
+        const [newEnquiry] = await db_1.db.select()
+            .from(schema_1.enquiry)
+            .where((0, drizzle_orm_1.eq)(schema_1.enquiry.id, enquiryId))
+            .limit(1);
         // Try sending emails but don't fail the request if it errors
         try {
             await (0, email_1.sendEnquiryNotification)({ name, email, phone, type, message });
@@ -52,7 +60,7 @@ exports.enquiriesRouter.post('/', async (req, res) => {
         catch (emailError) {
             console.error('Failed to send enquiry emails:', emailError);
         }
-        return res.json(newEnquiry[0]);
+        return res.json(newEnquiry);
     }
     catch (error) {
         console.error('Failed to create enquiry:', error);

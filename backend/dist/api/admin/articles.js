@@ -6,6 +6,7 @@ const db_1 = require("../../lib/db");
 const schema_1 = require("../../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const auth_1 = require("../../middleware/auth");
+const cuid2_1 = require("@paralleldrive/cuid2");
 exports.adminArticlesRouter = (0, express_1.Router)();
 exports.adminArticlesRouter.use(auth_1.requireAuth);
 exports.adminArticlesRouter.get('/', async (req, res) => {
@@ -28,15 +29,21 @@ exports.adminArticlesRouter.post('/', async (req, res) => {
         if (existing.length > 0) {
             return res.status(400).json({ error: 'Slug already exists' });
         }
-        const newArt = await db_1.db.insert(schema_1.article).values({
+        const articleId = (0, cuid2_1.createId)();
+        await db_1.db.insert(schema_1.article).values({
+            id: articleId,
             title,
             slug,
             category,
             excerpt: excerpt || '',
             content: content || '',
             isPublished: isPublished || false,
-        }).returning();
-        return res.json(newArt[0]);
+        });
+        const [newArt] = await db_1.db.select()
+            .from(schema_1.article)
+            .where((0, drizzle_orm_1.eq)(schema_1.article.id, articleId))
+            .limit(1);
+        return res.json(newArt);
     }
     catch (error) {
         console.error('Failed to create article:', error);

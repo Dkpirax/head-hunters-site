@@ -57,6 +57,7 @@ const conversations_1 = require("./api/admin/conversations");
 const articles_1 = require("./api/admin/articles");
 const enquiries_1 = require("./api/admin/enquiries");
 const users_1 = require("./api/admin/users");
+const notifications_1 = require("./api/admin/notifications");
 const enquiries_2 = require("./api/enquiries");
 const chat_1 = require("./api/chat");
 // Serve static frontend files
@@ -74,6 +75,7 @@ app.use('/api/admin/conversations', conversations_1.adminConversationsRouter);
 app.use('/api/admin/articles', articles_1.adminArticlesRouter);
 app.use('/api/admin/enquiries', enquiries_1.adminEnquiriesRouter);
 app.use('/api/admin/users', users_1.adminUsersRouter);
+app.use('/api/admin/notifications', notifications_1.adminNotificationsRouter);
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {
     try {

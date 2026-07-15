@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { db } from '../lib/db';
 import { conversation, message, content } from '../db/schema';
-import { eq, and, desc, asc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
+import { createId } from '@paralleldrive/cuid2';
 
 export const chatRouter = Router();
 
@@ -42,20 +43,39 @@ chatRouter.post('/conversations', async (req, res) => {
     
     const greetingText = settings[0]?.value || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
     
-    const newConv = await db.insert(conversation).values({
-      userId: visitorId,
-      status: 'BOT_ACTIVE',
-    }).returning();
-    
-    const botGreeting = await db.insert(message).values({
-      conversationId: newConv[0].id,
-      senderType: 'BOT',
-      content: greetingText,
-    }).returning();
+    const { newConv, botGreeting } = await db.transaction(async (tx) => {
+      const conversationId = createId();
+      const greetingId = createId();
+
+      await tx.insert(conversation).values({
+        id: conversationId,
+        userId: visitorId,
+        status: 'BOT_ACTIVE',
+      });
+
+      await tx.insert(message).values({
+        id: greetingId,
+        conversationId,
+        senderType: 'BOT',
+        content: greetingText,
+      });
+
+      const [createdConversation] = await tx.select()
+        .from(conversation)
+        .where(eq(conversation.id, conversationId))
+        .limit(1);
+
+      const [createdGreeting] = await tx.select()
+        .from(message)
+        .where(eq(message.id, greetingId))
+        .limit(1);
+
+      return { newConv: createdConversation, botGreeting: createdGreeting };
+    });
 
     return res.json({
-      ...newConv[0],
-      messages: botGreeting
+      ...newConv,
+      messages: [botGreeting]
     });
   } catch (error) {
     console.error('Failed to get/create conversation:', error);
@@ -72,16 +92,26 @@ chatRouter.post('/conversations/:id/messages', async (req, res) => {
 
     if (!content) return res.status(400).json({ error: 'Message content required' });
 
-    const newMsg = await db.insert(message).values({
-      conversationId: id,
-      senderType,
-      content,
-    }).returning();
+    const newMsg = await db.transaction(async (tx) => {
+      const messageId = createId();
+      await tx.insert(message).values({
+        id: messageId,
+        conversationId: id,
+        senderType,
+        content,
+      });
 
-    // Update conversation timestamp
-    await db.update(conversation).set({ updatedAt: new Date() }).where(eq(conversation.id, id));
+      await tx.update(conversation).set({ updatedAt: new Date() }).where(eq(conversation.id, id));
 
-    return res.json(newMsg[0]);
+      const [createdMessage] = await tx.select()
+        .from(message)
+        .where(eq(message.id, messageId))
+        .limit(1);
+
+      return createdMessage;
+    });
+
+    return res.json(newMsg);
   } catch (error) {
     console.error('Failed to add message:', error);
     res.status(500).json({ error: 'Internal server error' });

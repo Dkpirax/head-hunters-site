@@ -127,10 +127,10 @@ exports.settingsRouter.put('/', auth_1.requireAuth, async (req, res) => {
             if (key === "id" || key === "createdAt" || key === "updatedAt")
                 continue;
             const valStr = typeof value === "boolean" ? value.toString() : String(value);
-            // Upsert logic for Drizzle PostgreSQL
+            // MySQL upsert on the Content.key unique constraint.
             await db_1.db.insert(schema_1.content)
                 .values({ key: `settings.${key}`, value: valStr })
-                .onConflictDoUpdate({ target: schema_1.content.key, set: { value: valStr } });
+                .onDuplicateKeyUpdate({ set: { value: valStr } });
         }
         return res.json({ success: true, message: "Settings updated successfully." });
     }

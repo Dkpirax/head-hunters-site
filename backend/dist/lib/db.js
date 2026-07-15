@@ -36,17 +36,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.db = void 0;
-const node_postgres_1 = require("drizzle-orm/node-postgres");
-const pg_1 = require("pg");
+exports.pool = exports.db = void 0;
+const mysql2_1 = require("drizzle-orm/mysql2");
+const promise_1 = __importDefault(require("mysql2/promise"));
 const schema = __importStar(require("../db/schema"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 // Load .env from the root directory
-dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../../.env') });
-// Create the connection pool
-const pool = new pg_1.Pool({
-    connectionString: process.env.DATABASE_URL,
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, "../../../.env") });
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for MySQL connection");
+}
+const sslEnabled = process.env.DATABASE_SSL === "true" || process.env.MYSQL_SSL === "true";
+// Create one shared MySQL pool for the process.
+const pool = promise_1.default.createPool({
+    uri: databaseUrl,
+    waitForConnections: true,
+    connectionLimit: Number(process.env.DATABASE_POOL_LIMIT || 10),
+    timezone: "Z",
+    charset: "utf8mb4",
+    ssl: sslEnabled
+        ? {
+            rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== "false",
+        }
+        : undefined,
 });
-// Create and export the drizzle instance
-exports.db = (0, node_postgres_1.drizzle)(pool, { schema });
+exports.pool = pool;
+exports.db = (0, mysql2_1.drizzle)(pool, { schema, mode: "default" });

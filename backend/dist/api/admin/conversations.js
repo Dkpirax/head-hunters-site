@@ -6,6 +6,7 @@ const db_1 = require("../../lib/db");
 const schema_1 = require("../../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const auth_1 = require("../../middleware/auth");
+const cuid2_1 = require("@paralleldrive/cuid2");
 exports.adminConversationsRouter = (0, express_1.Router)();
 exports.adminConversationsRouter.use(auth_1.requireAuth);
 exports.adminConversationsRouter.get('/', async (req, res) => {
@@ -54,13 +55,22 @@ exports.adminConversationsRouter.post('/:id/messages', async (req, res) => {
         if (!content) {
             return res.status(400).json({ error: 'Message content is required' });
         }
-        const newMsg = await db_1.db.insert(schema_1.message).values({
-            conversationId: id,
-            content,
-            senderType: senderType || 'ADMIN',
-        }).returning();
-        await db_1.db.update(schema_1.conversation).set({ updatedAt: new Date() }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, id));
-        return res.json(newMsg[0]);
+        const newMsg = await db_1.db.transaction(async (tx) => {
+            const messageId = (0, cuid2_1.createId)();
+            await tx.insert(schema_1.message).values({
+                id: messageId,
+                conversationId: id,
+                content,
+                senderType: senderType || 'ADMIN',
+            });
+            await tx.update(schema_1.conversation).set({ updatedAt: new Date() }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, id));
+            const [createdMessage] = await tx.select()
+                .from(schema_1.message)
+                .where((0, drizzle_orm_1.eq)(schema_1.message.id, messageId))
+                .limit(1);
+            return createdMessage;
+        });
+        return res.json(newMsg);
     }
     catch (error) {
         console.error('Failed to add message:', error);
