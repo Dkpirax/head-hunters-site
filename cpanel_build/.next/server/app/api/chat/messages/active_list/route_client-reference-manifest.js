@@ -1,1 +1,0 @@
-globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/chat/messages/active_list/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"D:\\GIT\\head-hunters-site\\app\\api\\chat\\messages\\active_list\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};
