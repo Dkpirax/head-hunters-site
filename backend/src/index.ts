@@ -7,7 +7,24 @@ import { desc, eq } from 'drizzle-orm';
 
 import path from 'path';
 
-dotenv.config({ path: '../.env' });
+import fs from 'fs';
+const envPaths = [
+  path.join(__dirname, '.env'),           // cPanel deploy (index.js at root)
+  path.join(__dirname, '../../.env'),     // local dev (backend/src -> project root)
+  path.join(__dirname, '../.env')         // fallback
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    envLoaded = true;
+    break;
+  }
+}
+if (!envLoaded) {
+  dotenv.config(); // fallback to current working directory
+}
 
 const app = express();
 const port = process.env.PORT || 3001;

@@ -10,7 +10,23 @@ const db_1 = require("./lib/db");
 const schema_1 = require("./db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const path_1 = __importDefault(require("path"));
-dotenv_1.default.config({ path: '../.env' });
+const fs_1 = __importDefault(require("fs"));
+const envPaths = [
+    path_1.default.join(__dirname, '.env'), // cPanel deploy (index.js at root)
+    path_1.default.join(__dirname, '../../.env'), // local dev (backend/src -> project root)
+    path_1.default.join(__dirname, '../.env') // fallback
+];
+let envLoaded = false;
+for (const envPath of envPaths) {
+    if (fs_1.default.existsSync(envPath)) {
+        dotenv_1.default.config({ path: envPath });
+        envLoaded = true;
+        break;
+    }
+}
+if (!envLoaded) {
+    dotenv_1.default.config(); // fallback to current working directory
+}
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3001;
 app.use((0, cors_1.default)());
