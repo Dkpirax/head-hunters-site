@@ -1,8 +1,8 @@
-import { mysqlTable, varchar, text, boolean, timestamp, datetime, primaryKey } from 'drizzle-orm/mysql-core';
+import { pgTable, varchar, text, boolean, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
-export const job = mysqlTable('Job', {
+export const job = pgTable('Job', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   title: varchar('title', { length: 191 }).notNull(),
   location: varchar('location', { length: 191 }).notNull(),
@@ -10,11 +10,16 @@ export const job = mysqlTable('Job', {
   description: text('description').notNull(),
   status: varchar('status', { length: 191 }).notNull().default('ACTIVE'), // ACTIVE, CLOSED, DRAFT
   isHot: boolean('isHot').notNull().default(false),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    statusIdx: index('job_status_idx').on(table.status),
+    createdAtIdx: index('job_created_at_idx').on(table.createdAt),
+  };
 });
 
-export const enquiry = mysqlTable('Enquiry', {
+export const enquiry = pgTable('Enquiry', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   name: varchar('name', { length: 191 }).notNull(),
   email: varchar('email', { length: 191 }).notNull(),
@@ -22,18 +27,23 @@ export const enquiry = mysqlTable('Enquiry', {
   type: varchar('type', { length: 191 }).notNull(), // HIRING, CANDIDATE, GENERAL
   message: text('message').notNull(),
   status: varchar('status', { length: 191 }).notNull().default('NEW'), // NEW, READ, ASSIGNED, ARCHIVED
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    statusIdx: index('enquiry_status_idx').on(table.status),
+    emailIdx: index('enquiry_email_idx').on(table.email),
+  };
 });
 
-export const content = mysqlTable('Content', {
+export const content = pgTable('Content', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   key: varchar('key', { length: 191 }).notNull().unique(),
   value: text('value').notNull(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 
-export const article = mysqlTable('Article', {
+export const article = pgTable('Article', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   title: varchar('title', { length: 191 }).notNull(),
   slug: varchar('slug', { length: 191 }).notNull().unique(),
@@ -41,79 +51,101 @@ export const article = mysqlTable('Article', {
   excerpt: text('excerpt').notNull(),
   content: text('content').notNull(),
   isPublished: boolean('isPublished').notNull().default(false),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 
-export const conversation = mysqlTable('Conversation', {
+export const conversation = pgTable('Conversation', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   userId: varchar('userId', { length: 191 }).notNull(),
   status: varchar('status', { length: 191 }).notNull(), // BOT_ACTIVE, HUMAN_ACTIVE, CLOSED
   takenBy: varchar('takenBy', { length: 191 }),
   needsHuman: boolean('needsHuman').notNull().default(false),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    statusIdx: index('conversation_status_idx').on(table.status),
+    userIdIdx: index('conversation_user_id_idx').on(table.userId),
+  };
 });
 
-export const message = mysqlTable('Message', {
+export const message = pgTable('Message', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   conversationId: varchar('conversationId', { length: 191 }).notNull(),
   senderType: varchar('senderType', { length: 191 }).notNull(), // USER, ADMIN, BOT
   content: text('content').notNull(),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
   isReadByAdmin: boolean('isReadByAdmin').notNull().default(false),
+}, (table) => {
+  return {
+    conversationIdIdx: index('message_conversation_id_idx').on(table.conversationId),
+  };
 });
 
-export const adminUser = mysqlTable('AdminUser', {
+export const adminUser = pgTable('AdminUser', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   email: varchar('email', { length: 191 }).notNull().unique(),
   passwordHash: varchar('passwordHash', { length: 191 }).notNull(),
   name: varchar('name', { length: 191 }),
   role: varchar('role', { length: 191 }).notNull().default('ADMIN'), // SUPER_ADMIN, ADMIN, USER
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    emailIdx: index('admin_user_email_idx').on(table.email),
+  };
 });
 
-export const candidate = mysqlTable('Candidate', {
+export const candidate = pgTable('Candidate', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   email: varchar('email', { length: 191 }).notNull().unique(),
   name: varchar('name', { length: 191 }),
-  dateOfBirth: datetime('dateOfBirth').notNull(),
+  dateOfBirth: timestamp('dateOfBirth', { mode: 'date' }).notNull(),
   parentalConsent: boolean('parentalConsent').notNull().default(false),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    emailIdx: index('candidate_email_idx').on(table.email),
+  };
 });
 
-export const employer = mysqlTable('Employer', {
+export const employer = pgTable('Employer', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   email: varchar('email', { length: 191 }).notNull().unique(),
   name: varchar('name', { length: 191 }),
-  dateOfBirth: datetime('dateOfBirth').notNull(),
+  dateOfBirth: timestamp('dateOfBirth', { mode: 'date' }).notNull(),
   parentalConsent: boolean('parentalConsent').notNull().default(false),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().defaultNow().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    emailIdx: index('employer_email_idx').on(table.email),
+  };
 });
 
-export const permission = mysqlTable('Permission', {
+export const permission = pgTable('Permission', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   name: varchar('name', { length: 191 }).notNull().unique(),
   description: varchar('description', { length: 191 }),
 });
 
-export const userPermission = mysqlTable('UserPermission', {
+export const userPermission = pgTable('UserPermission', {
   userId: varchar('userId', { length: 191 }).notNull(),
   permissionId: varchar('permissionId', { length: 191 }).notNull(),
 }, (table) => {
   return {
-    pk: primaryKey({ columns: [table.userId, table.permissionId] })
-  }
+    pk: primaryKey({ columns: [table.userId, table.permissionId] }),
+    userIdIdx: index('user_permission_user_id_idx').on(table.userId),
+  };
 });
 
-export const passwordResetToken = mysqlTable('PasswordResetToken', {
+export const passwordResetToken = pgTable('PasswordResetToken', {
   token: varchar('token', { length: 191 }).primaryKey(),
   email: varchar('email', { length: 191 }).notNull(),
-  expires: datetime('expires').notNull(),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  expires: timestamp('expires', { mode: 'date' }).notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().defaultNow(),
 });
 
 // Relations
