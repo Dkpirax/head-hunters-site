@@ -96,11 +96,38 @@ function HomePage() {
   );
 }
 
+import { LoginPage } from "./pages/Login";
+import { ProtectedRoute } from "./components/layout/ProtectedRoute";
+import { AdminLayout } from "./components/layout/AdminLayout";
+
+import { AdminJobsPage } from "./pages/admin/Jobs";
+import { AdminSettingsPage } from "./pages/admin/Settings";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        
+        {/* Admin Routes */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          } 
+        >
+          <Route index element={
+            <div className="p-8 text-white">
+              <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
+              <p>Welcome to the Head Hunters admin portal.</p>
+            </div>
+          } />
+          <Route path="jobs" element={<AdminJobsPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
