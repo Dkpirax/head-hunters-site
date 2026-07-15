@@ -102,6 +102,10 @@ import { AdminLayout } from "./components/layout/AdminLayout";
 
 import { AdminJobsPage } from "./pages/admin/Jobs";
 import { AdminSettingsPage } from "./pages/admin/Settings";
+import { AdminUsersPage } from "./pages/admin/Users";
+import { AdminEnquiriesPage } from "./pages/admin/Enquiries";
+import { AdminInsightsPage } from "./pages/admin/Insights";
+import { AdminChatPage } from "./pages/admin/Chat";
 
 function App() {
   return (
@@ -127,6 +131,10 @@ function App() {
           } />
           <Route path="jobs" element={<AdminJobsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="enquiries" element={<AdminEnquiriesPage />} />
+          <Route path="insights" element={<AdminInsightsPage />} />
+          <Route path="chat" element={<AdminChatPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

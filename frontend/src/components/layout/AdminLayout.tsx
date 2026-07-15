@@ -42,7 +42,7 @@ export function AdminLayout() {
       {/* Sidebar */}
       <aside className="w-60 shrink-0 border-r border-white/6 flex flex-col bg-[#0B0B0C]">
         <div className="p-5 border-b border-white/6">
-          <Link to="/admin"><Logo variant="icon" color="green" size="md" /></Link>
+          <Link to="/admin"><Logo variant="mark" color="green" size="md" /></Link>
           <p className="text-[10px] text-white/25 font-semibold uppercase tracking-widest mt-2 ml-11">Admin portal</p>
         </div>
 

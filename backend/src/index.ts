@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { db } from './lib/db';
 import { job } from './db/schema';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 import path from 'path';
 
@@ -16,23 +16,32 @@ app.use(cors());
 app.use(express.json());
 
 import cookieParser from 'cookie-parser';
+import adminJobsRouter from "./api/admin/jobs";
 import { settingsRouter } from './api/settings';
+import adminUsersRouter from "./api/admin/users";
+import adminEnquiriesRouter from "./api/admin/enquiries";
+import adminInsightsRouter from "./api/admin/insights";
+import adminChatRouter from "./api/admin/chat";
 import authRouter from './api/auth';
+import { requireAuth } from './middleware/auth';
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 
-app.use('/api/auth', authRouter);
-app.use('/api/settings', settingsRouter);
+app.use("/api/admin/jobs", requireAuth, adminJobsRouter);
+app.use("/api/settings", settingsRouter);
+app.use("/api/admin/users", requireAuth, adminUsersRouter);
+app.use("/api/admin/enquiries", requireAuth, adminEnquiriesRouter);
+app.use("/api/admin/insights", requireAuth, adminInsightsRouter);
+app.use("/api/admin/chat", requireAuth, adminChatRouter);
 
-import adminJobsRouter from './api/admin/jobs';
-app.use('/api/admin/jobs', adminJobsRouter);
+app.use('/api/auth', authRouter);
 
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {
   try {
-    const { eq } = await import('drizzle-orm');
+
     const jobs = await db.select()
       .from(job)
       .where(eq(job.status, "ACTIVE"))

@@ -141,7 +141,7 @@ settingsRouter.put('/', requireAuth, async (req, res) => {
       
       // Upsert logic for Drizzle MySQL
       await db.insert(content)
-        .values({ key: `settings.${key}`, value: valStr, type: "setting" })
+        .values({ key: `settings.${key}`, value: valStr })
         .onDuplicateKeyUpdate({ set: { value: valStr } });
     }
     
