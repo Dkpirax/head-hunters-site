@@ -125,3 +125,29 @@ settingsRouter.get('/', async (req, res) => {
     res.json(defaultSettings);
   }
 });
+
+import { requireAuth } from '../middleware/auth';
+
+settingsRouter.put('/', requireAuth, async (req, res) => {
+  try {
+    const data = req.body;
+    
+    // Instead of looping individual updates, use transactions or bulk insert
+    // For simplicity, handle a few keys at a time
+    for (const [key, value] of Object.entries(data)) {
+      if (key === "id" || key === "createdAt" || key === "updatedAt") continue;
+      
+      const valStr = typeof value === "boolean" ? value.toString() : String(value);
+      
+      // Upsert logic for Drizzle MySQL
+      await db.insert(content)
+        .values({ key: `settings.${key}`, value: valStr, type: "setting" })
+        .onDuplicateKeyUpdate({ set: { value: valStr } });
+    }
+    
+    return res.json({ success: true, message: "Settings updated successfully." });
+  } catch (error) {
+    console.error("Failed to update settings:", error);
+    return res.status(500).json({ success: false, error: "Failed to update settings" });
+  }
+});

@@ -15,12 +15,19 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+import cookieParser from 'cookie-parser';
 import { settingsRouter } from './api/settings';
+import authRouter from './api/auth';
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cookieParser());
 
+app.use('/api/auth', authRouter);
 app.use('/api/settings', settingsRouter);
+
+import adminJobsRouter from './api/admin/jobs';
+app.use('/api/admin/jobs', adminJobsRouter);
 
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {

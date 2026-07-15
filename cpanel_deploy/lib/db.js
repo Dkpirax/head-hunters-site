@@ -40,6 +40,10 @@ exports.db = void 0;
 const mysql2_1 = require("drizzle-orm/mysql2");
 const promise_1 = __importDefault(require("mysql2/promise"));
 const schema = __importStar(require("../db/schema"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
+// Load .env from the root directory
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../../.env') });
 // Create the connection pool
 const poolConnection = promise_1.default.createPool({
     uri: process.env.DATABASE_URL,
