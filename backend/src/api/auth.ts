@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { db } from '../lib/db';
+import { adminUser } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 
@@ -11,33 +14,37 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+  try {
+    const users = await db.select().from(adminUser).where(eq(adminUser.email, email)).limit(1);
+    
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-  if (email !== adminEmail) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    const isValidPassword = await bcrypt.compare(password, users[0].passwordHash);
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { email, role: users[0].role },
+      process.env.AUTH_SECRET || 'fallback-secret',
+      { expiresIn: '1d' }
+    );
+
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  const isValidPassword = await bcrypt.compare(password, adminPasswordHash || '');
-
-  if (!isValidPassword) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
-  const token = jwt.sign(
-    { email: adminEmail, role: 'admin' },
-    process.env.AUTH_SECRET || 'fallback-secret',
-    { expiresIn: '1d' }
-  );
-
-  res.cookie('auth_token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  });
-
-  return res.json({ success: true });
 });
 
 router.post('/logout', (req, res) => {
