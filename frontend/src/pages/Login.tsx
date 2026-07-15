@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { Eye, EyeOff, LogIn } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,21 +18,13 @@ export function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
+      await apiClient("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        setError(data.error || "Invalid credentials. Please check your email and password.");
-      } else {
-        navigate("/admin");
-      }
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      navigate("/admin");
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials. Please check your email and password.");
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Settings, LogOut, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -18,8 +19,7 @@ export function AdminLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
+    apiClient("/api/auth/session")
       .then((data) => {
         if (data.user) {
           setUser(data.user);
@@ -28,7 +28,7 @@ export function AdminLayout() {
   }, []);
 
   const handleSignOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await apiClient("/api/auth/logout", { method: "POST" });
     navigate("/login");
   };
 
@@ -38,11 +38,11 @@ export function AdminLayout() {
   const role = user?.role || "ADMIN";
 
   return (
-    <div className="min-h-screen bg-[#0f1110] flex">
+    <div className="min-h-screen bg-[#0f1110] flex relative z-10">
       {/* Sidebar */}
       <aside className="w-60 shrink-0 border-r border-white/6 flex flex-col bg-[#0B0B0C]">
         <div className="p-5 border-b border-white/6">
-          <Link to="/admin"><Logo variant="icon" color="green" size="md" /></Link>
+          <Link to="/admin"><Logo variant="mark" color="green" size="md" /></Link>
           <p className="text-[10px] text-white/25 font-semibold uppercase tracking-widest mt-2 ml-11">Admin portal</p>
         </div>
 

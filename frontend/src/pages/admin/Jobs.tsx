@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Flame, X, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { apiClient } from "@/lib/api";
 
 export function AdminJobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -12,11 +13,8 @@ export function AdminJobsPage() {
 
   const fetchJobs = async () => {
     try {
-      const res = await fetch("/api/admin/jobs");
-      if (res.ok) {
-        const data = await res.json();
-        setJobs(data);
-      }
+      const data = await apiClient("/api/admin/jobs");
+      setJobs(data);
     } catch (err) {
       console.error("Failed to fetch jobs");
     } finally {
@@ -39,15 +37,13 @@ export function AdminJobsPage() {
     
     try {
       if (isNew) {
-        await fetch("/api/admin/jobs", {
+        await apiClient("/api/admin/jobs", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(editing)
         });
       } else {
-        await fetch(`/api/admin/jobs/${editing.id}`, {
+        await apiClient(`/api/admin/jobs/${editing.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(editing)
         });
       }
@@ -63,7 +59,7 @@ export function AdminJobsPage() {
 
   const remove = async (id: string) => {
     try {
-      await fetch(`/api/admin/jobs/${id}`, { method: "DELETE" });
+      await apiClient(`/api/admin/jobs/${id}`, { method: "DELETE" });
       await fetchJobs();
       setDeletingId(null);
     } catch (err: any) {

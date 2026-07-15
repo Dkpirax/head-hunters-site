@@ -102,34 +102,52 @@ import { AdminLayout } from "./components/layout/AdminLayout";
 
 import { AdminJobsPage } from "./pages/admin/Jobs";
 import { AdminSettingsPage } from "./pages/admin/Settings";
+import { AdminDashboardPage } from "./pages/admin/Dashboard";
+import { AdminChatPage } from "./pages/admin/Chat";
+import { AdminInsightsPage } from "./pages/admin/Insights";
+import { AdminUsersPage } from "./pages/admin/Users";
+import { AdminEnquiriesPage } from "./pages/admin/Enquiries";
+import { AdminNotFound } from "./pages/admin/NotFound";
+
+import { SmoothScroll } from "./components/layout/SmoothScroll";
+import { FloatingButtons } from "./components/layout/FloatingButtons";
+import { JobsPage } from "./pages/Jobs";
+import { InsightsPage } from "./pages/Insights";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        
-        {/* Admin Routes */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          } 
-        >
-          <Route index element={
-            <div className="p-8 text-white">
-              <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-              <p>Welcome to the Head Hunters admin portal.</p>
-            </div>
-          } />
-          <Route path="jobs" element={<AdminJobsPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <SmoothScroll>
+      <div className="grain" aria-hidden="true" />
+      <div className="aurora" aria-hidden="true" />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          
+          {/* Admin Routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            } 
+          >
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="jobs" element={<AdminJobsPage />} />
+            <Route path="insights" element={<AdminInsightsPage />} />
+            <Route path="enquiries" element={<AdminEnquiriesPage />} />
+            <Route path="chat" element={<AdminChatPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="*" element={<AdminNotFound />} />
+          </Route>
+        </Routes>
+        <FloatingButtons chatbotEnabled={true} />
+      </BrowserRouter>
+    </SmoothScroll>
   );
 }
 

@@ -16,18 +16,34 @@ app.use(cors());
 app.use(express.json());
 
 import cookieParser from 'cookie-parser';
-import { settingsRouter } from './api/settings';
 import authRouter from './api/auth';
+import { settingsRouter } from './api/settings';
+import { dashboardRouter } from './api/dashboard';
+import adminJobsRouter from './api/admin/jobs';
+import { adminConversationsRouter } from './api/admin/conversations';
+import { adminArticlesRouter } from './api/admin/articles';
+import { adminEnquiriesRouter } from './api/admin/enquiries';
+import { adminUsersRouter } from './api/admin/users';
+import { enquiriesRouter } from './api/enquiries';
+import { chatRouter } from './api/chat';
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 
+// Public routes
 app.use('/api/auth', authRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/enquiries', enquiriesRouter);
+app.use('/api/chat', chatRouter);
 
-import adminJobsRouter from './api/admin/jobs';
+// Protected Admin Routes
+app.use('/api/admin/dashboard', dashboardRouter);
 app.use('/api/admin/jobs', adminJobsRouter);
+app.use('/api/admin/conversations', adminConversationsRouter);
+app.use('/api/admin/articles', adminArticlesRouter);
+app.use('/api/admin/enquiries', adminEnquiriesRouter);
+app.use('/api/admin/users', adminUsersRouter);
 
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {
@@ -56,14 +72,34 @@ app.get('/api/jobs', async (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/api/health', async (req, res) => {
+// Endpoint: Get all published articles
+app.get('/api/articles', async (req, res) => {
+  try {
+    const { eq } = await import('drizzle-orm');
+    const { article } = await import('./db/schema');
+    const articles = await db.select()
+      .from(article)
+      .where(eq(article.isPublished, true))
+      .orderBy(desc(article.createdAt));
+    res.json(articles);
+  } catch (error) {
+    console.error('Error fetching articles:', error);
+    res.status(500).json({ error: 'Failed to fetch articles' });
+  }
+});
+
+// Health check endpoints
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', server: 'running' });
+});
+
+app.get('/api/health/database', async (req, res) => {
   try {
     await db.execute(sql`SELECT 1`);
     res.json({ status: 'ok', database: 'connected' });
   } catch (error) {
-    console.error('Database connection failed:', error);
-    res.status(500).json({ error: 'Database connection failed' });
+    console.error('Database connection failed'); // Do not log raw errors or connection strings
+    res.status(503).json({ error: 'Database is temporarily unavailable' });
   }
 });
 

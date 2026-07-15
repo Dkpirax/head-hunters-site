@@ -4,12 +4,41 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send, X, RotateCcw, Bot, User } from "lucide-react";
 import { motion } from "framer-motion";
 // import { getOrCreateConversation, addChatMessage, closeConversation, requestHumanTakeover } from "@/app/actions/chat";
-// import { createEnquiry } from "@/app/actions/enquiries";
-const getOrCreateConversation = async (uuid: string): Promise<any> => ({ id: 'mock', status: 'BOT_ACTIVE', messages: [] });
-const addChatMessage = async (id: string, type: string, content: string): Promise<any> => ({ id: 'mock', createdAt: new Date() });
-const closeConversation = async (id: string, type: string): Promise<any> => ({});
-const requestHumanTakeover = async (id: string): Promise<any> => ({});
-const createEnquiry = async (data: any): Promise<any> => ({});
+import { apiClient } from "@/lib/api";
+
+const getOrCreateConversation = async (uuid: string): Promise<any> => {
+  return apiClient("/api/chat/conversations", {
+    method: "POST",
+    body: JSON.stringify({ visitorId: uuid })
+  });
+};
+
+const addChatMessage = async (id: string, type: string, content: string): Promise<any> => {
+  return apiClient(`/api/chat/conversations/${id}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ senderType: type, content })
+  });
+};
+
+const closeConversation = async (id: string, type: string): Promise<any> => {
+  return apiClient(`/api/chat/conversations/${id}/close`, {
+    method: "POST",
+    body: JSON.stringify({ closedBy: type })
+  });
+};
+
+const requestHumanTakeover = async (id: string): Promise<any> => {
+  return apiClient(`/api/chat/conversations/${id}/takeover`, {
+    method: "POST"
+  });
+};
+
+const createEnquiry = async (data: any): Promise<any> => {
+  return apiClient("/api/enquiries", {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
+};
 import { playSound } from "@/lib/sounds";
 type EnquiryType = "HIRING" | "CANDIDATE" | "GENERAL";
 type PrismaMessage = { id: string; senderType: string; content: string; createdAt: Date };

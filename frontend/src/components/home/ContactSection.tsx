@@ -5,8 +5,7 @@ import { useState } from "react";
 import { Send, CheckCircle, Mail, MessageCircle, Calendar, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Accordion } from "@/components/ui/Accordion";
-// import { createEnquiry } from "@/app/actions/enquiries";
-const createEnquiry = async (data: any): Promise<any> => ({});
+import { apiClient } from "@/lib/api";
 
 const FAQS = [
   { question: "How fast can Head Hunters respond to a staffing request?", answer: "Sales consultant response is designed around a 1-hour target, with quotes provided within 24 hours where the brief is clear and complete." },
@@ -45,12 +44,15 @@ export function ContactSection({ settings }: { settings: any }) {
       if (activeTab === "Hiring") type = "HIRING";
       else if (activeTab === "Candidate") type = "CANDIDATE";
 
-      await createEnquiry({
-        name,
-        email,
-        phone: phone || undefined,
-        type,
-        message,
+      await apiClient("/api/enquiries", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email,
+          phone: phone || undefined,
+          type,
+          message,
+        })
       });
 
       setSubmitted(true);

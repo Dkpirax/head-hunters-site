@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Save, FileText, ToggleLeft, Settings as SettingsIcon, CheckCircle, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiClient } from "@/lib/api";
 
 export function AdminSettingsPage() {
   const [formData, setFormData] = useState<any>(null);
@@ -10,12 +11,17 @@ export function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then(res => res.json())
-      .then(data => {
+    async function loadSettings() {
+      try {
+        const data = await apiClient("/api/settings");
         setFormData(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+    loadSettings();
   }, []);
 
   if (loading || !formData) {
@@ -33,12 +39,10 @@ export function AdminSettingsPage() {
     setStatus({ type: null, message: "" });
 
     try {
-      const res = await fetch("/api/settings", {
+      await apiClient("/api/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
       });
-      if (!res.ok) throw new Error("Failed to save");
       setStatus({ type: "success", message: "Settings saved successfully! Changes are now live." });
       setTimeout(() => setStatus({ type: null, message: "" }), 5000);
     } catch (err) {
