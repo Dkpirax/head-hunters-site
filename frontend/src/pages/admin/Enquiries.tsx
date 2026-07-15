@@ -51,6 +51,10 @@ export function AdminEnquiriesPage() {
   
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [replyStatus, setReplyStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [replyMessage, setReplyMessage] = useState("")
+;
 
   const [searchParams] = useSearchParams();
   const queryId = searchParams.get("id");
@@ -129,6 +133,29 @@ export function AdminEnquiriesPage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleSendReply = async () => {
+    if (!selected || !replyText.trim()) return;
+    setReplyStatus("sending");
+    try {
+      const result = await apiClient(`/api/admin/enquiries/${selected.id}/reply`, {
+        method: "POST",
+        body: JSON.stringify({ replyText }),
+      });
+      setReplyStatus(result.success ? "success" : "error");
+      setReplyMessage(result.message || (result.success ? "Reply sent!" : "Failed to send."));
+      if (result.success) {
+        setReplyText("");
+        // Update local status to ASSIGNED
+        setEnquiries((prev) => prev.map((x) => x.id === selected.id ? { ...x, status: "ASSIGNED" as EnquiryStatus } : x));
+        setSelected((prev: any) => prev ? { ...prev, status: "ASSIGNED" as EnquiryStatus } : null);
+        setTimeout(() => { setReplyStatus("idle"); setReplyMessage(""); }, 3000);
+      }
+    } catch (e: any) {
+      setReplyStatus("error");
+      setReplyMessage(e.message || "Failed to send reply");
     }
   };
 
@@ -284,7 +311,31 @@ export function AdminEnquiriesPage() {
                   </p>
                 </div>
 
-                <div className="flex gap-2 flex-wrap pt-4 border-t border-white/6 mt-auto">
+                <div className="flex gap-2 flex-wrap pt-4 border-t border-white/6 mt-auto flex-col">
+                  {/* In-app email reply */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-white/35 uppercase tracking-wider">Reply via email</p>
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder={`Write a reply to ${selected.name}...`}
+                      rows={3}
+                      className="w-full px-3 py-2.5 rounded-[10px] border border-white/8 bg-white/4 text-white placeholder:text-white/25 text-sm focus:border-[#04a891]/50 focus:outline-none resize-none transition-all"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSendReply}
+                        disabled={!replyText.trim() || replyStatus === "sending"}
+                        className="inline-flex items-center gap-2 h-9 px-4 rounded-[9px] bg-[#02695e] text-white text-sm font-semibold hover:bg-[#027d6f] disabled:bg-white/10 disabled:text-white/30 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        <Mail size={13} />
+                        {replyStatus === "sending" ? "Sending..." : "Send Reply"}
+                      </button>
+                      {replyStatus === "success" && <span className="text-xs text-[#04a891] font-medium">{replyMessage}</span>}
+                      {replyStatus === "error" && <span className="text-xs text-red-400 font-medium">{replyMessage}</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap pt-3 border-t border-white/6">
                   <a
                     href={`mailto:${selected.email}?subject=Head Hunters Enquiry Follow-up`}
                     className="inline-flex items-center gap-2 h-9 px-4 rounded-[9px] bg-[#02695e] text-white text-sm font-semibold hover:bg-[#027d6f] transition-colors"
@@ -314,12 +365,13 @@ export function AdminEnquiriesPage() {
                       <Archive size={13} /> Archive
                     </button>
                   )}
-                  <button
-                    onClick={() => handleDelete(selected.id)}
-                    className="inline-flex items-center gap-2 h-9 px-4 rounded-[9px] border border-red-500/20 bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500 hover:text-white transition-all cursor-pointer"
-                  >
-                    <Trash2 size={13} /> Delete
-                  </button>
+                    <button
+                      onClick={() => handleDelete(selected.id)}
+                      className="inline-flex items-center gap-2 h-9 px-4 rounded-[9px] border border-red-500/20 bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (

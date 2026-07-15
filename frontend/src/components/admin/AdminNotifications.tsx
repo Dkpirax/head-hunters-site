@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect, useRef } from "react";
 import { Bell, Inbox, MessageSquare, AlertCircle, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -34,26 +32,27 @@ export function AdminNotifications() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Load and poll notifications
+  // Load and poll notifications every 5s
   useEffect(() => {
     let active = true;
 
     async function fetchNotifications() {
       try {
-        const res = await fetch("/api/admin/notifications");
+        // Use cookies (same as rest of admin) - no Authorization header needed
+        const res = await fetch("/api/admin/notifications", {
+          credentials: "include",
+        });
         if (res.ok) {
           const data = await res.json();
-          if (active) {
-            setNotifications(data.notifications || []);
-          }
+          if (active) setNotifications(data.notifications || []);
         }
       } catch (e) {
-        console.error("Error fetching notifications:", e);
+        // Silently ignore - polling will retry
       }
     }
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000); // poll every 5s
+    const interval = setInterval(fetchNotifications, 5000);
 
     return () => {
       active = false;

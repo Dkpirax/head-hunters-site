@@ -93,3 +93,34 @@ export async function sendEnquiryConfirmation(data: { name: string, email: strin
     console.error("Resend confirmation error:", error);
   }
 }
+
+export async function sendEnquiryReply(data: { name: string, email: string, replyText: string, adminName: string }) {
+  if (!resend) {
+    console.warn('RESEND_API_KEY not configured. Cannot send reply.');
+    return { success: false, reason: 'RESEND_API_KEY environment variable is not configured' };
+  }
+  try {
+    const result = await resend.emails.send({
+      from: emailFrom,
+      to: data.email,
+      replyTo: adminEmail,
+      subject: `Re: Your Head Hunters Enquiry`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <span style="font-size: 24px; font-weight: 800; color: #02695e; letter-spacing: -0.02em;">HEAD HUNTERS</span>
+          </div>
+          <h2 style="color: #111827; font-size: 18px; font-weight: 700; margin-top: 0; margin-bottom: 16px;">Hi ${data.name},</h2>
+          <div style="margin-bottom: 24px; padding: 16px; background-color: #f9fafb; border-left: 4px solid #04a891; border-radius: 4px;">
+            <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #374151; white-space: pre-wrap;">${data.replyText}</p>
+          </div>
+          <p style="color: #6b7280; font-size: 13px;">Best regards,<br/><strong>${data.adminName}</strong><br/>Head Hunters Recruitment</p>
+        </div>
+      `
+    });
+    return { success: true, id: result.data?.id };
+  } catch (error: any) {
+    console.error("Resend reply error:", error);
+    return { success: false, reason: error?.message || 'Unknown email error' };
+  }
+}

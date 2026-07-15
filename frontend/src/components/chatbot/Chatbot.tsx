@@ -159,6 +159,9 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
   }, []);
 
   // Poll for new messages every 2 seconds
+  // CRITICAL: Only depend on conversationId. Never put messages.length in deps —
+  // that tears down/recreates the interval on every message, causing race conditions.
+  const messagesLengthRef = useRef<number>(0);
   useEffect(() => {
     if (!conversationId) return;
 
@@ -204,26 +207,25 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
             ];
           }
 
-          // Only update messages if lengths differ to avoid render flashing
-          if (polledMsgs.length !== messages.length) {
+          // Only update messages if the count changed — use a ref to avoid dep array issues
+          if (polledMsgs.length !== messagesLengthRef.current) {
+            messagesLengthRef.current = polledMsgs.length;
             setMessages(polledMsgs);
-            
-            // Clear unread badge marker
             localStorage.setItem("hh_chat_read_timestamp", Date.now().toString());
           }
         }
       } catch (e) {
-        console.error("Error polling chat messages:", e);
+        // Silently ignore poll errors - will retry on next interval
       }
     }
 
-    // Set interval polling
+    // Set interval polling — single stable interval for the conversation
     const interval = setInterval(poll, 2000);
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, [conversationId, messages.length]);
+  }, [conversationId]); // ONLY depend on conversationId
 
   // Scroll to bottom on new messages
   useEffect(() => {

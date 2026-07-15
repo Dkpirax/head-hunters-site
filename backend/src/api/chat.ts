@@ -1,50 +1,68 @@
 import { Router } from 'express';
 import { db } from '../lib/db';
-import { conversation, message } from '../db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { conversation, message, content } from '../db/schema';
+import { eq, and, desc, asc } from 'drizzle-orm';
 
 export const chatRouter = Router();
 
-// Get or Create Conversation
+// Get or Create Conversation — only returns ACTIVE (BOT_ACTIVE or HUMAN_ACTIVE) conversations.
+// If the existing conversation is CLOSED, creates a new one.
 chatRouter.post('/conversations', async (req, res) => {
   try {
     const { visitorId } = req.body;
     if (!visitorId) return res.status(400).json({ error: 'visitorId required' });
 
-    let conv = await db.query.conversation.findFirst({
-      where: eq(conversation.userId, visitorId),
-      with: {
-        messages: {
-          orderBy: (message, { asc }) => [asc(message.createdAt)]
-        }
-      }
-    });
+    // ONLY look for non-closed conversations
+    const existingConvs = await db.select()
+      .from(conversation)
+      .where(eq(conversation.userId, visitorId))
+      .orderBy(desc(conversation.updatedAt))
+      .limit(1);
 
-    if (!conv) {
-      const newConv = await db.insert(conversation).values({
-        userId: visitorId,
-        status: 'BOT_ACTIVE',
-      }).returning();
+    const existingConv = existingConvs[0];
+    
+    // If found and NOT closed, return it with messages
+    if (existingConv && existingConv.status !== 'CLOSED') {
+      const messages = await db.select()
+        .from(message)
+        .where(eq(message.conversationId, existingConv.id))
+        .orderBy(message.createdAt);
       
-      const botGreeting = await db.insert(message).values({
-        conversationId: newConv[0].id,
-        senderType: 'BOT',
-        content: "Hi there! I'm the Head Hunters assistant. How can I help you today?",
-      }).returning();
-
       return res.json({
-        id: newConv[0].id,
-        status: newConv[0].status,
-        messages: botGreeting
+        ...existingConv,
+        messages,
       });
     }
 
-    return res.json(conv);
+    // Otherwise create a fresh conversation
+    const settings = await db.select()
+      .from(content)
+      .where(eq(content.key, 'chatbot_greeting'))
+      .limit(1);
+    
+    const greetingText = settings[0]?.value || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
+    
+    const newConv = await db.insert(conversation).values({
+      userId: visitorId,
+      status: 'BOT_ACTIVE',
+    }).returning();
+    
+    const botGreeting = await db.insert(message).values({
+      conversationId: newConv[0].id,
+      senderType: 'BOT',
+      content: greetingText,
+    }).returning();
+
+    return res.json({
+      ...newConv[0],
+      messages: botGreeting
+    });
   } catch (error) {
     console.error('Failed to get/create conversation:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // Add Message
 chatRouter.post('/conversations/:id/messages', async (req, res) => {

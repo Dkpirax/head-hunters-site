@@ -24,6 +24,7 @@ import { adminConversationsRouter } from './api/admin/conversations';
 import { adminArticlesRouter } from './api/admin/articles';
 import { adminEnquiriesRouter } from './api/admin/enquiries';
 import { adminUsersRouter } from './api/admin/users';
+import { adminNotificationsRouter } from './api/admin/notifications';
 import { enquiriesRouter } from './api/enquiries';
 import { chatRouter } from './api/chat';
 
@@ -44,6 +45,7 @@ app.use('/api/admin/conversations', adminConversationsRouter);
 app.use('/api/admin/articles', adminArticlesRouter);
 app.use('/api/admin/enquiries', adminEnquiriesRouter);
 app.use('/api/admin/users', adminUsersRouter);
+app.use('/api/admin/notifications', adminNotificationsRouter);
 
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {
