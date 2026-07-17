@@ -5,9 +5,15 @@ import { db } from './lib/db';
 import { job } from './db/schema';
 import { desc, sql } from 'drizzle-orm';
 
+import fs from 'fs';
 import path from 'path';
 
-dotenv.config({ path: '../.env' });
+// Support both local dev (../.env) and production deploy (.env is in same dir)
+const envPath = fs.existsSync(path.join(__dirname, '.env')) 
+  ? path.join(__dirname, '.env')
+  : path.join(__dirname, '../../.env');
+
+dotenv.config({ path: envPath });
 
 const app = express();
 const port = process.env.PORT || 3001;

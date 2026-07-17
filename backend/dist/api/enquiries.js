@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.enquiriesRouter = void 0;
 const express_1 = require("express");
@@ -6,7 +9,7 @@ const db_1 = require("../lib/db");
 const schema_1 = require("../db/schema");
 const email_1 = require("../lib/email");
 const drizzle_orm_1 = require("drizzle-orm");
-const cuid2_1 = require("@paralleldrive/cuid2");
+const crypto_1 = __importDefault(require("crypto"));
 exports.enquiriesRouter = (0, express_1.Router)();
 // Simple in-memory IP rate limiter (10 per hour per IP)
 const ipCache = new Map();
@@ -38,7 +41,7 @@ exports.enquiriesRouter.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields for enquiry.' });
         }
         // Save to DB first
-        const enquiryId = (0, cuid2_1.createId)();
+        const enquiryId = crypto_1.default.randomUUID();
         await db_1.db.insert(schema_1.enquiry).values({
             id: enquiryId,
             name,

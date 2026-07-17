@@ -4,7 +4,7 @@ import { adminUser, permission, userPermission } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { requireAuth } from '../../middleware/auth';
 import bcrypt from 'bcryptjs';
-import { createId } from '@paralleldrive/cuid2';
+import crypto from "crypto";
 
 export const adminUsersRouter = Router();
 
@@ -61,7 +61,7 @@ adminUsersRouter.post('/', async (req, res) => {
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    const userId = createId();
+    const userId = crypto.randomUUID();
     await db.insert(adminUser).values({
       id: userId,
       email,

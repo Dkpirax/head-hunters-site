@@ -3,7 +3,7 @@ import { db } from '../../lib/db';
 import { article } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { requireAuth } from '../../middleware/auth';
-import { createId } from '@paralleldrive/cuid2';
+import crypto from "crypto";
 
 export const adminArticlesRouter = Router();
 
@@ -32,7 +32,7 @@ adminArticlesRouter.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Slug already exists' });
     }
     
-    const articleId = createId();
+    const articleId = crypto.randomUUID();
     await db.insert(article).values({
       id: articleId,
       title,

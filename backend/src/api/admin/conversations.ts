@@ -3,7 +3,7 @@ import { db } from '../../lib/db';
 import { conversation, message } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { requireAuth } from '../../middleware/auth';
-import { createId } from '@paralleldrive/cuid2';
+import crypto from "crypto";
 
 export const adminConversationsRouter = Router();
 
@@ -60,7 +60,7 @@ adminConversationsRouter.post('/:id/messages', async (req, res) => {
     }
     
     const newMsg = await db.transaction(async (tx) => {
-      const messageId = createId();
+      const messageId = crypto.randomUUID();
       await tx.insert(message).values({
         id: messageId,
         conversationId: id,

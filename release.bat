@@ -1,5 +1,5 @@
 @echo off
-REM Deploy script for head-hunters-site to Spaceship Server
+REM Deploy script for head-hunters-site to Spaceship Server (cPanel Node.js App)
 
 setlocal enabledelayedexpansion
 
@@ -9,7 +9,7 @@ echo ========================================
 echo.
 
 REM Clean up
-echo [1/4] Cleaning previous deployment files...
+echo [1/5] Cleaning previous deployment files...
 if exist "spaceship_deploy" (
     rmdir /s /q spaceship_deploy
 )
@@ -18,40 +18,41 @@ if exist "spaceship_deploy.zip" (
 )
 echo.
 
-REM Build Next.js app
-echo [2/4] Building Next.js application...
+REM Build Frontend
+echo [2/5] Building Vite Frontend...
+cd frontend
 call npm run build
 if errorlevel 1 (
-    echo ERROR: Next.js build failed!
+    echo ERROR: Frontend build failed!
     pause
     exit /b 1
 )
+cd ..
+echo.
+
+REM Build Backend
+echo [3/5] Building Express Backend...
+cd backend
+call npm run build
+if errorlevel 1 (
+    echo ERROR: Backend build failed!
+    pause
+    exit /b 1
+)
+cd ..
 echo.
 
 REM Create deploy structure
-echo [3/4] Creating deploy structure...
+echo [4/5] Creating deploy structure...
 mkdir spaceship_deploy 2>nul
+mkdir spaceship_deploy\public 2>nul
 
-REM Check if standalone build exists
-if not exist ".next\standalone" (
-    echo ERROR: Standalone build not found in .next\standalone.
-    echo Please ensure "output: 'standalone'" is configured in next.config.ts.
-    pause
-    exit /b 1
-)
+echo Copying backend files...
+xcopy /E /I /Y "backend\dist\*" "spaceship_deploy\" >nul
+copy /Y "backend\package.json" "spaceship_deploy\" >nul
 
-echo Copying standalone server files...
-xcopy /E /I /Y ".next\standalone" "spaceship_deploy\" >nul
-
-echo Copying public files...
-if exist "public" (
-    xcopy /E /I /Y "public" "spaceship_deploy\public\" >nul
-)
-
-echo Copying static files...
-if exist ".next\static" (
-    xcopy /E /I /Y ".next\static" "spaceship_deploy\.next\static\" >nul
-)
+echo Copying frontend files to public folder...
+xcopy /E /I /Y "frontend\dist\*" "spaceship_deploy\public\" >nul
 
 REM Copy environment file if exists
 if exist ".env" (
@@ -65,7 +66,7 @@ if exist ".env" (
 echo.
 
 REM Zip the deployment files
-echo [4/4] Zipping deploy files...
+echo [5/5] Zipping deploy files...
 tar -a -c -f spaceship_deploy.zip -C spaceship_deploy .
 if errorlevel 1 (
     echo ERROR: Zipping failed!
@@ -85,11 +86,12 @@ echo ========================================
 echo Deployment Preparation Complete!
 echo ========================================
 echo.
-echo 1. Your Next.js app has been built and packaged into 'spaceship_deploy.zip'.
+echo 1. Your app has been built and packaged into 'spaceship_deploy.zip'.
 echo 2. Upload and extract 'spaceship_deploy.zip' directly to your target folder on Spaceship.
 echo 3. In cPanel Setup Node.js App:
 echo    - Set 'Application root' to your target folder.
-echo    - Set 'Application startup file' to 'server.js'.
+echo    - Set 'Application startup file' to 'index.js'.
 echo    - Click 'Save' and 'Start App'.
+echo    - Make sure to run 'NPM Install' inside the cPanel interface.
 echo.
 pause

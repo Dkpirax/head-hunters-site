@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db } from '../lib/db';
 import { conversation, message, content } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { createId } from '@paralleldrive/cuid2';
+import crypto from "crypto";
 
 export const chatRouter = Router();
 
@@ -44,8 +44,8 @@ chatRouter.post('/conversations', async (req, res) => {
     const greetingText = settings[0]?.value || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
     
     const { newConv, botGreeting } = await db.transaction(async (tx) => {
-      const conversationId = createId();
-      const greetingId = createId();
+      const conversationId = crypto.randomUUID();
+      const greetingId = crypto.randomUUID();
 
       await tx.insert(conversation).values({
         id: conversationId,
@@ -93,7 +93,7 @@ chatRouter.post('/conversations/:id/messages', async (req, res) => {
     if (!content) return res.status(400).json({ error: 'Message content required' });
 
     const newMsg = await db.transaction(async (tx) => {
-      const messageId = createId();
+      const messageId = crypto.randomUUID();
       await tx.insert(message).values({
         id: messageId,
         conversationId: id,

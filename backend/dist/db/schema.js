@@ -1,13 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userPermissionRelations = exports.permissionRelations = exports.adminUserRelations = exports.messageRelations = exports.conversationRelations = exports.passwordResetToken = exports.userPermission = exports.permission = exports.employer = exports.candidate = exports.adminUser = exports.message = exports.conversation = exports.article = exports.content = exports.enquiry = exports.job = void 0;
 const mysql_core_1 = require("drizzle-orm/mysql-core");
 const drizzle_orm_1 = require("drizzle-orm");
-const cuid2_1 = require("@paralleldrive/cuid2");
+const crypto_1 = __importDefault(require("crypto"));
 const utcTimestamp = (name) => (0, mysql_core_1.timestamp)(name, { mode: 'date' });
 const utcDateTime = (name) => (0, mysql_core_1.datetime)(name, { mode: 'date' });
 exports.job = (0, mysql_core_1.mysqlTable)('Job', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     title: (0, mysql_core_1.varchar)('title', { length: 191 }).notNull(),
     location: (0, mysql_core_1.varchar)('location', { length: 191 }).notNull(),
     type: (0, mysql_core_1.varchar)('type', { length: 191 }).notNull(), // CASUAL, PERMANENT, REMOTE, EXECUTIVE
@@ -23,7 +26,7 @@ exports.job = (0, mysql_core_1.mysqlTable)('Job', {
     };
 });
 exports.enquiry = (0, mysql_core_1.mysqlTable)('Enquiry', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     name: (0, mysql_core_1.varchar)('name', { length: 191 }).notNull(),
     email: (0, mysql_core_1.varchar)('email', { length: 191 }).notNull(),
     phone: (0, mysql_core_1.varchar)('phone', { length: 191 }),
@@ -39,13 +42,13 @@ exports.enquiry = (0, mysql_core_1.mysqlTable)('Enquiry', {
     };
 });
 exports.content = (0, mysql_core_1.mysqlTable)('Content', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     key: (0, mysql_core_1.varchar)('key', { length: 191 }).notNull().unique(),
     value: (0, mysql_core_1.text)('value').notNull(),
     updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 exports.article = (0, mysql_core_1.mysqlTable)('Article', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     title: (0, mysql_core_1.varchar)('title', { length: 191 }).notNull(),
     slug: (0, mysql_core_1.varchar)('slug', { length: 191 }).notNull().unique(),
     category: (0, mysql_core_1.varchar)('category', { length: 191 }).notNull(),
@@ -56,7 +59,7 @@ exports.article = (0, mysql_core_1.mysqlTable)('Article', {
     updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 exports.conversation = (0, mysql_core_1.mysqlTable)('Conversation', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     userId: (0, mysql_core_1.varchar)('userId', { length: 191 }).notNull(),
     status: (0, mysql_core_1.varchar)('status', { length: 191 }).notNull(), // BOT_ACTIVE, HUMAN_ACTIVE, CLOSED
     takenBy: (0, mysql_core_1.varchar)('takenBy', { length: 191 }),
@@ -70,7 +73,7 @@ exports.conversation = (0, mysql_core_1.mysqlTable)('Conversation', {
     };
 });
 exports.message = (0, mysql_core_1.mysqlTable)('Message', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     conversationId: (0, mysql_core_1.varchar)('conversationId', { length: 191 }).notNull(),
     senderType: (0, mysql_core_1.varchar)('senderType', { length: 191 }).notNull(), // USER, ADMIN, BOT
     content: (0, mysql_core_1.text)('content').notNull(),
@@ -84,7 +87,7 @@ exports.message = (0, mysql_core_1.mysqlTable)('Message', {
     };
 });
 exports.adminUser = (0, mysql_core_1.mysqlTable)('AdminUser', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     email: (0, mysql_core_1.varchar)('email', { length: 191 }).notNull().unique(),
     passwordHash: (0, mysql_core_1.varchar)('passwordHash', { length: 191 }).notNull(),
     name: (0, mysql_core_1.varchar)('name', { length: 191 }),
@@ -97,7 +100,7 @@ exports.adminUser = (0, mysql_core_1.mysqlTable)('AdminUser', {
     };
 });
 exports.candidate = (0, mysql_core_1.mysqlTable)('Candidate', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     email: (0, mysql_core_1.varchar)('email', { length: 191 }).notNull().unique(),
     name: (0, mysql_core_1.varchar)('name', { length: 191 }),
     dateOfBirth: utcDateTime('dateOfBirth').notNull(),
@@ -110,7 +113,7 @@ exports.candidate = (0, mysql_core_1.mysqlTable)('Candidate', {
     };
 });
 exports.employer = (0, mysql_core_1.mysqlTable)('Employer', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     email: (0, mysql_core_1.varchar)('email', { length: 191 }).notNull().unique(),
     name: (0, mysql_core_1.varchar)('name', { length: 191 }),
     dateOfBirth: utcDateTime('dateOfBirth').notNull(),
@@ -123,7 +126,7 @@ exports.employer = (0, mysql_core_1.mysqlTable)('Employer', {
     };
 });
 exports.permission = (0, mysql_core_1.mysqlTable)('Permission', {
-    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => (0, cuid2_1.createId)()),
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     name: (0, mysql_core_1.varchar)('name', { length: 191 }).notNull().unique(),
     description: (0, mysql_core_1.varchar)('description', { length: 191 }),
 });

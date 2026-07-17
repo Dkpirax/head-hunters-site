@@ -42,8 +42,13 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const db_1 = require("./lib/db");
 const schema_1 = require("./db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
+const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-dotenv_1.default.config({ path: '../.env' });
+// Support both local dev (../.env) and production deploy (.env is in same dir)
+const envPath = fs_1.default.existsSync(path_1.default.join(__dirname, '.env'))
+    ? path_1.default.join(__dirname, '.env')
+    : path_1.default.join(__dirname, '../../.env');
+dotenv_1.default.config({ path: envPath });
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3001;
 app.use((0, cors_1.default)());

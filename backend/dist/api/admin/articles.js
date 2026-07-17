@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.adminArticlesRouter = void 0;
 const express_1 = require("express");
@@ -6,7 +9,7 @@ const db_1 = require("../../lib/db");
 const schema_1 = require("../../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const auth_1 = require("../../middleware/auth");
-const cuid2_1 = require("@paralleldrive/cuid2");
+const crypto_1 = __importDefault(require("crypto"));
 exports.adminArticlesRouter = (0, express_1.Router)();
 exports.adminArticlesRouter.use(auth_1.requireAuth);
 exports.adminArticlesRouter.get('/', async (req, res) => {
@@ -29,7 +32,7 @@ exports.adminArticlesRouter.post('/', async (req, res) => {
         if (existing.length > 0) {
             return res.status(400).json({ error: 'Slug already exists' });
         }
-        const articleId = (0, cuid2_1.createId)();
+        const articleId = crypto_1.default.randomUUID();
         await db_1.db.insert(schema_1.article).values({
             id: articleId,
             title,

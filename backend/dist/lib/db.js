@@ -42,8 +42,12 @@ const promise_1 = __importDefault(require("mysql2/promise"));
 const schema = __importStar(require("../db/schema"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
-// Load .env from the root directory
-dotenv_1.default.config({ path: path_1.default.resolve(__dirname, "../../../.env") });
+const fs_1 = __importDefault(require("fs"));
+// Support both production (../../.env) and local dev (../../../.env)
+const envPath = fs_1.default.existsSync(path_1.default.resolve(__dirname, "../../.env"))
+    ? path_1.default.resolve(__dirname, "../../.env")
+    : path_1.default.resolve(__dirname, "../../../.env");
+dotenv_1.default.config({ path: envPath });
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
     throw new Error("DATABASE_URL is required for MySQL connection");

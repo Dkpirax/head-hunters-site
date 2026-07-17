@@ -3,7 +3,7 @@ import { db } from '../lib/db';
 import { enquiry } from '../db/schema';
 import { sendEnquiryNotification, sendEnquiryConfirmation } from '../lib/email';
 import { eq } from 'drizzle-orm';
-import { createId } from '@paralleldrive/cuid2';
+import crypto from "crypto";
 
 export const enquiriesRouter = Router();
 
@@ -47,7 +47,7 @@ enquiriesRouter.post('/', async (req, res) => {
     }
 
     // Save to DB first
-    const enquiryId = createId();
+    const enquiryId = crypto.randomUUID();
     await db.insert(enquiry).values({
       id: enquiryId,
       name,

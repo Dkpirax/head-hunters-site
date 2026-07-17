@@ -4,8 +4,14 @@ import * as schema from "../db/schema";
 import dotenv from "dotenv";
 import path from "path";
 
-// Load .env from the root directory
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+import fs from "fs";
+
+// Support both production (../../.env) and local dev (../../../.env)
+const envPath = fs.existsSync(path.resolve(__dirname, "../../.env"))
+  ? path.resolve(__dirname, "../../.env")
+  : path.resolve(__dirname, "../../../.env");
+
+dotenv.config({ path: envPath });
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -29,5 +35,5 @@ const pool = mysql.createPool({
     : undefined,
 });
 
-export const db = drizzle(pool, { schema, mode: "default" });
+export const db = drizzle(pool, { schema, mode: "planetscale" });
 export { pool };

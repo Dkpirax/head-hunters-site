@@ -1,11 +1,14 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.chatRouter = void 0;
 const express_1 = require("express");
 const db_1 = require("../lib/db");
 const schema_1 = require("../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
-const cuid2_1 = require("@paralleldrive/cuid2");
+const crypto_1 = __importDefault(require("crypto"));
 exports.chatRouter = (0, express_1.Router)();
 // Get or Create Conversation — only returns ACTIVE (BOT_ACTIVE or HUMAN_ACTIVE) conversations.
 // If the existing conversation is CLOSED, creates a new one.
@@ -39,8 +42,8 @@ exports.chatRouter.post('/conversations', async (req, res) => {
             .limit(1);
         const greetingText = settings[0]?.value || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
         const { newConv, botGreeting } = await db_1.db.transaction(async (tx) => {
-            const conversationId = (0, cuid2_1.createId)();
-            const greetingId = (0, cuid2_1.createId)();
+            const conversationId = crypto_1.default.randomUUID();
+            const greetingId = crypto_1.default.randomUUID();
             await tx.insert(schema_1.conversation).values({
                 id: conversationId,
                 userId: visitorId,
@@ -80,7 +83,7 @@ exports.chatRouter.post('/conversations/:id/messages', async (req, res) => {
         if (!content)
             return res.status(400).json({ error: 'Message content required' });
         const newMsg = await db_1.db.transaction(async (tx) => {
-            const messageId = (0, cuid2_1.createId)();
+            const messageId = crypto_1.default.randomUUID();
             await tx.insert(schema_1.message).values({
                 id: messageId,
                 conversationId: id,

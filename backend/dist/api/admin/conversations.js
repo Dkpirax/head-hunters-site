@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.adminConversationsRouter = void 0;
 const express_1 = require("express");
@@ -6,7 +9,7 @@ const db_1 = require("../../lib/db");
 const schema_1 = require("../../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const auth_1 = require("../../middleware/auth");
-const cuid2_1 = require("@paralleldrive/cuid2");
+const crypto_1 = __importDefault(require("crypto"));
 exports.adminConversationsRouter = (0, express_1.Router)();
 exports.adminConversationsRouter.use(auth_1.requireAuth);
 exports.adminConversationsRouter.get('/', async (req, res) => {
@@ -56,7 +59,7 @@ exports.adminConversationsRouter.post('/:id/messages', async (req, res) => {
             return res.status(400).json({ error: 'Message content is required' });
         }
         const newMsg = await db_1.db.transaction(async (tx) => {
-            const messageId = (0, cuid2_1.createId)();
+            const messageId = crypto_1.default.randomUUID();
             await tx.insert(schema_1.message).values({
                 id: messageId,
                 conversationId: id,
