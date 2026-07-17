@@ -60,7 +60,7 @@ app.get('/api/jobs/latest', async (req, res) => {
     const jobs = await db.select()
       .from(job)
       .where(eq(job.status, "ACTIVE"))
-      .orderBy(desc(job.createdAt))
+      .orderBy(desc(job.isHot), desc(job.createdAt))
       .limit(3);
     res.json(jobs);
   } catch (error) {
@@ -72,11 +72,25 @@ app.get('/api/jobs/latest', async (req, res) => {
 // Example endpoint: Get all Jobs
 app.get('/api/jobs', async (req, res) => {
   try {
-    const jobs = await db.select().from(job).orderBy(desc(job.createdAt));
+    const { desc } = await import('drizzle-orm');
+    const jobs = await db.select().from(job).orderBy(desc(job.isHot), desc(job.createdAt));
     res.json(jobs);
   } catch (error) {
     console.error('Error fetching jobs:', error);
     res.status(500).json({ error: 'Failed to fetch jobs' });
+  }
+});
+
+// Endpoint: Get a single job by id
+app.get('/api/jobs/:id', async (req, res) => {
+  try {
+    const { eq } = await import('drizzle-orm');
+    const [foundJob] = await db.select().from(job).where(eq(job.id, req.params.id)).limit(1);
+    if (!foundJob) return res.status(404).json({ error: 'Job not found' });
+    res.json(foundJob);
+  } catch (error) {
+    console.error('Error fetching job:', error);
+    res.status(500).json({ error: 'Failed to fetch job' });
   }
 });
 

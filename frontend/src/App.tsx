@@ -112,6 +112,7 @@ import { AdminNotFound } from "./pages/admin/NotFound";
 import { SmoothScroll } from "./components/layout/SmoothScroll";
 import { FloatingButtons } from "./components/layout/FloatingButtons";
 import { JobsPage } from "./pages/Jobs";
+import { JobDetailPage } from "./pages/JobDetail";
 import { InsightsPage } from "./pages/Insights";
 import { InsightDetailPage } from "./pages/InsightDetail";
 
@@ -124,6 +125,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/insights" element={<InsightsPage />} />
           <Route path="/insights/:slug" element={<InsightDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
