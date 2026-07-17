@@ -36,17 +36,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.db = void 0;
+exports.pool = exports.db = void 0;
 const mysql2_1 = require("drizzle-orm/mysql2");
 const promise_1 = __importDefault(require("mysql2/promise"));
 const schema = __importStar(require("../db/schema"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
-// Load .env from the root directory
-dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../../.env') });
-// Create the connection pool
-const poolConnection = promise_1.default.createPool({
-    uri: process.env.DATABASE_URL,
+const fs_1 = __importDefault(require("fs"));
+const envPath = fs_1.default.existsSync(path_1.default.resolve(__dirname, "../.env"))
+    ? path_1.default.resolve(__dirname, "../.env")
+    : fs_1.default.existsSync(path_1.default.resolve(__dirname, "../../.env"))
+        ? path_1.default.resolve(__dirname, "../../.env")
+        : path_1.default.resolve(__dirname, "../../../.env");
+dotenv_1.default.config({ path: envPath });
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for MySQL connection");
+}
+const sslEnabled = process.env.DATABASE_SSL === "true" || process.env.MYSQL_SSL === "true";
+// Create one shared MySQL pool for the process.
+const pool = promise_1.default.createPool({
+    uri: databaseUrl,
+    waitForConnections: true,
+    connectionLimit: Number(process.env.DATABASE_POOL_LIMIT || 10),
+    timezone: "Z",
+    charset: "utf8mb4",
+    ssl: sslEnabled
+        ? {
+            rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== "false",
+        }
+        : undefined,
 });
-// Create and export the drizzle instance
-exports.db = (0, mysql2_1.drizzle)(poolConnection, { schema, mode: "default" });
+exports.pool = pool;
+exports.db = (0, mysql2_1.drizzle)(pool, { schema, mode: "planetscale" });

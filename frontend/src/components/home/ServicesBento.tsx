@@ -185,7 +185,7 @@ export function ServicesBento({ settings }: { settings: any }) {
                 <div className="relative">
                   {service.tags && (
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {service.tags.map((tag) => (
+                      {service.tags.map((tag: any) => (
                         <span
                           key={tag}
                           className="px-2.5 py-1 rounded-[6px] border border-white/10 text-white/60 text-xs font-medium"

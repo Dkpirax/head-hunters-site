@@ -6,10 +6,11 @@ import path from "path";
 
 import fs from "fs";
 
-// Support both production (../../.env) and local dev (../../../.env)
-const envPath = fs.existsSync(path.resolve(__dirname, "../../.env"))
-  ? path.resolve(__dirname, "../../.env")
-  : path.resolve(__dirname, "../../../.env");
+const envPath = fs.existsSync(path.resolve(__dirname, "../.env"))
+  ? path.resolve(__dirname, "../.env")
+  : fs.existsSync(path.resolve(__dirname, "../../.env"))
+    ? path.resolve(__dirname, "../../.env")
+    : path.resolve(__dirname, "../../../.env");
 
 dotenv.config({ path: envPath });
 

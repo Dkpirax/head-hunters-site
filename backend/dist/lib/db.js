@@ -43,10 +43,11 @@ const schema = __importStar(require("../db/schema"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-// Support both production (../../.env) and local dev (../../../.env)
-const envPath = fs_1.default.existsSync(path_1.default.resolve(__dirname, "../../.env"))
-    ? path_1.default.resolve(__dirname, "../../.env")
-    : path_1.default.resolve(__dirname, "../../../.env");
+const envPath = fs_1.default.existsSync(path_1.default.resolve(__dirname, "../.env"))
+    ? path_1.default.resolve(__dirname, "../.env")
+    : fs_1.default.existsSync(path_1.default.resolve(__dirname, "../../.env"))
+        ? path_1.default.resolve(__dirname, "../../.env")
+        : path_1.default.resolve(__dirname, "../../../.env");
 dotenv_1.default.config({ path: envPath });
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -67,4 +68,4 @@ const pool = promise_1.default.createPool({
         : undefined,
 });
 exports.pool = pool;
-exports.db = (0, mysql2_1.drizzle)(pool, { schema, mode: "default" });
+exports.db = (0, mysql2_1.drizzle)(pool, { schema, mode: "planetscale" });
