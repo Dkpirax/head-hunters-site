@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../../lib/db';
 import { conversation, message } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, desc, asc } from 'drizzle-orm';
 import { requireAuth } from '../../middleware/auth';
 import crypto from "crypto";
 
@@ -11,16 +11,22 @@ adminConversationsRouter.use(requireAuth);
 
 adminConversationsRouter.get('/', async (req, res) => {
   try {
-    const convs = await db.query.conversation.findMany({
-      where: (conversation, { inArray }) => inArray(conversation.status, ['BOT_ACTIVE', 'HUMAN_ACTIVE']),
-      with: {
-        messages: {
-          orderBy: (message, { asc }) => [asc(message.createdAt)],
-        },
-      },
-      orderBy: (conversation, { desc }) => [desc(conversation.updatedAt)],
-    });
-    return res.json(convs);
+    const convs = await db.select()
+      .from(conversation)
+      .where(inArray(conversation.status, ['BOT_ACTIVE', 'HUMAN_ACTIVE']))
+      .orderBy(desc(conversation.updatedAt));
+
+    const convIds = convs.map(c => c.id);
+    const allMessages = convIds.length > 0 
+      ? await db.select().from(message).where(inArray(message.conversationId, convIds)).orderBy(asc(message.createdAt))
+      : [];
+
+    const formattedConvs = convs.map(c => ({
+      ...c,
+      messages: allMessages.filter(m => m.conversationId === c.id)
+    }));
+
+    return res.json(formattedConvs);
   } catch (error) {
     console.error('Failed to fetch conversations:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -30,20 +36,15 @@ adminConversationsRouter.get('/', async (req, res) => {
 adminConversationsRouter.get('/:id/messages', async (req, res) => {
   try {
     const { id } = req.params;
-    const conv = await db.query.conversation.findFirst({
-      where: eq(conversation.id, id),
-      with: {
-        messages: {
-          orderBy: (message, { asc }) => [asc(message.createdAt)],
-        },
-      },
-    });
+    const [conv] = await db.select().from(conversation).where(eq(conversation.id, id)).limit(1);
     
     if (!conv) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
+
+    const msgs = await db.select().from(message).where(eq(message.conversationId, id)).orderBy(asc(message.createdAt));
     
-    return res.json(conv);
+    return res.json({ ...conv, messages: msgs });
   } catch (error) {
     console.error('Failed to fetch messages:', error);
     return res.status(500).json({ error: 'Internal server error' });

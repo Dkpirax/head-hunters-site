@@ -106,9 +106,13 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevStatusRef = useRef<string>("BOT_ACTIVE");
+  const hasInitializedRef = useRef(false);
 
   // Initialize UUID and load conversation
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+
     async function initChat() {
       let userUuid = localStorage.getItem("hh_user_uuid");
       if (!userUuid) {

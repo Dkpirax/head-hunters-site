@@ -96,6 +96,26 @@ app.get('/api/articles', async (req, res) => {
   }
 });
 
+// Endpoint: Get a single article by slug
+app.get('/api/articles/:slug', async (req, res) => {
+  try {
+    const { eq } = await import('drizzle-orm');
+    const { article } = await import('./db/schema');
+    const [foundArticle] = await db.select()
+      .from(article)
+      .where(eq(article.slug, req.params.slug))
+      .limit(1);
+      
+    if (!foundArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    res.json(foundArticle);
+  } catch (error) {
+    console.error('Error fetching article:', error);
+    res.status(500).json({ error: 'Failed to fetch article' });
+  }
+});
+
 // Health check endpoints
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', server: 'running' });

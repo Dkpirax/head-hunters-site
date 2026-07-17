@@ -12,18 +12,16 @@ adminUsersRouter.use(requireAuth);
 
 adminUsersRouter.get('/', async (req, res) => {
   try {
-    const users = await db.query.adminUser.findMany({
-      orderBy: (adminUser, { desc }) => [desc(adminUser.createdAt)],
-      with: {
-        permissions: {
-          with: {
-            permission: true
-          }
-        }
-      }
-    });
-
+    const users = await db.select().from(adminUser).orderBy(desc(adminUser.createdAt));
+    
     const allPermissions = await db.select().from(permission);
+    
+    const userPerms = await db.select({
+      userId: userPermission.userId,
+      permissionName: permission.name,
+    })
+    .from(userPermission)
+    .innerJoin(permission, eq(userPermission.permissionId, permission.id));
 
     // Format like old actions
     const formattedUsers = users.map(u => ({
@@ -32,7 +30,7 @@ adminUsersRouter.get('/', async (req, res) => {
       name: u.name,
       role: u.role,
       createdAt: u.createdAt,
-      permissions: u.permissions.map(p => p.permission.name)
+      permissions: userPerms.filter(p => p.userId === u.id).map(p => p.permissionName)
     }));
 
     return res.json({

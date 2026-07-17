@@ -113,6 +113,7 @@ import { SmoothScroll } from "./components/layout/SmoothScroll";
 import { FloatingButtons } from "./components/layout/FloatingButtons";
 import { JobsPage } from "./pages/Jobs";
 import { InsightsPage } from "./pages/Insights";
+import { InsightDetailPage } from "./pages/InsightDetail";
 
 function App() {
   return (
@@ -124,6 +125,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/insights/:slug" element={<InsightDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           
           {/* Admin Routes */}

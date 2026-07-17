@@ -158,23 +158,19 @@ chatRouter.get('/messages', async (req, res) => {
       return res.status(400).json({ error: 'conversationId required' });
     }
 
-    const conv = await db.query.conversation.findFirst({
-      where: eq(conversation.id, conversationId),
-      with: {
-        messages: {
-          orderBy: (message, { asc }) => [asc(message.createdAt)]
-        }
-      }
-    });
+    const { asc } = await import('drizzle-orm');
+    const [conv] = await db.select().from(conversation).where(eq(conversation.id, conversationId)).limit(1);
 
     if (!conv) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
 
+    const msgs = await db.select().from(message).where(eq(message.conversationId, conversationId)).orderBy(asc(message.createdAt));
+
     return res.json({
       status: conv.status,
       takenBy: conv.takenBy,
-      messages: conv.messages
+      messages: msgs
     });
   } catch (error) {
     console.error('Failed to poll messages:', error);
