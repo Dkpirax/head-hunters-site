@@ -15,7 +15,7 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const SERVICES = [
+const SERVICES: any[] = [
   {
     icon: Target,
     title: "Executive Search",
@@ -141,11 +141,11 @@ export function ServicesBento({ settings }: { settings: any }) {
 
       {/* Bento grid */}
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 lg:px-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(220px,auto)] gap-3.5 grid-flow-row-dense">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(180px,auto)] gap-3.5 grid-flow-row-dense">
           {SERVICES.map((service, i) => {
             if (service.type === "image") {
               return (
-                <BentoCard key={i} wide={service.wide} className="!p-0 min-h-[260px]">
+                <BentoCard key={i} wide={service.wide} className="!p-0 min-h-[180px]">
                   <div className="relative h-full w-full overflow-hidden rounded-[14px]">
                     <img
                       src={service.image}
