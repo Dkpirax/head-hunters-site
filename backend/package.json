@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
     "db:migrate:data": "tsx src/scripts/migrate-postgres-to-mysql.ts",
-    "seed:admin": "tsx src/scripts/seed-admin.ts"
+    "seed:admin": "tsx src/scripts/seed-admin.ts",
+    "seed:admin:prod": "node scripts/seed-admin.js"
   },
   "keywords": [],
   "author": "",
