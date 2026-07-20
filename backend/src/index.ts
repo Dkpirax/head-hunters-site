@@ -15,10 +15,27 @@ const envPath = fs.existsSync(path.join(__dirname, '.env'))
 
 dotenv.config({ path: envPath });
 
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.VISITOR_TOKEN_SECRET || process.env.VISITOR_TOKEN_SECRET.length < 32) {
+    console.error("FATAL: VISITOR_TOKEN_SECRET is missing or weak in production. Must be at least 32 characters.");
+    process.exit(1);
+  }
+}
+
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors());
+const allowedOrigins = process.env.NEXT_PUBLIC_SITE_URL ? [process.env.NEXT_PUBLIC_SITE_URL] : ['http://localhost:3000'];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 import cookieParser from 'cookie-parser';
@@ -31,6 +48,8 @@ import { adminArticlesRouter } from './api/admin/articles';
 import { adminEnquiriesRouter } from './api/admin/enquiries';
 import { adminUsersRouter } from './api/admin/users';
 import { adminNotificationsRouter } from './api/admin/notifications';
+import { aiSettingsRouter } from './api/admin/ai-settings';
+import { knowledgeRouter } from './api/admin/knowledge';
 import { enquiriesRouter } from './api/enquiries';
 import { chatRouter } from './api/chat';
 
@@ -52,6 +71,8 @@ app.use('/api/admin/articles', adminArticlesRouter);
 app.use('/api/admin/enquiries', adminEnquiriesRouter);
 app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/admin/notifications', adminNotificationsRouter);
+app.use('/api/admin/ai-settings', aiSettingsRouter);
+app.use('/api/admin/knowledge', knowledgeRouter);
 
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {

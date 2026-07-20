@@ -10,8 +10,8 @@ import {
 } from "framer-motion";
 
 const STATS = [
-  { value: 30, suffix: "+", label: "Years of recruitment history" },
-  { value: 3, suffix: "", label: "Country workforce footprint" },
+  { value: 8, suffix: "+", label: "Years of industry experience" },
+  { value: 100, suffix: "%", label: "Local Sri Lankan expertise" },
   { value: 1, suffix: "h", label: "Response standard" },
   { value: 24, suffix: "h", label: "Quote target" },
   { value: 48, suffix: "h", label: "Worker update target" },
@@ -49,6 +49,11 @@ export function ProofStrip() {
   return (
     <section className="bg-[#f2f3ef] border-y border-black/6 py-10" aria-label="Trust signals">
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 lg:px-12">
+        <div className="mb-6 text-center">
+          <p className="text-sm font-semibold text-[#111413]/70">
+            Backed by a Switzerland-based parent company (Pending Legal Approval)
+          </p>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {STATS.map((stat, i) => (
             <motion.div

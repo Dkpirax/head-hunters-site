@@ -1,37 +1,38 @@
 import { Link } from "react-router-dom";
-import { Mail, MessageCircle, CalendarDays, ArrowUpRight } from "lucide-react";
+import { Mail, MessageCircle, Phone, ArrowUpRight, MapPin } from "lucide-react";
 import { NavLogo } from "@/components/ui/Logo";
 
 const footerLinks = {
   Services: [
-    { label: "Executive Search", href: "/#services" },
-    { label: "Permanent Placements", href: "/#services" },
-    { label: "Labour Hire", href: "/#services" },
-    { label: "Remote Staffing", href: "/#services" },
-    { label: "Payroll & Bookkeeping", href: "/#services" },
+    { label: "Permanent Recruitment", href: "/services" },
+    { label: "Executive Search", href: "/services" },
+    { label: "Recruitment Process Outsourcing", href: "/services" },
+    { label: "HR Consulting", href: "/services" },
   ],
   Pathways: [
-    { label: "Looking for Staff", href: "/#staff" },
-    { label: "Looking for a Job", href: "/jobs" },
-    { label: "Submit Your CV", href: "/#jobs" },
-    { label: "Contact Us", href: "/#contact" },
+    { label: "Looking for Staff", href: "/employers" },
+    { label: "Find a Job", href: "/candidates" },
+    { label: "Register Your CV", href: "/candidates" },
+    { label: "Contact Us", href: "/contact" },
   ],
   Trust: [
-    { label: "Service Standards", href: "/#standards" },
-    { label: "Job Scam Awareness", href: "/#resources" },
+    { label: "About Us", href: "/about" },
+    { label: "Job Scam Awareness", href: "/job-scam-awareness" },
     { label: "FAQs", href: "/#faq" },
-    { label: "Insights", href: "/#resources" },
+    { label: "Insights", href: "/insights" },
   ],
 };
 
 const defaultFooterSettings = {
-  notifyEmails: "hello@headhunters.com.au",
-  whatsappNumber: "",
-  calendlyLink: "",
+  notifyEmails: "info@headhunters.lk",
+  whatsappNumber: "94773975048",
+  phonePrimary: "+94 77 397 5048",
+  phoneSecondary: "+94 77 400 1484",
+  address: "No. 06, Pinto Place, Colombo 06, Sri Lanka (00600)",
   linkedin_url: "https://linkedin.com/company/headhunters",
   twitter_url: "https://twitter.com/headhunters",
   facebook_url: "https://facebook.com/headhunters",
-  copyright_text: "© 2026 Head Hunters. All rights reserved.",
+  copyright_text: "© 2026 Headhunters.lk. All rights reserved.",
   ios_app_url: "",
   android_app_url: "",
 };
@@ -42,7 +43,6 @@ export function Footer({ settings }: { settings?: any }) {
     ...settings,
     notifyEmails: settings?.email_notify_list || settings?.notifyEmails || defaultFooterSettings.notifyEmails,
     whatsappNumber: settings?.integration_whatsapp_number || settings?.whatsappNumber || defaultFooterSettings.whatsappNumber,
-    calendlyLink: settings?.integration_calendly_url || settings?.calendlyLink || defaultFooterSettings.calendlyLink,
   };
 
   return (
@@ -60,17 +60,17 @@ export function Footer({ settings }: { settings?: any }) {
           </div>
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <Link
-              to="/#contact"
+              to="/employers"
               className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] bg-[#02695e] text-white text-sm font-semibold transition-all hover:bg-[#027d6f] hover:shadow-[0_12px_32px_rgba(2,105,94,0.4)]"
             >
-              Talk to a consultant
+              Request Staff
               <ArrowUpRight size={16} />
             </Link>
             <Link
-              to="/jobs"
+              to="/candidates"
               className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] border border-white/12 bg-white/6 text-white text-sm font-semibold transition-all hover:bg-white/10"
             >
-              Browse jobs
+              Find Jobs
             </Link>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function Footer({ settings }: { settings?: any }) {
               <NavLogo />
             </Link>
             <p className="text-sm text-white/45 leading-relaxed max-w-[260px]">
-              A modern recruitment partner built around people, precision and progress. Serving Australia, New Zealand and Sri Lanka.
+              A Sri Lankan recruitment and HR services company supported by a Switzerland-based parent company with eight years of industry experience. (Pending Legal Approval)
             </p>
             <div className="space-y-2.5">
               <a
@@ -96,19 +96,31 @@ export function Footer({ settings }: { settings?: any }) {
                 {s.notifyEmails}
               </a>
               <a
-                href={s.whatsappNumber ? `https://wa.me/${s.whatsappNumber.replace(/[^0-9]/g, "")}` : "/#contact"}
+                href={`https://wa.me/${s.whatsappNumber.replace(/[^0-9]/g, "")}`}
+                target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
               >
                 <MessageCircle size={14} className="text-[#04a891] shrink-0" />
                 WhatsApp support
               </a>
               <a
-                href={s.calendlyLink || "/#contact"}
+                href={`tel:${s.phonePrimary.replace(/[^0-9+]/g, "")}`}
                 className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
               >
-                <CalendarDays size={14} className="text-[#04a891] shrink-0" />
-                Book a call
+                <Phone size={14} className="text-[#04a891] shrink-0" />
+                {s.phonePrimary}
               </a>
+              <a
+                href={`tel:${s.phoneSecondary.replace(/[^0-9+]/g, "")}`}
+                className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
+              >
+                <Phone size={14} className="text-[#04a891] shrink-0" />
+                {s.phoneSecondary}
+              </a>
+              <div className="flex items-start gap-2.5 text-sm text-white/50 pt-1">
+                <MapPin size={14} className="text-[#04a891] shrink-0 mt-0.5" />
+                <span className="leading-snug">{s.address}</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-4 pt-2 border-t border-white/4 max-w-[260px]">
@@ -173,14 +185,12 @@ export function Footer({ settings }: { settings?: any }) {
         <div className="max-w-[1200px] mx-auto px-5 py-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/28">
           <p>{s.copyright_text}</p>
           <div className="flex items-center gap-6">
-            <Link to="/privacy" className="hover:text-white/60 transition-colors">
+            <Link to="/privacy-policy" className="hover:text-white/60 transition-colors">
               Privacy Policy
             </Link>
-            <Link to="/terms" className="hover:text-white/60 transition-colors">
+            <Link to="/terms-and-conditions" className="hover:text-white/60 transition-colors">
               Terms of Service
             </Link>
-            <span className="text-white/20">|</span>
-            <span>Branding by Fenra</span>
           </div>
         </div>
       </div>

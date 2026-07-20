@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, text, boolean, timestamp, datetime, primaryKey, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, boolean, timestamp, datetime, primaryKey, index, int, float } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 import crypto from 'crypto';
 
@@ -15,6 +15,7 @@ export const job = mysqlTable('Job', {
   isHot: boolean('isHot').notNull().default(false),
   createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
   updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
+
 }, (table) => {
   return {
     statusIdx: index('job_status_idx').on(table.status),
@@ -58,6 +59,38 @@ export const article = mysqlTable('Article', {
   updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
 
+
+export const knowledgeDocument = mysqlTable('KnowledgeDocument', {
+  id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: varchar('title', { length: 191 }).notNull(),
+  fileName: varchar('fileName', { length: 191 }).notNull(),
+  version: varchar('version', { length: 191 }).notNull(),
+  status: varchar('status', { length: 191 }).notNull(), // DRAFT, PROCESSING, INDEXED, APPROVED, INACTIVE, FAILED
+  checksum: varchar('checksum', { length: 191 }).notNull(),
+  uploadedAt: utcTimestamp('uploadedAt').notNull().defaultNow(),
+  uploadedBy: varchar('uploadedBy', { length: 191 }),
+  indexedAt: utcTimestamp('indexedAt'),
+});
+
+export const knowledgeChunk = mysqlTable('KnowledgeChunk', {
+  id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  documentId: varchar('documentId', { length: 191 }).notNull(),
+  documentVersion: varchar('documentVersion', { length: 191 }).notNull(),
+  sectionTitle: varchar('sectionTitle', { length: 191 }),
+  pageNumber: int('pageNumber'),
+  chunkIndex: int('chunkIndex').notNull(),
+  contentHash: varchar('contentHash', { length: 191 }).notNull(),
+  tokenCount: int('tokenCount').notNull(),
+  vectorRecordId: varchar('vectorRecordId', { length: 191 }).notNull(),
+  status: varchar('status', { length: 191 }).notNull().default('ACTIVE'),
+  createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
+}, (table) => {
+  return {
+    documentIdIdx: index('knowledge_chunk_document_id_idx').on(table.documentId),
+    vectorRecordIdIdx: index('knowledge_chunk_vector_record_id_idx').on(table.vectorRecordId),
+  };
+});
+
 export const conversation = mysqlTable('Conversation', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: varchar('userId', { length: 191 }).notNull(),
@@ -66,6 +99,13 @@ export const conversation = mysqlTable('Conversation', {
   needsHuman: boolean('needsHuman').notNull().default(false),
   createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
   updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
+  mode: varchar('mode', { length: 191 }), // AI, HUMAN, CLOSED
+  chatStatus: varchar('chatStatus', { length: 191 }), // OPEN, WAITING_FOR_ADMIN, RESOLVED
+  assignedAdminId: varchar('assignedAdminId', { length: 191 }),
+  aiModel: varchar('aiModel', { length: 191 }),
+  knowledgeDocumentVersion: varchar('knowledgeDocumentVersion', { length: 191 }),
+  lastRetrievalScore: float('lastRetrievalScore'),
+  handoffReason: text('handoffReason'),
 }, (table) => {
   return {
     statusIdx: index('conversation_status_idx').on(table.status),
@@ -80,6 +120,12 @@ export const message = mysqlTable('Message', {
   content: text('content').notNull(),
   createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
   isReadByAdmin: boolean('isReadByAdmin').notNull().default(false),
+  sender: varchar('sender', { length: 191 }), // USER, AI, ADMIN, SYSTEM
+  grounded: boolean('grounded'),
+  retrievedChunkIds: text('retrievedChunkIds'),
+  modelName: varchar('modelName', { length: 191 }),
+  latencyMs: int('latencyMs'),
+  errorCode: varchar('errorCode', { length: 191 }),
 }, (table) => {
   return {
     conversationIdIdx: index('message_conversation_id_idx').on(table.conversationId),

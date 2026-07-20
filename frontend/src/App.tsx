@@ -107,6 +107,8 @@ import { AdminChatPage } from "./pages/admin/Chat";
 import { AdminInsightsPage } from "./pages/admin/Insights";
 import { AdminUsersPage } from "./pages/admin/Users";
 import { AdminEnquiriesPage } from "./pages/admin/Enquiries";
+import { AdminAISettingsPage } from "./pages/admin/AISettings";
+import { AdminKnowledgePage } from "./pages/admin/Knowledge";
 import { AdminNotFound } from "./pages/admin/NotFound";
 
 import { SmoothScroll } from "./components/layout/SmoothScroll";
@@ -116,6 +118,16 @@ import { JobDetailPage } from "./pages/JobDetail";
 import { InsightsPage } from "./pages/Insights";
 import { InsightDetailPage } from "./pages/InsightDetail";
 
+import { AboutPage } from "./pages/About";
+import { ServicesPage } from "./pages/Services";
+import { EmployersPage } from "./pages/Employers";
+import { CandidatesPage } from "./pages/Candidates";
+import { ContactPage } from "./pages/Contact";
+import { IndustriesPage } from "./pages/Industries";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicy";
+import { TermsAndConditionsPage } from "./pages/TermsAndConditions";
+import { JobScamAwarenessPage } from "./pages/JobScamAwareness";
+
 function App() {
   return (
     <SmoothScroll>
@@ -124,6 +136,15 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/employers" element={<EmployersPage />} />
+          <Route path="/candidates" element={<CandidatesPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/industries" element={<IndustriesPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+          <Route path="/job-scam-awareness" element={<JobScamAwarenessPage />} />
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/insights" element={<InsightsPage />} />
@@ -146,6 +167,8 @@ function App() {
             <Route path="chat" element={<AdminChatPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="ai-settings" element={<AdminAISettingsPage />} />
+            <Route path="knowledge" element={<AdminKnowledgePage />} />
             <Route path="*" element={<AdminNotFound />} />
           </Route>
         </Routes>

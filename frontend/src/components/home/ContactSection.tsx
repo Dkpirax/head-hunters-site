@@ -8,12 +8,11 @@ import { Accordion } from "@/components/ui/Accordion";
 import { apiClient } from "@/lib/api";
 
 const FAQS = [
-  { question: "How fast can Head Hunters respond to a staffing request?", answer: "Sales consultant response is designed around a 1-hour target, with quotes provided within 24 hours where the brief is clear and complete." },
+  { question: "How fast can Headhunters.lk respond to a staffing request?", answer: "Sales consultant response is designed around a 1-hour target, with quotes provided within 24 hours where the brief is clear and complete." },
   { question: "Can candidates upload a CV directly?", answer: "Yes. The candidate pathway includes CV upload, online registration, job alerts, career resources and WhatsApp connection options." },
-  { question: "Which services are supported?", answer: "Executive search, permanent recruitment, casual labour hire, casual-to-permanent conversion, remote staffing solutions, payroll and bookkeeping support across Australia, New Zealand and Sri Lanka." },
+  { question: "Which services are supported?", answer: "Executive search, permanent recruitment, recruitment process outsourcing (RPO), and HR consulting across Sri Lanka." },
   { question: "Does the platform connect to recruitment systems?", answer: "The platform is designed to integrate with Bullhorn, FoundU, Google Reviews, live chat, Calendly, job alerts and CRM handoff workflows." },
-  { question: "How does casual-to-permanent conversion work?", answer: "You start with a flexible casual arrangement. Once you've seen a worker perform, we handle the conversion to permanent employment — paperwork, terms and all." },
-  { question: "What is the recruitment fraud policy?", answer: "Head Hunters will never ask candidates for payment to apply for a role. If you receive a suspicious request using our name, contact us directly to verify." },
+  { question: "What is the recruitment fraud policy?", answer: "Headhunters.lk will never ask candidates for payment to apply for a role. If you receive a suspicious request using our name, contact us directly to verify." },
 ];
 
 type Tab = "Hiring" | "Candidate" | "General";
@@ -24,8 +23,8 @@ export function ContactSection({ settings }: { settings: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const contactTitle = settings?.contact_title || settings?.contactTitle || "Let’s Talk";
-  const notifyEmails = settings?.email_notify_list || settings?.notifyEmails || "hello@headhunters.com.au";
-  const whatsappNumber = settings?.integration_whatsapp_number || settings?.whatsappNumber || "";
+  const notifyEmails = settings?.email_notify_list || settings?.notifyEmails || "info@headhunters.lk";
+  const whatsappNumber = settings?.integration_whatsapp_number || settings?.whatsappNumber || "94773975048";
   const calendlyLink = settings?.integration_calendly_url || settings?.calendlyLink || "";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -138,7 +137,7 @@ export function ContactSection({ settings }: { settings: any }) {
                 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
                 viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }}>
                 <Lock size={14} className="text-[#04a891] shrink-0 mt-0.5" />
-                <span>Recruitment fraud notice: Head Hunters will never ask candidates for payment to apply for a role. Report suspicious activity immediately.</span>
+                <span>Recruitment fraud notice: Headhunters.lk will never ask candidates for payment to apply for a role. Report suspicious activity immediately.</span>
               </motion.div>
             </div>
 
@@ -180,7 +179,7 @@ export function ContactSection({ settings }: { settings: any }) {
                   {[
                     { id: "contact-name", label: "Name", type: "text", placeholder: "Your full name", required: true },
                     { id: "contact-email", label: "Email", type: "email", placeholder: "you@company.com", required: true },
-                    { id: "contact-phone", label: "Phone (optional)", type: "tel", placeholder: "+61 4xx xxx xxx", required: false },
+                    { id: "contact-phone", label: "Phone (optional)", type: "tel", placeholder: "+94 77 xxx xxxx", required: false },
                   ].map((field) => (
                     <div key={field.id}>
                       <label htmlFor={field.id} className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">

@@ -4,8 +4,6 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 const REGIONS = [
-  { name: "Australia", desc: "Permanent, casual, executive and remote staffing solutions.", x: "78%", y: "72%" },
-  { name: "New Zealand", desc: "Workforce support aligned to NZ employment conditions.", x: "85%", y: "80%" },
   { name: "Sri Lanka", desc: "Offshore admin, VA, bookkeeping and customer service teams.", x: "62%", y: "52%" },
 ];
 
@@ -134,8 +132,6 @@ function CobeGlobe() {
   }, []);
 
   const markers = [
-    { lat: -25.2744, lng: 133.7751, label: "Australia" },
-    { lat: -40.9006, lng: 174.8860, label: "New Zealand" },
     { lat: 7.8731, lng: 80.7718, label: "Sri Lanka" }
   ];
 

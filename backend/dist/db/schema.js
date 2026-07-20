@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userPermissionRelations = exports.permissionRelations = exports.adminUserRelations = exports.messageRelations = exports.conversationRelations = exports.passwordResetToken = exports.userPermission = exports.permission = exports.employer = exports.candidate = exports.adminUser = exports.message = exports.conversation = exports.article = exports.content = exports.enquiry = exports.job = void 0;
+exports.userPermissionRelations = exports.permissionRelations = exports.adminUserRelations = exports.messageRelations = exports.conversationRelations = exports.passwordResetToken = exports.userPermission = exports.permission = exports.employer = exports.candidate = exports.adminUser = exports.message = exports.conversation = exports.knowledgeChunk = exports.knowledgeDocument = exports.article = exports.content = exports.enquiry = exports.job = void 0;
 const mysql_core_1 = require("drizzle-orm/mysql-core");
 const drizzle_orm_1 = require("drizzle-orm");
 const crypto_1 = __importDefault(require("crypto"));
@@ -58,6 +58,35 @@ exports.article = (0, mysql_core_1.mysqlTable)('Article', {
     createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
     updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 });
+exports.knowledgeDocument = (0, mysql_core_1.mysqlTable)('KnowledgeDocument', {
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
+    title: (0, mysql_core_1.varchar)('title', { length: 191 }).notNull(),
+    fileName: (0, mysql_core_1.varchar)('fileName', { length: 191 }).notNull(),
+    version: (0, mysql_core_1.varchar)('version', { length: 191 }).notNull(),
+    status: (0, mysql_core_1.varchar)('status', { length: 191 }).notNull(), // DRAFT, PROCESSING, INDEXED, APPROVED, INACTIVE, FAILED
+    checksum: (0, mysql_core_1.varchar)('checksum', { length: 191 }).notNull(),
+    uploadedAt: utcTimestamp('uploadedAt').notNull().defaultNow(),
+    uploadedBy: (0, mysql_core_1.varchar)('uploadedBy', { length: 191 }),
+    indexedAt: utcTimestamp('indexedAt'),
+});
+exports.knowledgeChunk = (0, mysql_core_1.mysqlTable)('KnowledgeChunk', {
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
+    documentId: (0, mysql_core_1.varchar)('documentId', { length: 191 }).notNull(),
+    documentVersion: (0, mysql_core_1.varchar)('documentVersion', { length: 191 }).notNull(),
+    sectionTitle: (0, mysql_core_1.varchar)('sectionTitle', { length: 191 }),
+    pageNumber: (0, mysql_core_1.int)('pageNumber'),
+    chunkIndex: (0, mysql_core_1.int)('chunkIndex').notNull(),
+    contentHash: (0, mysql_core_1.varchar)('contentHash', { length: 191 }).notNull(),
+    tokenCount: (0, mysql_core_1.int)('tokenCount').notNull(),
+    vectorRecordId: (0, mysql_core_1.varchar)('vectorRecordId', { length: 191 }).notNull(),
+    status: (0, mysql_core_1.varchar)('status', { length: 191 }).notNull().default('ACTIVE'),
+    createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
+}, (table) => {
+    return {
+        documentIdIdx: (0, mysql_core_1.index)('knowledge_chunk_document_id_idx').on(table.documentId),
+        vectorRecordIdIdx: (0, mysql_core_1.index)('knowledge_chunk_vector_record_id_idx').on(table.vectorRecordId),
+    };
+});
 exports.conversation = (0, mysql_core_1.mysqlTable)('Conversation', {
     id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     userId: (0, mysql_core_1.varchar)('userId', { length: 191 }).notNull(),
@@ -66,6 +95,13 @@ exports.conversation = (0, mysql_core_1.mysqlTable)('Conversation', {
     needsHuman: (0, mysql_core_1.boolean)('needsHuman').notNull().default(false),
     createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
     updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
+    mode: (0, mysql_core_1.varchar)('mode', { length: 191 }), // AI, HUMAN, CLOSED
+    chatStatus: (0, mysql_core_1.varchar)('chatStatus', { length: 191 }), // OPEN, WAITING_FOR_ADMIN, RESOLVED
+    assignedAdminId: (0, mysql_core_1.varchar)('assignedAdminId', { length: 191 }),
+    aiModel: (0, mysql_core_1.varchar)('aiModel', { length: 191 }),
+    knowledgeDocumentVersion: (0, mysql_core_1.varchar)('knowledgeDocumentVersion', { length: 191 }),
+    lastRetrievalScore: (0, mysql_core_1.float)('lastRetrievalScore'),
+    handoffReason: (0, mysql_core_1.text)('handoffReason'),
 }, (table) => {
     return {
         statusIdx: (0, mysql_core_1.index)('conversation_status_idx').on(table.status),
@@ -79,6 +115,12 @@ exports.message = (0, mysql_core_1.mysqlTable)('Message', {
     content: (0, mysql_core_1.text)('content').notNull(),
     createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
     isReadByAdmin: (0, mysql_core_1.boolean)('isReadByAdmin').notNull().default(false),
+    sender: (0, mysql_core_1.varchar)('sender', { length: 191 }), // USER, AI, ADMIN, SYSTEM
+    grounded: (0, mysql_core_1.boolean)('grounded'),
+    retrievedChunkIds: (0, mysql_core_1.text)('retrievedChunkIds'),
+    modelName: (0, mysql_core_1.varchar)('modelName', { length: 191 }),
+    latencyMs: (0, mysql_core_1.int)('latencyMs'),
+    errorCode: (0, mysql_core_1.varchar)('errorCode', { length: 191 }),
 }, (table) => {
     return {
         conversationIdIdx: (0, mysql_core_1.index)('message_conversation_id_idx').on(table.conversationId),

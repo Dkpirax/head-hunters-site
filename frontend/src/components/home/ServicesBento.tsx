@@ -145,16 +145,16 @@ export function ServicesBento({ settings }: { settings: any }) {
           {SERVICES.map((service, i) => {
             if (service.type === "image") {
               return (
-                <BentoCard key={i} wide={service.wide} className="!p-0 min-h-[180px]">
-                  <div className="relative h-full w-full overflow-hidden rounded-[14px]">
+                <BentoCard key={i} wide={service.wide} className="!p-0 min-h-[220px] h-full">
+                  <div className="absolute inset-0 overflow-hidden rounded-[14px]">
                     <img
                       src={service.image}
                       alt={service.imageAlt}
-                      className="object-cover saturate-75"
+                      className="absolute inset-0 w-full h-full object-cover saturate-75"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#111413] via-[#111413]/40 to-transparent opacity-80" />
                     {(service.title || service.description) && (
-                      <div className="absolute bottom-0 left-0 right-0 p-8">
+                      <div className="absolute bottom-0 left-0 right-0 p-8 z-10">
                         {service.title && (
                           <h3 className="text-white font-bold text-2xl mb-3">
                             {service.title}
