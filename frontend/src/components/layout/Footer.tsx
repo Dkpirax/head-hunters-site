@@ -85,7 +85,7 @@ export function Footer({ settings }: { settings?: any }) {
               <NavLogo />
             </Link>
             <p className="text-sm text-white/45 leading-relaxed max-w-[260px]">
-              A Sri Lankan recruitment and HR services company supported by a Switzerland-based parent company with eight years of industry experience. (Pending Legal Approval)
+              A Sri Lankan recruitment and HR services company supported by a Switzerland-based parent company with eight years of industry experience.
             </p>
             <div className="space-y-2.5">
               <a

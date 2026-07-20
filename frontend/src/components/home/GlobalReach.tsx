@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 const REGIONS = [
+  { name: "Switzerland", desc: "Global headquarters and operations.", x: "46.8155", y: "8.2245" },
   { name: "Sri Lanka", desc: "Offshore admin, VA, bookkeeping and customer service teams.", x: "62%", y: "52%" },
 ];
 
@@ -132,11 +133,12 @@ function CobeGlobe() {
   }, []);
 
   const markers = [
+    { lat: 46.8155, lng: 8.2245, label: "Switzerland" },
     { lat: 7.8731, lng: 80.7718, label: "Sri Lanka" }
   ];
 
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[500px] flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing scale-110 md:scale-125 transform-origin-center mt-10 md:mt-0">
+    <div ref={containerRef} className="w-full h-full min-h-[500px] flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing scale-90 md:scale-100 transform-origin-center mt-10 md:mt-0">
       <Globe
         ref={globeEl}
         width={dimensions.width}

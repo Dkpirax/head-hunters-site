@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
-import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Settings, LogOut, ExternalLink, Database, Cpu } from "lucide-react";
+import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Settings, LogOut, ExternalLink, Database, Cpu, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/insights", label: "Insights", icon: FileText },
   { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
   { href: "/admin/chat", label: "Chats", icon: MessageSquare },
+  { href: "/admin/candidates", label: "Candidates", icon: UserCheck },
   { href: "/admin/knowledge", label: "Knowledge Base", icon: Database },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },

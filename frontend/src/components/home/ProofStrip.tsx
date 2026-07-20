@@ -51,7 +51,7 @@ export function ProofStrip() {
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 lg:px-12">
         <div className="mb-6 text-center">
           <p className="text-sm font-semibold text-[#111413]/70">
-            Backed by a Switzerland-based parent company (Pending Legal Approval)
+            Backed by a Switzerland-based parent company
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

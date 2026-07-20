@@ -34,7 +34,7 @@ function HomePage() {
         const jobsData = await jobsRes.json();
         
         setSettings(settingsData);
-        setLatestJobs(jobsData);
+        setLatestJobs(Array.isArray(jobsData) ? jobsData : []);
       } catch (error) {
         console.error("Failed to load homepage data:", error);
       } finally {
@@ -68,7 +68,7 @@ function HomePage() {
                 <div>
                   <p className="eyebrow-dark eyebrow mb-4">People. Precision. Progress.</p>
                   <h2 className="text-[clamp(30px,4.5vw,58px)] font-black text-[#111413] leading-[0.95] tracking-tight">
-                    Not a job board. A complete workforce partner.
+                    A complete workforce partner.
                   </h2>
                 </div>
                 <div>
@@ -116,14 +116,12 @@ import { FloatingButtons } from "./components/layout/FloatingButtons";
 import { JobsPage } from "./pages/Jobs";
 import { JobDetailPage } from "./pages/JobDetail";
 import { InsightsPage } from "./pages/Insights";
+import { UploadCVPage } from "./pages/UploadCV";
+import { AdminCandidatesPage } from "./pages/admin/Candidates";
 import { InsightDetailPage } from "./pages/InsightDetail";
 
-import { AboutPage } from "./pages/About";
-import { ServicesPage } from "./pages/Services";
-import { EmployersPage } from "./pages/Employers";
-import { CandidatesPage } from "./pages/Candidates";
+
 import { ContactPage } from "./pages/Contact";
-import { IndustriesPage } from "./pages/Industries";
 import { PrivacyPolicyPage } from "./pages/PrivacyPolicy";
 import { TermsAndConditionsPage } from "./pages/TermsAndConditions";
 import { JobScamAwarenessPage } from "./pages/JobScamAwareness";
@@ -136,12 +134,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/employers" element={<EmployersPage />} />
-          <Route path="/candidates" element={<CandidatesPage />} />
+
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/industries" element={<IndustriesPage />} />
+          <Route path="/upload-cv" element={<UploadCVPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
           <Route path="/job-scam-awareness" element={<JobScamAwarenessPage />} />
@@ -166,6 +161,7 @@ function App() {
             <Route path="enquiries" element={<AdminEnquiriesPage />} />
             <Route path="chat" element={<AdminChatPage />} />
             <Route path="users" element={<AdminUsersPage />} />
+            <Route path="candidates" element={<AdminCandidatesPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="ai-settings" element={<AdminAISettingsPage />} />
             <Route path="knowledge" element={<AdminKnowledgePage />} />

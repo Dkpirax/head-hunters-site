@@ -52,6 +52,7 @@ import { aiSettingsRouter } from './api/admin/ai-settings';
 import { knowledgeRouter } from './api/admin/knowledge';
 import { enquiriesRouter } from './api/enquiries';
 import { chatRouter } from './api/chat';
+import candidatesRouter from './api/candidates';
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -62,6 +63,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/enquiries', enquiriesRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/candidates', candidatesRouter);
 
 // Protected Admin Routes
 app.use('/api/admin/dashboard', dashboardRouter);

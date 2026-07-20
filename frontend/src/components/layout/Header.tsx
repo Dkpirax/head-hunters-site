@@ -1,31 +1,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LinkButton } from "@/components/ui/Button";
 import { NavLogo } from "@/components/ui/Logo";
 
 const navLinks = [
-  { label: "Employers", href: "/employers" },
-  { label: "Candidates", href: "/candidates" },
-  { label: "Services", href: "/services" },
-  { label: "Industries", href: "/industries" },
-  { label: "About", href: "/about" },
+  { label: "For Employers", href: "/#contact" },
+  { label: "For Candidates", href: "/#jobs" },
+  { label: "Services", href: "/#services" },
+  { label: "About", href: "/#story" },
   { label: "Insights", href: "/insights" },
-  { label: "Contact", href: "/contact" },
+  { label: "Jobs", href: "/jobs" },
 ];
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const location = useLocation();
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (location.pathname === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location]);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -66,9 +79,9 @@ export function Header() {
 
         {/* Desktop CTAs */}
         <div className="hidden lg:flex items-center gap-2">
-          <LinkButton href="/candidates" variant="ghost" size="sm">Find Jobs</LinkButton>
-          <LinkButton href="/employers" variant="solid" size="sm">
-            Request Staff <ArrowRight size={13} />
+          <LinkButton href="/upload-cv" variant="ghost" size="sm">Upload CV</LinkButton>
+          <LinkButton href="/contact" variant="solid" size="sm">
+            Talk to a consultant <ArrowRight size={13} />
           </LinkButton>
         </div>
 
@@ -120,11 +133,11 @@ export function Header() {
             </Link>
           ))}
           <div className="pt-4 flex flex-col gap-3">
-            <LinkButton href="/candidates" variant="ghost" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
-              Find Jobs
+            <LinkButton href="/upload-cv" variant="ghost" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
+              Upload CV
             </LinkButton>
-            <LinkButton href="/employers" variant="solid" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
-              Request Staff
+            <LinkButton href="/contact" variant="solid" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
+              Talk to a consultant
             </LinkButton>
           </div>
         </div>

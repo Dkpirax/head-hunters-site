@@ -1,0 +1,100 @@
+import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { db } from '../lib/db';
+import { candidate } from '../db/schema';
+import crypto from 'crypto';
+
+const router = Router();
+
+// Ensure uploads directory exists
+const uploadDir = path.join(process.cwd(), 'uploads', 'cvs');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF and DOCX are allowed.'));
+    }
+  }
+});
+
+// POST /api/candidates/upload
+router.post('/upload', upload.single('cv'), async (req, res) => {
+  try {
+    const { name, email, phone, interestedJobs } = req.body;
+    const file = req.file;
+
+    if (!name || !email || !file) {
+      return res.status(400).json({ error: 'Name, email, and CV file are required' });
+    }
+
+    const newCandidate = {
+      id: crypto.randomUUID(),
+      name,
+      email,
+      phone: phone || null,
+      interestedJobs: interestedJobs || null,
+      cvFileName: file.filename,
+    };
+
+    await db.insert(candidate).values(newCandidate);
+
+    res.status(201).json({ message: 'CV uploaded successfully', candidate: newCandidate });
+  } catch (error: any) {
+    console.error('Error uploading CV:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'A candidate with this email already exists' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/candidates
+// Note: In a real app this should have admin authentication middleware
+router.get('/', async (req, res) => {
+  try {
+    const candidates = await db.select().from(candidate).orderBy(candidate.createdAt);
+    res.json(candidates);
+  } catch (error) {
+    console.error('Error fetching candidates:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/candidates/download/:filename
+router.get('/download/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(uploadDir, filename);
+
+  if (fs.existsSync(filePath)) {
+    res.download(filePath);
+  } else {
+    res.status(404).json({ error: 'File not found' });
+  }
+});
+
+export default router;

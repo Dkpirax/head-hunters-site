@@ -152,8 +152,9 @@ export const candidate = mysqlTable('Candidate', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: varchar('email', { length: 191 }).notNull().unique(),
   name: varchar('name', { length: 191 }),
-  dateOfBirth: utcDateTime('dateOfBirth').notNull(),
-  parentalConsent: boolean('parentalConsent').notNull().default(false),
+  phone: varchar('phone', { length: 191 }),
+  interestedJobs: text('interestedJobs'),
+  cvFileName: varchar('cvFileName', { length: 191 }),
   createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
   updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 }, (table) => {

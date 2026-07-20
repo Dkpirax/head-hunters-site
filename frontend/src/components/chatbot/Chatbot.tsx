@@ -29,7 +29,7 @@ const requestHumanTakeover = async (id: string): Promise<any> => {
 
 
 
-export function Chatbot({ onClose }: { onClose: () => void }) {
+export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: boolean }) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [mode, setMode] = useState<string>("AI");
@@ -183,15 +183,18 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 25, scale: 0.96 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      drag="x"
+      drag={inline ? false : "x"}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.2}
       onDragEnd={(e, info) => {
-        if (Math.abs(info.offset.x) > 100) {
+        if (!inline && onClose && Math.abs(info.offset.x) > 100) {
           onClose();
         }
       }}
-      className="fixed top-0 left-0 w-full h-[100dvh] rounded-none md:absolute md:top-auto md:left-auto md:bottom-18 md:right-0 md:w-[380px] md:h-[540px] md:max-w-[calc(100vw-32px)] md:max-h-[calc(100vh-100px)] md:rounded-[24px] bg-white/95 md:bg-white/90 backdrop-blur-2xl md:border border-white/60 shadow-[0_24px_60px_rgba(2,105,94,0.16)] flex flex-col overflow-hidden z-40 md:z-[100] text-slate-800 font-sans"
+      className={inline 
+        ? "w-full h-[600px] rounded-[24px] bg-white/95 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgba(2,105,94,0.12)] flex flex-col overflow-hidden text-slate-800 font-sans relative"
+        : "fixed top-0 left-0 w-full h-[100dvh] rounded-none md:absolute md:top-auto md:left-auto md:bottom-18 md:right-0 md:w-[380px] md:h-[540px] md:max-w-[calc(100vw-32px)] md:max-h-[calc(100vh-100px)] md:rounded-[24px] bg-white/95 md:bg-white/90 backdrop-blur-2xl md:border border-white/60 shadow-[0_24px_60px_rgba(2,105,94,0.16)] flex flex-col overflow-hidden z-40 md:z-[100] text-slate-800 font-sans"
+      }
     >
       {/* Header */}
       <div className="px-5 py-4 pt-[max(env(safe-area-inset-top,1rem),1rem)] md:pt-4 border-b border-[#02695e]/10 bg-gradient-to-r from-[#02695e]/5 via-[#04a891]/4 to-[#02695e]/3 flex items-center justify-between">
@@ -222,13 +225,14 @@ export function Chatbot({ onClose }: { onClose: () => void }) {
           >
             <RotateCcw size={13} />
           </button>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[#02695e]/8 transition-colors cursor-pointer text-slate-400 hover:text-[#02695e]"
-            title="Close Chat"
-          >
-            <X size={15} />
-          </button>
+          {!inline && onClose && (
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors cursor-pointer text-slate-400 hover:text-slate-700"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
 
