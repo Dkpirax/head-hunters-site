@@ -4,19 +4,18 @@ import { NavLogo } from "@/components/ui/Logo";
 
 const footerLinks = {
   Services: [
-    { label: "Permanent Recruitment", href: "/services" },
-    { label: "Executive Search", href: "/services" },
-    { label: "Recruitment Process Outsourcing", href: "/services" },
-    { label: "HR Consulting", href: "/services" },
+    { label: "Permanent Recruitment", href: "/#services" },
+    { label: "Executive Search", href: "/#services" },
+    { label: "Recruitment Process Outsourcing", href: "/#services" },
+    { label: "HR Consulting", href: "/#services" },
   ],
   Pathways: [
-    { label: "Looking for Staff", href: "/employers" },
-    { label: "Find a Job", href: "/candidates" },
-    { label: "Register Your CV", href: "/candidates" },
-    { label: "Contact Us", href: "/contact" },
+    { label: "Talk to a consultant", href: "/contact" },
+    { label: "Upload CV", href: "/upload-cv" },
+    { label: "Find a Job", href: "/jobs" },
   ],
   Trust: [
-    { label: "About Us", href: "/about" },
+    { label: "About Us", href: "/#story" },
     { label: "Job Scam Awareness", href: "/job-scam-awareness" },
     { label: "FAQs", href: "/#faq" },
     { label: "Insights", href: "/insights" },
@@ -60,17 +59,17 @@ export function Footer({ settings }: { settings?: any }) {
           </div>
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <Link
-              to="/employers"
+              to="/contact"
               className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] bg-[#02695e] text-white text-sm font-semibold transition-all hover:bg-[#027d6f] hover:shadow-[0_12px_32px_rgba(2,105,94,0.4)]"
             >
-              Request Staff
+              Talk to a consultant
               <ArrowUpRight size={16} />
             </Link>
             <Link
-              to="/candidates"
+              to="/upload-cv"
               className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] border border-white/12 bg-white/6 text-white text-sm font-semibold transition-all hover:bg-white/10"
             >
-              Find Jobs
+              Upload CV
             </Link>
           </div>
         </div>

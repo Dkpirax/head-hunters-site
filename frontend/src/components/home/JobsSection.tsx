@@ -50,7 +50,7 @@ export function JobsSection({ recentJobs = [] }: { recentJobs?: any[] }) {
                 className="inline-flex items-center gap-2 h-11 px-5 rounded-[10px] bg-[#02695e] text-white text-sm font-semibold transition-all hover:bg-[#027d6f] hover:shadow-[0_10px_28px_rgba(2,105,94,0.3)]">
                 Browse all jobs <ArrowRight size={14} />
               </Link>
-              <Link to="/#contact"
+              <Link to="/upload-cv"
                 className="inline-flex items-center gap-2 h-11 px-5 rounded-[10px] bg-[#111413] text-white text-sm font-semibold hover:bg-black transition-all shadow-sm">
                 Upload your CV
               </Link>
