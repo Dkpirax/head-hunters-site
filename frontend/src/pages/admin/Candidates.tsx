@@ -60,81 +60,88 @@ export function AdminCandidatesPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
+      <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Candidates</h1>
-          <p className="text-sm text-slate-500">Review submitted CVs and candidate profiles</p>
+          <h1 className="text-2xl font-black text-white mb-1">Candidates</h1>
+          <p className="text-white/40 text-sm">Review submitted CVs and candidate profiles</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <div className="bg-white/3 border border-white/8 rounded-[16px] overflow-hidden flex flex-col min-h-0">
+        <div className="p-4 border-b border-white/8 flex items-center justify-between bg-white/1 shrink-0">
           <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={16} />
             <input
               type="text"
               placeholder="Search by name, email, or role..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#04a891] focus:border-transparent transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#04a891] focus:border-transparent transition-all"
             />
           </div>
-          <div className="text-sm text-slate-500 font-medium">
+          <div className="text-sm text-white/40 font-medium px-4">
             {filteredCandidates.length} candidate{filteredCandidates.length !== 1 ? 's' : ''}
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+          <table className="w-full text-left text-sm text-white/70">
+            <thead className="bg-white/5 text-xs uppercase text-white/50 border-b border-white/8">
               <tr>
-                <th className="px-6 py-4 font-semibold">Candidate</th>
-                <th className="px-6 py-4 font-semibold">Contact</th>
-                <th className="px-6 py-4 font-semibold">Interested Roles</th>
-                <th className="px-6 py-4 font-semibold">Date Submitted</th>
-                <th className="px-6 py-4 font-semibold text-right">Action</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">Candidate</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">Contact</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">Interested Roles</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">Date Submitted</th>
+                <th className="px-6 py-4 font-semibold tracking-wider text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-white/4">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    <div className="w-6 h-6 border-2 border-slate-200 border-t-[#04a891] rounded-full animate-spin mx-auto mb-2"></div>
+                  <td colSpan={5} className="px-6 py-8 text-center text-white/40">
                     Loading candidates...
                   </td>
                 </tr>
               ) : filteredCandidates.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-white/40">
                     No candidates found matching your criteria.
                   </td>
                 </tr>
               ) : (
-                filteredCandidates.map((candidate) => (
-                  <tr key={candidate.id} className="hover:bg-slate-50/50 transition-colors">
+                filteredCandidates.map((c) => (
+                  <tr key={c.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{candidate.name}</div>
+                      <div className="font-medium text-white">{c.name || 'Unknown'}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-slate-900">{candidate.email}</span>
-                        {candidate.phone && <span className="text-xs text-slate-500">{candidate.phone}</span>}
-                      </div>
+                      <div className="text-white">{c.email}</div>
+                      {c.phone && <div className="text-white/50 text-xs mt-1">{c.phone}</div>}
                     </td>
-                    <td className="px-6 py-4 max-w-xs truncate" title={candidate.interestedJobs || ''}>
-                      {candidate.interestedJobs || <span className="text-slate-400 italic">Not specified</span>}
+                    <td className="px-6 py-4">
+                      {c.interestedJobs ? (
+                        <div className="flex flex-wrap gap-1">
+                          {c.interestedJobs.split(',').map((job, i) => (
+                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#04a891]/20 text-[#04a891]">
+                              {job.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-white/30">-</span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {new Date(candidate.createdAt).toLocaleDateString()}
+                    <td className="px-6 py-4 whitespace-nowrap text-white/50">
+                      {new Date(c.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleDownloadCV(candidate.cvFileName, candidate.name)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#02695e]/10 text-[#02695e] hover:bg-[#02695e]/20 rounded-md text-xs font-semibold transition-colors"
+                        onClick={() => handleDownloadCV(c.cvFileName, c.name || 'Candidate')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-medium transition-colors"
                       >
                         <Download size={14} />
-                        CV
+                        Download CV
                       </button>
                     </td>
                   </tr>

@@ -84,6 +84,7 @@ const ai_settings_1 = require("./api/admin/ai-settings");
 const knowledge_1 = require("./api/admin/knowledge");
 const enquiries_2 = require("./api/enquiries");
 const chat_1 = require("./api/chat");
+const candidates_1 = __importDefault(require("./api/candidates"));
 // Serve static frontend files
 app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
 app.use((0, cookie_parser_1.default)());
@@ -92,6 +93,7 @@ app.use('/api/auth', auth_1.default);
 app.use('/api/settings', settings_1.settingsRouter);
 app.use('/api/enquiries', enquiries_2.enquiriesRouter);
 app.use('/api/chat', chat_1.chatRouter);
+app.use('/api/candidates', candidates_1.default);
 // Protected Admin Routes
 app.use('/api/admin/dashboard', dashboard_1.dashboardRouter);
 app.use('/api/admin/jobs', jobs_1.default);

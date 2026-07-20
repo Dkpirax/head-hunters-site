@@ -82,8 +82,16 @@ exports.adminConversationsRouter.put('/:id/status', async (req, res) => {
         const { id } = req.params;
         const { status, takenBy, needsHuman } = req.body;
         const updateData = { updatedAt: new Date() };
-        if (status !== undefined)
+        if (status !== undefined) {
             updateData.status = status;
+            if (status === 'HUMAN_ACTIVE') {
+                updateData.chatStatus = 'ADMIN_JOINED';
+            }
+            else if (status === 'BOT_ACTIVE' || status === 'CLOSED') {
+                updateData.chatStatus = 'OPEN';
+                updateData.mode = 'AI';
+            }
+        }
         if (takenBy !== undefined)
             updateData.takenBy = takenBy;
         if (needsHuman !== undefined)

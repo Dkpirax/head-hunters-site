@@ -102,6 +102,12 @@ exports.conversation = (0, mysql_core_1.mysqlTable)('Conversation', {
     knowledgeDocumentVersion: (0, mysql_core_1.varchar)('knowledgeDocumentVersion', { length: 191 }),
     lastRetrievalScore: (0, mysql_core_1.float)('lastRetrievalScore'),
     handoffReason: (0, mysql_core_1.text)('handoffReason'),
+    humanSupportProvider: (0, mysql_core_1.varchar)('humanSupportProvider', { length: 191 }).default('INTERNAL'),
+    handoffRequestedAt: utcTimestamp('handoffRequestedAt'),
+    tawkOpenedAt: utcTimestamp('tawkOpenedAt'),
+    agentJoinedAt: utcTimestamp('agentJoinedAt'),
+    handoffCompletedAt: utcTimestamp('handoffCompletedAt'),
+    handoffFailureReason: (0, mysql_core_1.text)('handoffFailureReason'),
 }, (table) => {
     return {
         statusIdx: (0, mysql_core_1.index)('conversation_status_idx').on(table.status),
@@ -145,8 +151,9 @@ exports.candidate = (0, mysql_core_1.mysqlTable)('Candidate', {
     id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
     email: (0, mysql_core_1.varchar)('email', { length: 191 }).notNull().unique(),
     name: (0, mysql_core_1.varchar)('name', { length: 191 }),
-    dateOfBirth: utcDateTime('dateOfBirth').notNull(),
-    parentalConsent: (0, mysql_core_1.boolean)('parentalConsent').notNull().default(false),
+    phone: (0, mysql_core_1.varchar)('phone', { length: 191 }),
+    interestedJobs: (0, mysql_core_1.text)('interestedJobs'),
+    cvFileName: (0, mysql_core_1.varchar)('cvFileName', { length: 191 }),
     createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
     updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 }, (table) => {

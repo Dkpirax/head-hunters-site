@@ -262,6 +262,126 @@ export function AdminAISettingsPage() {
           </div>
         </div>
 
+        {/* Tawk.to Live Chat Integration */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-white border-b border-white/10 pb-2">Human Handoff & Tawk.to</h2>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-1">Human Support Provider</label>
+              <select
+                value={settings.humanSupportProvider}
+                onChange={e => setSettings({...settings, humanSupportProvider: e.target.value})}
+                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-[#04a891]"
+              >
+                <option value="INTERNAL">Internal Dashboard (Legacy)</option>
+                <option value="TAWK">Tawk.to Widget</option>
+                <option value="DISABLED">Disabled (AI Only)</option>
+              </select>
+            </div>
+            
+            {settings.humanSupportProvider === 'TAWK' && (
+              <div className="flex items-center pt-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className={`w-10 h-5 rounded-full transition-colors relative ${settings.tawkEnabled ? 'bg-[#04a891]' : 'bg-white/10'}`}>
+                    <div className={`absolute top-0.5 left-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.tawkEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    className="hidden"
+                    checked={settings.tawkEnabled}
+                    onChange={(e) => setSettings({...settings, tawkEnabled: e.target.checked})}
+                  />
+                  <span className="text-white text-sm font-medium">Enable Tawk.to Frontend</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {settings.humanSupportProvider === 'TAWK' && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Tawk.to Property ID</label>
+                  <input
+                    type="text"
+                    value={settings.tawkPropertyId || ''}
+                    onChange={e => setSettings({...settings, tawkPropertyId: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-[#04a891]"
+                    placeholder="e.g. 64abc123..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-1">Tawk.to Widget ID</label>
+                  <input
+                    type="text"
+                    value={settings.tawkWidgetId || ''}
+                    onChange={e => setSettings({...settings, tawkWidgetId: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-[#04a891]"
+                    placeholder="e.g. 1g..."
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Tawk.to Secure Mode Secret</label>
+                <div className="flex items-center gap-2">
+                  {settings.tawkSecretConfigured && !replacingKey ? (
+                    <>
+                      <div className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white/50">
+                        ************************
+                      </div>
+                      <button onClick={async () => {
+                        if (confirm("Are you sure you want to remove the Tawk Secret?")) {
+                          await apiClient('/api/admin/ai-settings', {
+                            method: 'PUT',
+                            body: JSON.stringify({ ...settings, removeTawkSecret: true })
+                          });
+                          fetchSettings();
+                        }
+                      }} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-2 rounded-lg text-sm shrink-0 whitespace-nowrap transition-colors">
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="password"
+                        value={settings.tawkSecret || ''}
+                        onChange={e => setSettings({...settings, tawkSecret: e.target.value})}
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-[#04a891]"
+                        placeholder="Paste Tawk secret to enable Identity Verification"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-1">WhatsApp Fallback Number</label>
+                  <input
+                    type="text"
+                    value={settings.tawkWhatsAppNumber || ''}
+                    onChange={e => setSettings({...settings, tawkWhatsAppNumber: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-[#04a891]"
+                    placeholder="e.g. 94773975048"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Offline Message</label>
+                <textarea
+                  value={settings.tawkOfflineMessage || ''}
+                  onChange={e => setSettings({...settings, tawkOfflineMessage: e.target.value})}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-[#04a891] h-16"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
       </div>
     </div>
   );

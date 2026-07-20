@@ -106,6 +106,12 @@ export const conversation = mysqlTable('Conversation', {
   knowledgeDocumentVersion: varchar('knowledgeDocumentVersion', { length: 191 }),
   lastRetrievalScore: float('lastRetrievalScore'),
   handoffReason: text('handoffReason'),
+  humanSupportProvider: varchar('humanSupportProvider', { length: 191 }).default('INTERNAL'),
+  handoffRequestedAt: utcTimestamp('handoffRequestedAt'),
+  tawkOpenedAt: utcTimestamp('tawkOpenedAt'),
+  agentJoinedAt: utcTimestamp('agentJoinedAt'),
+  handoffCompletedAt: utcTimestamp('handoffCompletedAt'),
+  handoffFailureReason: text('handoffFailureReason'),
 }, (table) => {
   return {
     statusIdx: index('conversation_status_idx').on(table.status),

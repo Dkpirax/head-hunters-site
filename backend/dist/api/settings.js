@@ -22,7 +22,7 @@ const defaultSettings = {
     story_title: "Our Story",
     story_text: "From a home‑based startup to a trusted recruitment partner across three countries.",
     global_reach_title: "Global Reach, Local Expertise",
-    global_reach_text: "Serving Australia, New Zealand, and Sri Lanka.",
+    global_reach_text: "Serving Australia, New Zealand, Sri Lanka, and Switzerland.",
     testimonials_title: "What Our Clients Say",
     contact_title: "Let’s Talk",
     copyright_text: "© Head Hunters. All rights reserved.",

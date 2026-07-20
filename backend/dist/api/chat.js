@@ -129,8 +129,36 @@ async function getAiSettings() {
         retrievalCount: settings.retrievalCount ?? 5,
         minRelevanceScore: settings.minRelevanceScore ?? 0.70,
         fallbackMessage: settings.fallbackMessage || "I’m sorry, but I could not find that information in the approved Headhunters.lk information. Please contact our team at info@headhunters.lk or WhatsApp/call +94 77 397 5048.",
+        humanSupportProvider: settings.humanSupportProvider || "INTERNAL",
+        tawkEnabled: settings.tawkEnabled ?? false,
+        tawkPropertyId: settings.tawkPropertyId || "",
+        tawkWidgetId: settings.tawkWidgetId || "",
+        tawkSecureModeEnabled: settings.tawkSecureModeEnabled ?? false,
+        tawkSecretConfigured: !!settings.tawkSecret,
+        tawkWhatsAppFallbackEnabled: settings.tawkWhatsAppFallbackEnabled ?? true,
+        tawkWhatsAppNumber: settings.tawkWhatsAppNumber || "94773975048",
+        tawkOfflineMessage: settings.tawkOfflineMessage || "Our recruitment team is currently offline. You can leave a message, continue with the AI assistant, or contact us on WhatsApp.",
+        tawkBusinessHours: settings.tawkBusinessHours || "Mon-Fri 9AM-5PM",
     };
 }
+exports.chatRouter.get('/config', async (req, res) => {
+    try {
+        const settings = await getAiSettings();
+        res.json({
+            tawkEnabled: settings.tawkEnabled,
+            tawkPropertyId: settings.tawkPropertyId,
+            tawkWidgetId: settings.tawkWidgetId,
+            humanSupportProvider: settings.humanSupportProvider,
+            tawkWhatsAppFallbackEnabled: settings.tawkWhatsAppFallbackEnabled,
+            tawkWhatsAppNumber: settings.tawkWhatsAppNumber,
+            tawkOfflineMessage: settings.tawkOfflineMessage,
+            tawkBusinessHours: settings.tawkBusinessHours
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 exports.chatRouter.post('/conversations', async (req, res) => {
     try {
         const visitorId = getOrCreateVisitorToken(req, res);
@@ -171,6 +199,26 @@ exports.chatRouter.post('/conversations', async (req, res) => {
             return { newConv: c, botGreeting: m };
         });
         return res.json({ ...newConv, messages: [botGreeting] });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.chatRouter.post('/conversations/:id/refresh', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const setRows = await db_1.db.select().from(schema_1.content).where((0, drizzle_orm_1.eq)(schema_1.content.key, 'chatbot_greeting')).limit(1);
+        const greetingText = setRows[0]?.value || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
+        const greetingId = crypto_1.default.randomUUID();
+        await db_1.db.insert(schema_1.message).values({
+            id: greetingId,
+            conversationId: id,
+            senderType: 'BOT',
+            sender: 'AI',
+            content: greetingText,
+        });
+        const [m] = await db_1.db.select().from(schema_1.message).where((0, drizzle_orm_1.eq)(schema_1.message.id, greetingId)).limit(1);
+        return res.json(m);
     }
     catch (error) {
         res.status(500).json({ error: 'Internal server error' });
@@ -390,6 +438,95 @@ exports.chatRouter.get('/messages', verifyVisitorToken, async (req, res) => {
             takenBy: conv.takenBy,
             messages: msgs
         });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.chatRouter.post('/conversations/:id/tawk-identity', verifyVisitorToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const visitorId = req.visitorId;
+        let [conv] = await db_1.db.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id))).limit(1);
+        if (!conv || conv.userId !== visitorId)
+            return res.status(404).json({ error: 'Conversation not found' });
+        const settings = await getAiSettings();
+        if (!settings.tawkEnabled) {
+            return res.status(400).json({ enabled: false, error: 'Tawk.to integration disabled' });
+        }
+        const visitorInfo = req.body; // e.g. { name, email, phone }
+        if (!visitorInfo.email && !visitorInfo.name) {
+            return res.status(400).json({ error: 'Missing identity data' });
+        }
+        const payload = {
+            enabled: true,
+            propertyId: settings.tawkPropertyId,
+            widgetId: settings.tawkWidgetId,
+            visitor: {
+                name: visitorInfo.name,
+                email: visitorInfo.email,
+                phone: visitorInfo.phone,
+            }
+        };
+        if (settings.tawkSecureModeEnabled && settings.tawkSecretConfigured) {
+            // Need to retrieve the actual secret to sign
+            const rows = await db_1.db.select().from(schema_1.content).where((0, drizzle_orm_1.eq)(schema_1.content.key, 'ai_settings'));
+            if (rows.length > 0) {
+                const rawSettings = JSON.parse(rows[0].value);
+                if (rawSettings.tawkSecret) {
+                    const actualSecret = decrypt(rawSettings.tawkSecret);
+                    if (actualSecret && visitorInfo.email) { // secure mode requires email
+                        payload.visitor.hash = crypto_1.default.createHmac('sha256', actualSecret).update(visitorInfo.email).digest('hex');
+                    }
+                }
+            }
+        }
+        res.json(payload);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.chatRouter.post('/conversations/:id/handoff-status', verifyVisitorToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const visitorId = req.visitorId;
+        const { status, failureReason } = req.body;
+        let [conv] = await db_1.db.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id))).limit(1);
+        if (!conv || conv.userId !== visitorId)
+            return res.status(404).json({ error: 'Conversation not found' });
+        // Validate transition
+        const validTransitions = {
+            'OPEN': ['NOT_REQUESTED', 'DETAILS_REQUIRED'],
+            'NOT_REQUESTED': ['DETAILS_REQUIRED', 'REQUESTED'],
+            'DETAILS_REQUIRED': ['REQUESTED'],
+            'REQUESTED': ['TAWK_OPENED', 'OFFLINE', 'FAILED'],
+            'TAWK_OPENED': ['AGENT_JOINED', 'COMPLETED', 'FAILED'],
+            'AGENT_JOINED': ['COMPLETED']
+        };
+        const currentStatus = conv.chatStatus || 'OPEN';
+        // In some cases we might just allow setting it directly if it's one of the valid statuses
+        // For now, allow valid target states
+        const validStates = ['NOT_REQUESTED', 'DETAILS_REQUIRED', 'REQUESTED', 'TAWK_OPENED', 'AGENT_JOINED', 'COMPLETED', 'OFFLINE', 'FAILED'];
+        if (!validStates.includes(status)) {
+            return res.status(400).json({ error: 'Invalid handoff status' });
+        }
+        const updates = {
+            chatStatus: status,
+            updatedAt: new Date()
+        };
+        if (status === 'REQUESTED')
+            updates.handoffRequestedAt = new Date();
+        if (status === 'TAWK_OPENED')
+            updates.tawkOpenedAt = new Date();
+        if (status === 'AGENT_JOINED')
+            updates.agentJoinedAt = new Date();
+        if (status === 'COMPLETED')
+            updates.handoffCompletedAt = new Date();
+        if (status === 'FAILED')
+            updates.handoffFailureReason = failureReason;
+        await db_1.db.update(schema_1.conversation).set(updates).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id)));
+        res.json({ success: true, status });
     }
     catch (error) {
         res.status(500).json({ error: 'Internal server error' });

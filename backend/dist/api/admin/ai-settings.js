@@ -41,9 +41,11 @@ exports.aiSettingsRouter.get('/', auth_1.requireAuth, async (req, res) => {
         if (settingsRows.length > 0) {
             aiSettings = JSON.parse(settingsRows[0].value);
         }
-        // Return whether API key is configured, never the key itself
+        // Return whether API key and Tawk Secret are configured
         const apiKeyConfigured = !!aiSettings.apiKey;
+        const tawkSecretConfigured = !!aiSettings.tawkSecret;
         delete aiSettings.apiKey;
+        delete aiSettings.tawkSecret;
         res.json({
             enabled: true,
             provider: 'Ollama',
@@ -57,8 +59,19 @@ exports.aiSettingsRouter.get('/', auth_1.requireAuth, async (req, res) => {
             fallbackMessage: "I’m sorry, but I could not find that information in the approved Headhunters.lk information. Please contact our team at info@headhunters.lk or WhatsApp/call +94 77 397 5048.",
             humanHandoffEnabled: true,
             humanHandoffMessage: "A team member will be with you shortly.",
+            humanSupportProvider: "INTERNAL", // INTERNAL, TAWK, DISABLED
+            tawkEnabled: false,
+            tawkPropertyId: "",
+            tawkWidgetId: "",
+            tawkSecureModeEnabled: false,
+            tawkHumanHandoffEnabled: true,
+            tawkWhatsAppFallbackEnabled: true,
+            tawkWhatsAppNumber: "94773975048",
+            tawkOfflineMessage: "Our recruitment team is currently offline. You can leave a message, continue with the AI assistant, or contact us on WhatsApp.",
+            tawkBusinessHours: "Mon-Fri 9AM-5PM",
             requestTimeout: 60,
             apiKeyConfigured,
+            tawkSecretConfigured,
             ...aiSettings
         });
     }
@@ -84,9 +97,19 @@ exports.aiSettingsRouter.put('/', auth_1.requireAuth, async (req, res) => {
             existingSettings.apiKey = encrypt(data.apiKey);
             console.log(`[SECURITY AUDIT] API Key replaced by admin user: ${req.user?.id || 'unknown'}`);
         }
-        // Merge other operational settings (do not merge apiKey directly from data unless encrypted)
+        if (data.removeTawkSecret) {
+            delete existingSettings.tawkSecret;
+            console.log(`[SECURITY AUDIT] Tawk Secret removed by admin user: ${req.user?.id || 'unknown'}`);
+        }
+        else if (data.tawkSecret) {
+            existingSettings.tawkSecret = encrypt(data.tawkSecret);
+            console.log(`[SECURITY AUDIT] Tawk Secret replaced by admin user: ${req.user?.id || 'unknown'}`);
+        }
+        // Merge other operational settings
         delete data.apiKey;
         delete data.removeApiKey;
+        delete data.tawkSecret;
+        delete data.removeTawkSecret;
         const newSettings = { ...existingSettings, ...data };
         // Save as JSON inside the `content` table under `ai_settings` key
         await db_1.db.insert(schema_1.content)

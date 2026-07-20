@@ -166,13 +166,13 @@ export function AdminKnowledgePage() {
 
         {/* Document List */}
         <div className="bg-[#1a1c1b] border border-white/10 rounded-xl overflow-hidden">
-          <table className="w-full text-left">
+          <table className="w-full text-left table-fixed">
             <thead>
               <tr className="border-b border-white/10 bg-black/20">
-                <th className="p-4 text-sm font-medium text-white/60">Document</th>
-                <th className="p-4 text-sm font-medium text-white/60">Version & Checksum</th>
-                <th className="p-4 text-sm font-medium text-white/60">Status & Meta</th>
-                <th className="p-4 text-sm font-medium text-white/60 text-right">Actions</th>
+                <th className="p-4 text-sm font-medium text-white/60 w-2/5">Document</th>
+                <th className="p-4 text-sm font-medium text-white/60 w-1/5">Version & Checksum</th>
+                <th className="p-4 text-sm font-medium text-white/60 w-1/5">Status & Meta</th>
+                <th className="p-4 text-sm font-medium text-white/60 text-right w-1/5">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -182,12 +182,12 @@ export function AdminKnowledgePage() {
                 </tr>
               ) : documents.map((doc) => (
                 <tr key={doc.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                  <td className="p-4">
+                  <td className="p-4 overflow-hidden">
                     <div className="flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-white/40" />
-                      <div>
-                        <div className="text-white font-medium">{doc.title}</div>
-                        <div className="text-xs text-white/40">{doc.fileName}</div>
+                      <FileText className="w-5 h-5 text-white/40 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-white font-medium truncate" title={doc.title || doc.fileName}>{doc.title}</div>
+                        <div className="text-xs text-white/40 truncate" title={doc.fileName}>{doc.fileName}</div>
                       </div>
                     </div>
                   </td>
