@@ -6,7 +6,7 @@ import { ArrowRight, CheckCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 const PROMPTS = [
-  { label: "Looking for a container unloader?", toast: "Casual labour selected — add shift count, site and start time below." },
+  { label: "Looking for a Customer Executive?", toast: "Customer Executive selected — add experience requirements, location and start date below." },
   { label: "Need warehouse staff urgently?", toast: "Urgent warehouse selected — specify shift pattern and licences required." },
   { label: "Need admin or remote staff support?", toast: "Remote admin selected — choose VA, customer service or bookkeeping." },
 ];

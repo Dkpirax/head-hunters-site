@@ -68,8 +68,10 @@ export function JobsPage() {
       if (activeFilter !== "All roles") {
         if (activeFilter === "Casual") matchesFilter = job.type === "CASUAL";
         if (activeFilter === "Permanent") matchesFilter = job.type === "PERMANENT";
-        if (activeFilter === "Remote") matchesFilter = job.type === "REMOTE" || job.location.includes("Remote");
+        if (activeFilter === "Remote") matchesFilter = job.type === "REMOTE" || job.location.toLowerCase().includes("remote");
         if (activeFilter === "Executive") matchesFilter = job.type === "EXECUTIVE" || job.title.includes("Lead") || job.title.includes("Director");
+        if (activeFilter === "Australia") matchesFilter = job.location.toLowerCase().includes("australia") || job.location.toLowerCase().includes("au");
+        if (activeFilter === "New Zealand") matchesFilter = job.location.toLowerCase().includes("new zealand") || job.location.toLowerCase().includes("nz");
       }
 
       return matchesSearch && matchesFilter;
@@ -113,7 +115,7 @@ export function JobsPage() {
         <section className="pb-28">
           <div className="max-w-[1200px] mx-auto px-5">
             <div className="flex flex-wrap gap-2 mb-8">
-              {["All roles", "Casual", "Permanent", "Remote", "Executive"].map((f) => (
+              {["All roles", "Casual", "Permanent", "Remote", "Executive", "Australia", "New Zealand"].map((f) => (
                 <button 
                   key={f}
                   onClick={() => setActiveFilter(f)}

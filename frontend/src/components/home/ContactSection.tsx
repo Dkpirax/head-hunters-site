@@ -24,6 +24,7 @@ export function ContactSection({ settings }: { settings: any }) {
 
   const contactTitle = settings?.contact_title || settings?.contactTitle || "Let’s Talk";
   const notifyEmails = settings?.email_notify_list || settings?.notifyEmails || "info@headhunters.lk";
+  const replyEmail = "info@headhunters.lk";
   const whatsappNumber = settings?.integration_whatsapp_number || settings?.whatsappNumber || "94773975048";
   const calendlyLink = settings?.integration_calendly_url || settings?.calendlyLink || "";
 
@@ -117,9 +118,9 @@ export function ContactSection({ settings }: { settings: any }) {
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }}>
                 {[
-                  { icon: Mail, label: notifyEmails, href: `mailto:${notifyEmails}` },
-                  { icon: MessageCircle, label: "WhatsApp support line", href: whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}` : `mailto:${notifyEmails}` },
-                  { icon: Calendar, label: "Book a consultant call", href: calendlyLink || `mailto:${notifyEmails}` },
+                  { icon: Mail, label: "info@headhunters.lk", href: `mailto:info@headhunters.lk` },
+                  { icon: MessageCircle, label: "WhatsApp support line", href: whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}` : `mailto:info@headhunters.lk` },
+                  { icon: Calendar, label: "Book a consultant call", href: calendlyLink || `mailto:info@headhunters.lk` },
                 ].map((item) => {
                   const Icon = item.icon;
                   return (

@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 import {
-  Target, BriefcaseBusiness, Globe, RefreshCcw,
+  Target, BriefcaseBusiness, RefreshCcw,
   Calculator, ShieldCheck, ArrowRight,
 } from "lucide-react";
 import gsap from "gsap";
@@ -29,14 +29,6 @@ const SERVICES: any[] = [
     title: "Permanent Placements",
     description:
       "Quality permanent hires for growth, replacement and capability building across core business functions.",
-  },
-  {
-    icon: Globe,
-    title: "Remote Staff Solutions",
-    description:
-      "Offshore support for admin, customer service, virtual assistance, digital marketing, bookkeeping and back office teams.",
-    tags: ["Australia", "New Zealand", "Sri Lanka"],
-    tall: true,
   },
   {
     type: "image" as const,

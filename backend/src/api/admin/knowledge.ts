@@ -1,6 +1,6 @@
 import { Router, Request } from 'express';
 import { db } from '../../lib/db';
-import { knowledgeDocument, knowledgeChunk } from '../../db/schema';
+import { knowledgeDocument, knowledgeChunk, content } from '../../db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import multer from 'multer';
@@ -147,9 +147,31 @@ knowledgeRouter.post('/reindex', async (req, res) => {
     const normalized = normalizeText(rawText);
     const textChunks = chunkText(normalized);
 
-    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-    const embeddingModel = process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text';
-    const apiKey = process.env.OLLAMA_API_KEY || ''; // Usually empty for local
+    // Read AI Settings from database
+    const settingsRows = await db.select().from(content).where(eq(content.key, 'ai_settings'));
+    let aiSettings: any = {};
+    if (settingsRows.length > 0) {
+      aiSettings = JSON.parse(settingsRows[0].value);
+    }
+
+    const baseUrl = (aiSettings.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/+$/, '');
+    const embeddingModel = aiSettings.embeddingModel || process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text';
+    
+    // Decrypt API key if present
+    let apiKey: string | null = null;
+    if (aiSettings.apiKey) {
+      try {
+        const algorithm = 'aes-256-ctr';
+        const secretKey = (process.env.AUTH_SECRET || 'fallback_secret_must_be_32_bytes_long_').padEnd(32, '0').slice(0, 32);
+        const parts = aiSettings.apiKey.split(':');
+        if (parts.length === 2) {
+          const iv = Buffer.from(parts[0], 'hex');
+          const encryptedText = Buffer.from(parts[1], 'hex');
+          const decipher = crypto.createDecipheriv(algorithm, secretKey, iv);
+          apiKey = Buffer.concat([decipher.update(encryptedText), decipher.final()]).toString();
+        }
+      } catch (e) {}
+    }
 
     const lanceChunks = [];
     
@@ -168,10 +190,14 @@ knowledgeRouter.post('/reindex', async (req, res) => {
       });
 
       if (!response.ok) {
-        throw new Error(`Ollama embedding failed: ${response.statusText}`);
+        throw new Error(`Ollama embedding failed at ${baseUrl}/api/embed (${response.status}: ${response.statusText}). Check if Ollama is running and model '${embeddingModel}' is pulled.`);
       }
 
       const data = await response.json();
+      if (!data.embeddings || !data.embeddings[0]) {
+        throw new Error(`Embedding model '${embeddingModel}' returned no vectors.`);
+      }
+
       lanceChunks.push({
         vector: data.embeddings[0],
         chunkId: `chk_${version}_${i}`,
@@ -194,7 +220,11 @@ knowledgeRouter.post('/reindex', async (req, res) => {
     res.json({ success: true, message: 'Reindexed successfully' });
   } catch (error: any) {
     // If failed, mark as FAILED
-    await db.update(knowledgeDocument).set({ status: 'FAILED' }).where(eq(knowledgeDocument.version, version));
+    console.error(`Reindex error for version ${version}:`, error.message);
+    await db.update(knowledgeDocument)
+      .set({ status: 'FAILED' })
+      .where(eq(knowledgeDocument.version, version));
+      
     res.status(500).json({ error: error.message });
   }
 });

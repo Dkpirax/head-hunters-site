@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, MessageSquare, X } from "lucide-react";
+import { ArrowUp, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Chatbot } from "@/components/chatbot/Chatbot";
 import { useLocation } from "react-router-dom";
@@ -84,18 +84,23 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
       </AnimatePresence>
       
       {chatbotEnabled && (
-        <button
-          onClick={handleToggleChat}
-          className={`w-14 h-14 rounded-full bg-[#04a891] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(4,168,145,0.4)] hover:scale-105 hover:bg-[#039682] transition-all cursor-pointer z-50 relative ${isChatOpen ? 'hidden md:flex' : ''}`}
-          aria-label={isChatOpen ? "Close chat" : "Open chat"}
-        >
-          {isChatOpen ? <X size={22} /> : <MessageSquare size={22} />}
-          {hasUnread && !isChatOpen && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#02695e] border border-white flex items-center justify-center text-[10px] text-white font-black animate-pulse shadow-md">
-              1
+        <div className="relative">
+          <button
+            onClick={handleToggleChat}
+            className={`group flex items-center gap-2 pl-3 pr-4 h-14 rounded-full bg-gradient-to-r from-[#02695e] to-[#04a891] text-white shadow-[0_8px_30px_rgba(4,168,145,0.45)] hover:shadow-[0_8px_40px_rgba(4,168,145,0.65)] hover:scale-105 transition-all cursor-pointer z-50 relative ${isChatOpen ? 'hidden md:flex' : 'flex'}`}
+            aria-label={isChatOpen ? "Close chat" : "Open chat"}
+          >
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              {isChatOpen ? <X size={16} /> : <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />}
+            </div>
+            <span className="text-[13px] font-bold tracking-wide whitespace-nowrap">
+              {isChatOpen ? "Close" : "Chat with us"}
             </span>
+          </button>
+          {hasUnread && !isChatOpen && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-[9px] text-white font-black animate-pulse shadow-md">1</span>
           )}
-        </button>
+        </div>
       )}
     </div>
   );

@@ -51,16 +51,16 @@ export function Header() {
         className={cn(
           "hh-header-anim fixed top-3 left-1/2 -translate-x-1/2 z-50",
           "w-[min(1200px,calc(100%-24px))]",
-          "h-16 px-3 pl-4",
-          "grid grid-cols-[auto_1fr_auto] items-center gap-6",
-          "rounded-[12px] border transition-all duration-300",
+          "h-16 px-4 sm:px-6",
+          "flex items-center justify-between gap-4 md:gap-8",
+          "rounded-[14px] border transition-all duration-300",
           scrolled
             ? "border-white/14 bg-[#0B0B0C]/85 backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.45)]"
             : "border-white/8 bg-[#0B0B0C]/50 backdrop-blur-xl"
         )}
         id="top"
       >
-        <Link to="/" aria-label="Headhunters.lk home">
+        <Link to="/" aria-label="Headhunters.lk home" className="flex items-center shrink-0 py-1">
           <NavLogo />
         </Link>
 

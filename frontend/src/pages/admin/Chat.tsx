@@ -14,12 +14,33 @@ interface Message {
 interface Conversation {
   id: string;
   userId: string;
-  status: string; // 'BOT_ACTIVE' | 'HUMAN_ACTIVE' | 'CLOSED'
+  status: string; // Legacy: 'BOT_ACTIVE' | 'HUMAN_ACTIVE' | 'CLOSED'
+  mode?: string; // New: 'AI' | 'HUMAN' | 'CLOSED'
+  chatStatus?: string; // New: 'OPEN' | 'WAITING_FOR_ADMIN' | 'RESOLVED'
   takenBy: string | null;
   needsHuman?: boolean;
   createdAt: string;
   updatedAt: string;
   messages: Message[];
+}
+
+function getConvStatusLabel(c: Conversation): string {
+  // New schema takes priority
+  if (c.mode === 'HUMAN') return 'Consultant';
+  if (c.chatStatus === 'WAITING_FOR_ADMIN') return 'Needs Help';
+  // Legacy
+  if (c.status === 'HUMAN_ACTIVE') return 'Consultant';
+  return 'AI Bot';
+}
+
+function getConvStatusStyle(c: Conversation): string {
+  if (c.mode === 'HUMAN' || c.status === 'HUMAN_ACTIVE') return 'bg-[#04a891]/20 text-[#04a891]';
+  if (c.chatStatus === 'WAITING_FOR_ADMIN' || c.needsHuman) return 'bg-amber-500/20 text-amber-300';
+  return 'bg-blue-500/15 text-blue-400';
+}
+
+function isWaitingForHuman(c: Conversation): boolean {
+  return !!(c.needsHuman || c.chatStatus === 'WAITING_FOR_ADMIN');
 }
 
 function formatRelativeTime(dateString: string) {
@@ -139,7 +160,7 @@ export function AdminChatPage() {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === selectedId
-            ? { ...c, status: "HUMAN_ACTIVE", takenBy: adminEmail }
+            ? { ...c, status: "HUMAN_ACTIVE", mode: "HUMAN", chatStatus: "ADMIN_JOINED", takenBy: adminEmail, needsHuman: false }
             : c
         )
       );
@@ -180,7 +201,7 @@ export function AdminChatPage() {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === selectedId
-            ? { ...c, status: "BOT_ACTIVE", takenBy: null, needsHuman: false }
+            ? { ...c, status: "BOT_ACTIVE", mode: "AI", chatStatus: "OPEN", takenBy: null, needsHuman: false }
             : c
         )
       );
@@ -262,7 +283,7 @@ export function AdminChatPage() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold text-white">{displayName}</span>
-                        {c.needsHuman && (
+                        {isWaitingForHuman(c) && (
                           <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" title="User requested human assistance!" />
                         )}
                       </div>
@@ -278,17 +299,13 @@ export function AdminChatPage() {
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`text-[9px] font-black px-1.5 py-0.5 rounded-[4px] uppercase ${
-                            c.status === "HUMAN_ACTIVE"
-                              ? "bg-[#04a891]/20 text-[#04a891]"
-                              : "bg-blue-500/15 text-blue-400"
-                          }`}
+                          className={`text-[9px] font-black px-1.5 py-0.5 rounded-[4px] uppercase ${getConvStatusStyle(c)}`}
                         >
-                          {c.status === "HUMAN_ACTIVE" ? "Consultant" : "Bot"}
+                          {getConvStatusLabel(c)}
                         </span>
-                        {c.needsHuman && (
+                        {isWaitingForHuman(c) && (
                           <span className="text-[8px] font-bold text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded-[4px] animate-pulse">
-                            Wants Live Chat
+                            Needs Help
                           </span>
                         )}
                       </div>

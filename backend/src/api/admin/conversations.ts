@@ -11,17 +11,27 @@ adminConversationsRouter.use(requireAuth);
 
 adminConversationsRouter.get('/', async (req, res) => {
   try {
+    // Fetch all non-resolved conversations (supports both legacy status field and new mode/chatStatus)
     const convs = await db.select()
       .from(conversation)
-      .where(inArray(conversation.status, ['BOT_ACTIVE', 'HUMAN_ACTIVE']))
       .orderBy(desc(conversation.updatedAt));
 
-    const convIds = convs.map(c => c.id);
+    // Filter: show active conversations only (exclude RESOLVED/CLOSED ones)
+    const activeConvs = convs.filter(c => {
+      // New schema: exclude resolved
+      if (c.chatStatus === 'RESOLVED') return false;
+      // Legacy: exclude closed
+      if (c.status === 'CLOSED') return false;
+      // Must have some activity (mode or status present)
+      return true;
+    });
+
+    const convIds = activeConvs.map(c => c.id);
     const allMessages = convIds.length > 0 
       ? await db.select().from(message).where(inArray(message.conversationId, convIds)).orderBy(asc(message.createdAt))
       : [];
 
-    const formattedConvs = convs.map(c => ({
+    const formattedConvs = activeConvs.map(c => ({
       ...c,
       messages: allMessages.filter(m => m.conversationId === c.id)
     }));
@@ -94,11 +104,18 @@ adminConversationsRouter.put('/:id/status', async (req, res) => {
     const updateData: any = { updatedAt: new Date() };
     if (status !== undefined) {
       updateData.status = status;
+      // Sync new schema fields with legacy status
       if (status === 'HUMAN_ACTIVE') {
         updateData.chatStatus = 'ADMIN_JOINED';
-      } else if (status === 'BOT_ACTIVE' || status === 'CLOSED') {
+        updateData.mode = 'HUMAN';
+        updateData.needsHuman = false;
+      } else if (status === 'BOT_ACTIVE') {
         updateData.chatStatus = 'OPEN';
         updateData.mode = 'AI';
+      } else if (status === 'CLOSED') {
+        updateData.chatStatus = 'RESOLVED';
+        updateData.mode = 'CLOSED';
+        updateData.needsHuman = false;
       }
     }
     if (takenBy !== undefined) updateData.takenBy = takenBy;

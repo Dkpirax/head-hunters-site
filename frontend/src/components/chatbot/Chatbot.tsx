@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, X, RotateCcw, Bot, User, ShieldAlert, ChevronDown, Check, MessagesSquare } from "lucide-react";
+import { Send, X, RotateCcw, User, ChevronDown, Check, MessagesSquare, Headphones, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiClient } from "@/lib/api";
 import { playSound } from "@/lib/sounds";
@@ -55,6 +55,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   const [inputVal, setInputVal] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [initError, setInitError] = useState(false);
   
   // Tawk Handoff state
   const [handoffStep, setHandoffStep] = useState<"NONE" | "CONSENT" | "DETAILS" | "CONNECTING" | "AWAY_PROMPT" | "OFFLINE_PROMPT">("NONE");
@@ -77,22 +78,19 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
     async function initChat() {
       try {
-        const conf = await getChatConfig();
+        const [conf, conversation] = await Promise.all([
+          getChatConfig(),
+          getOrCreateConversation()
+        ]);
         setConfig(conf);
-        
-        const conversation = await getOrCreateConversation();
         setConversationId(conversation.id);
         setMode(conversation.mode || "AI");
         setChatStatus(conversation.chatStatus || "OPEN");
         prevModeRef.current = conversation.mode || "AI";
         setMessages(conversation.messages || []);
-
-        // Restore handoff step if needed
-        if (conversation.chatStatus === "TAWK_OPENED" || conversation.chatStatus === "AGENT_JOINED") {
-          setIsMinimized(true);
-        }
       } catch (e) {
         console.error("Failed to load chat conversation:", e);
+        setInitError(true);
       }
     }
     initChat();
@@ -106,11 +104,9 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
     async function poll() {
       if (document.hidden) return; 
       try {
-        const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`);
-        if (!res.ok) return;
-        const result = await res.json();
+        const result = await apiClient(`/api/chat/messages?conversationId=${conversationId}`);
         
-        if (active) {
+        if (active && result) {
           if (result.mode === "HUMAN" && prevModeRef.current !== "HUMAN") {
             playSound("connected");
           } else if (result.mode === "AI" && prevModeRef.current === "HUMAN") {
@@ -153,8 +149,6 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
     };
 
     window.Tawk_API.onChatMinimized = () => {
-      // If user minimizes Tawk chat, hide the widget entirely to remove attention grabbers,
-      // and bring the AI chat button back.
       setIsMinimized(false);
       hideTawk();
     };
@@ -214,10 +208,15 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
       }
       const result = await addChatMessage(conversationId, text);
       if (result.ai_generated && result.message) {
-        setMessages((prev) => [...prev, result.message]);
+        setMessages((prev) => {
+          // Replace temp message with actual messages from server on next poll
+          return [...prev.filter(m => m.id !== tempId), result.message];
+        });
       }
     } catch (error) {
       console.error("Failed to send message", error);
+      // Remove temp message on error
+      setMessages((prev) => prev.filter(m => m.id !== tempId));
     } finally {
       setIsTyping(false);
       setIsSubmitting(false);
@@ -288,7 +287,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         id: `sys-${Date.now()}`,
         senderType: "SYSTEM",
         sender: "SYSTEM",
-        content: "Live support could not be opened right now. You can continue here or contact us on WhatsApp.",
+        content: "Live support could not be opened right now. Please contact us at info@headhunters.lk or via WhatsApp.",
         createdAt: new Date(),
       }]);
     }
@@ -315,30 +314,30 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
     if (handoffStep === "NONE") return null;
 
     return (
-      <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-md flex flex-col p-6 animate-in fade-in duration-200">
+      <div className="absolute inset-0 z-10 bg-white/97 backdrop-blur-md flex flex-col p-6 animate-in fade-in duration-200">
         {handoffStep === "CONSENT" && (
           <div className="flex flex-col h-full justify-center space-y-6">
-            <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center mx-auto shadow-sm">
-              <ShieldAlert size={24} />
+            <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-[#02695e] text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+              <Headphones size={26} />
             </div>
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-bold text-slate-800">Live Support Transfer</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                To connect you with our recruitment team, we’ll share the contact details you provide with our live-chat service, Tawk.to. Do you want to continue?
+              <h3 className="text-lg font-bold text-slate-800">Connect with Our Team</h3>
+              <p className="text-sm text-slate-500 leading-relaxed max-w-[260px] mx-auto">
+                We'll connect you with a recruitment consultant. Your details will be shared securely with our live-chat platform.
               </p>
             </div>
-            <div className="space-y-3 pt-4">
+            <div className="space-y-3 pt-2">
               <button 
                 onClick={() => setHandoffStep("DETAILS")}
-                className="w-full h-11 bg-[#02695e] text-white font-semibold rounded-[12px] hover:bg-[#027d6f] transition-colors shadow-sm"
+                className="w-full h-12 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-semibold rounded-[14px] hover:shadow-lg hover:shadow-teal-500/25 transition-all"
               >
                 Continue to live support
               </button>
               <button 
                 onClick={cancelHandoff}
-                className="w-full h-11 bg-slate-100 text-slate-700 font-semibold rounded-[12px] hover:bg-slate-200 transition-colors"
+                className="w-full h-12 bg-slate-100 text-slate-600 font-semibold rounded-[14px] hover:bg-slate-200 transition-colors"
               >
-                Cancel
+                Stay with AI assistant
               </button>
             </div>
           </div>
@@ -346,7 +345,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
         {handoffStep === "DETAILS" && (
           <div className="flex flex-col h-full overflow-y-auto pb-4">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-slate-800">Your Details</h3>
               <button onClick={cancelHandoff} className="p-2 -mr-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
                 <X size={18} />
@@ -354,36 +353,37 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
             </div>
             <div className="space-y-4 flex-1">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">I am a</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">I am a</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'candidate'})} className={`h-10 text-sm font-medium rounded-lg border ${visitorDetails.type === 'candidate' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'} transition-all`}>Job Seeker</button>
-                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'employer'})} className={`h-10 text-sm font-medium rounded-lg border ${visitorDetails.type === 'employer' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'} transition-all`}>Employer</button>
+                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'candidate'})} className={`h-10 text-sm font-semibold rounded-xl border-2 transition-all ${visitorDetails.type === 'candidate' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Job Seeker</button>
+                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'employer'})} className={`h-10 text-sm font-semibold rounded-xl border-2 transition-all ${visitorDetails.type === 'employer' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Employer</button>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">Name</label>
-                <input type="text" value={visitorDetails.name} onChange={e => setVisitorDetails({...visitorDetails, name: e.target.value})} className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="Your full name" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Name *</label>
+                <input type="text" value={visitorDetails.name} onChange={e => setVisitorDetails({...visitorDetails, name: e.target.value})} className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="Your full name" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">Email</label>
-                <input type="email" value={visitorDetails.email} onChange={e => setVisitorDetails({...visitorDetails, email: e.target.value})} className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="you@example.com" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Email *</label>
+                <input type="email" value={visitorDetails.email} onChange={e => setVisitorDetails({...visitorDetails, email: e.target.value})} className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="you@example.com" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">Phone (Optional)</label>
-                <input type="tel" value={visitorDetails.phone} onChange={e => setVisitorDetails({...visitorDetails, phone: e.target.value})} className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="+94 77 ..." />
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Phone (optional)</label>
+                <input type="tel" value={visitorDetails.phone} onChange={e => setVisitorDetails({...visitorDetails, phone: e.target.value})} className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="+94 77 ..." />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">How can we help?</label>
-                <textarea value={visitorDetails.reason} onChange={e => setVisitorDetails({...visitorDetails, reason: e.target.value})} className="w-full h-20 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none" placeholder="Briefly describe what you need..." />
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">How can we help?</label>
+                <textarea value={visitorDetails.reason} onChange={e => setVisitorDetails({...visitorDetails, reason: e.target.value})} className="w-full h-20 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none" placeholder="Briefly describe what you need..." />
               </div>
             </div>
-            <div className="pt-6 mt-auto">
+            <div className="pt-5 mt-auto">
               <button 
                 disabled={!visitorDetails.name || !visitorDetails.email}
                 onClick={proceedToTawk}
-                className="w-full h-11 bg-[#02695e] text-white font-semibold rounded-[12px] hover:bg-[#027d6f] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full h-12 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-semibold rounded-[14px] hover:shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Connect with team
+                <Headphones size={16} />
+                Connect with our team
               </button>
             </div>
           </div>
@@ -391,27 +391,30 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
         {handoffStep === "CONNECTING" && (
           <div className="flex flex-col h-full items-center justify-center space-y-4">
-            <div className="w-8 h-8 border-3 border-[#02695e]/20 border-t-[#02695e] rounded-full animate-spin" />
-            <p className="text-sm font-medium text-slate-600">Connecting you with our recruitment team...</p>
+            <div className="w-12 h-12 border-[3px] border-[#02695e]/20 border-t-[#02695e] rounded-full animate-spin" />
+            <p className="text-sm font-medium text-slate-600">Connecting you with our team...</p>
           </div>
         )}
 
         {handoffStep === "AWAY_PROMPT" && (
           <div className="flex flex-col h-full justify-center space-y-6">
+            <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto">
+              <Headphones size={26} />
+            </div>
             <div className="text-center space-y-2">
               <h3 className="text-lg font-bold text-slate-800">Team is Away</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Our recruitment team may take a little longer to respond. Would you like to open live chat, continue with the AI assistant, or contact us on WhatsApp?
+              <p className="text-sm text-slate-500 leading-relaxed max-w-[260px] mx-auto">
+                Our recruitment team may take a little longer to respond. You can open live chat, continue with AI, or contact us on WhatsApp.
               </p>
             </div>
-            <div className="space-y-3 pt-4">
-              <button onClick={openTawkChat} className="w-full h-11 bg-[#02695e] text-white font-semibold rounded-[12px] hover:bg-[#027d6f] transition-colors shadow-sm">
+            <div className="space-y-3 pt-2">
+              <button onClick={openTawkChat} className="w-full h-12 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-semibold rounded-[14px] transition-all hover:shadow-lg hover:shadow-teal-500/25">
                 Open Live Chat
               </button>
-              <a href={`https://wa.me/${config?.tawkWhatsAppNumber?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="w-full h-11 flex items-center justify-center bg-green-600 text-white font-semibold rounded-[12px] hover:bg-green-700 transition-colors shadow-sm">
-                WhatsApp Us
+              <a href={`https://wa.me/${config?.tawkWhatsAppNumber?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="w-full h-12 flex items-center justify-center gap-2 bg-green-600 text-white font-semibold rounded-[14px] hover:bg-green-700 transition-colors">
+                <MessageCircle size={16} /> WhatsApp Us
               </a>
-              <button onClick={cancelHandoff} className="w-full h-11 bg-slate-100 text-slate-700 font-semibold rounded-[12px] hover:bg-slate-200 transition-colors">
+              <button onClick={cancelHandoff} className="w-full h-12 bg-slate-100 text-slate-600 font-semibold rounded-[14px] hover:bg-slate-200 transition-colors">
                 Continue with AI
               </button>
             </div>
@@ -420,20 +423,23 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
         {handoffStep === "OFFLINE_PROMPT" && (
           <div className="flex flex-col h-full justify-center space-y-6">
+            <div className="w-14 h-14 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center mx-auto">
+              <Headphones size={26} />
+            </div>
             <div className="text-center space-y-2">
               <h3 className="text-lg font-bold text-slate-800">Team Offline</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {config?.tawkOfflineMessage || "Our recruitment team is currently offline. You can leave a message, continue with the AI assistant, or contact us on WhatsApp."}
+              <p className="text-sm text-slate-500 leading-relaxed max-w-[260px] mx-auto">
+                {config?.tawkOfflineMessage || "Our team is currently offline. Leave a message, contact us on WhatsApp, or let our AI assistant help you."}
               </p>
             </div>
-            <div className="space-y-3 pt-4">
-              <button onClick={openTawkChat} className="w-full h-11 bg-[#02695e] text-white font-semibold rounded-[12px] hover:bg-[#027d6f] transition-colors shadow-sm">
+            <div className="space-y-3 pt-2">
+              <button onClick={openTawkChat} className="w-full h-12 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-semibold rounded-[14px] transition-all hover:shadow-lg hover:shadow-teal-500/25">
                 Leave a message
               </button>
-              <a href={`https://wa.me/${config?.tawkWhatsAppNumber?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="w-full h-11 flex items-center justify-center bg-green-600 text-white font-semibold rounded-[12px] hover:bg-green-700 transition-colors shadow-sm">
-                WhatsApp Us
+              <a href={`https://wa.me/${config?.tawkWhatsAppNumber?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="w-full h-12 flex items-center justify-center gap-2 bg-green-600 text-white font-semibold rounded-[14px] hover:bg-green-700 transition-colors">
+                <MessageCircle size={16} /> WhatsApp Us
               </a>
-              <button onClick={cancelHandoff} className="w-full h-11 bg-slate-100 text-slate-700 font-semibold rounded-[12px] hover:bg-slate-200 transition-colors">
+              <button onClick={cancelHandoff} className="w-full h-12 bg-slate-100 text-slate-600 font-semibold rounded-[14px] hover:bg-slate-200 transition-colors">
                 Continue with AI
               </button>
             </div>
@@ -447,9 +453,16 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
     if (handoffStep === "CONNECTING") return "Connecting...";
     if (mode === "TAWK_HANDOFF") return "Live Support Active";
     if (mode === "HUMAN") {
-      return chatStatus === "WAITING_FOR_ADMIN" ? "Waiting for consultant..." : "Human agent joined";
+      return chatStatus === "WAITING_FOR_ADMIN" ? "Waiting for a consultant..." : "Consultant joined";
     }
     return "AI-powered recruitment support";
+  };
+
+  const getLiveAgentButtonLabel = () => {
+    if (!config) return null;
+    if (config.humanSupportProvider === 'TAWK') return 'Speak to a Consultant';
+    if (config.humanSupportProvider === 'INTERNAL') return 'Talk to a Human';
+    return null;
   };
 
   if (isMinimized) {
@@ -459,14 +472,13 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
           onClick={() => {
             setIsMinimized(false);
             if (mode === "TAWK_HANDOFF") {
-              // Usually we wouldn't show the Tawk widget AND this maximized, but we let them return to AI.
               hideTawk();
               setMode("AI");
             }
           }}
           className="bg-white px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-slate-100 flex items-center gap-3 hover:scale-105 transition-transform"
         >
-          <Bot className="text-[#02695e] w-5 h-5" />
+          <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />
           <span className="text-sm font-semibold text-slate-700">Return to AI Assistant</span>
         </button>
       </div>
@@ -487,54 +499,56 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
       {renderHandoffFlow()}
 
       {/* Header */}
-      <div className="px-5 py-4 pt-[max(env(safe-area-inset-top,1rem),1rem)] md:pt-4 border-b border-[#02695e]/10 bg-[#0B0B0C] flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] flex items-center justify-center">
-            <Bot size={18} className="text-white" />
+      <div className="px-3.5 py-3 pt-[max(env(safe-area-inset-top,0.75rem),0.75rem)] md:pt-3 bg-gradient-to-r from-[#02695e] to-[#04a891] flex items-center justify-between gap-2 shrink-0 shadow-sm">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />
           </div>
-          <div>
-            <h4 className="text-sm font-bold text-white leading-tight tracking-wide">
+          <div className="min-w-0">
+            <h4 className="text-xs sm:text-[13px] font-bold text-white leading-tight tracking-wide whitespace-nowrap overflow-hidden text-ellipsis">
               Headhunters Assistant
             </h4>
-            <p className="text-[11px] text-white/60 mt-0.5 font-medium flex items-center gap-1.5">
+            <p className="text-[10px] text-white/80 mt-0.5 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
               {getStatusText()}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {mode === "AI" && config?.humanSupportProvider && config.humanSupportProvider !== 'DISABLED' && (
+        <div className="flex items-center gap-1 shrink-0">
+          {mode === "AI" && config?.humanSupportProvider && config.humanSupportProvider !== 'DISABLED' && getLiveAgentButtonLabel() && (
             <button
               onClick={initiateHumanHandoff}
               disabled={isSubmitting}
-              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] font-semibold transition-colors whitespace-nowrap"
+              className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 text-white rounded-full text-[10.5px] font-semibold transition-all whitespace-nowrap border border-white/30 shadow-sm"
             >
-              {config.humanSupportProvider === 'TAWK' ? 'Live Chat (Tawk)' : 'Talk to Human'}
+              <Headphones size={11} />
+              <span className="hidden sm:inline">{getLiveAgentButtonLabel()}</span>
+              <span className="sm:hidden">Consultant</span>
             </button>
           )}
           <button
             onClick={startFreshConversation}
             disabled={isSubmitting || mode === "TAWK_HANDOFF"}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer text-white/60 hover:text-white disabled:opacity-40"
-            title="Restart conversation"
+            className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer text-white/80 hover:text-white disabled:opacity-40"
+            title="New conversation"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={13} />
           </button>
           {!inline && onClose && (
             <button
               onClick={() => setIsMinimized(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors cursor-pointer text-white/60 hover:text-white"
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors cursor-pointer text-white/80 hover:text-white"
               title="Minimize"
             >
-              <ChevronDown size={18} />
+              <ChevronDown size={17} />
             </button>
           )}
         </div>
       </div>
 
       {/* Privacy Notice */}
-      <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-start justify-center text-center shrink-0">
-        <p className="text-[10px] leading-tight text-slate-500 font-medium">
-          Please don’t share passwords, bank details or identity documents in this chat.
+      <div className="px-4 py-2 bg-amber-50 border-b border-amber-100/80 flex items-center justify-center text-center shrink-0">
+        <p className="text-[10px] leading-tight text-amber-700/80 font-medium">
+          🔒 Never share passwords, bank details or identity documents in this chat.
         </p>
       </div>
 
@@ -543,25 +557,46 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         data-lenis-prevent
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
-        className="flex-1 overflow-y-auto px-5 py-6 space-y-5 bg-[#FAFAFA] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto px-5 py-6 space-y-5 bg-[#F9FAFB] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
       >
-        {messages.length === 0 && (
+        {initError && (
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+              <X className="text-red-400 w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Could not connect</p>
+              <p className="text-xs text-slate-400 mt-1">Please refresh the page or contact us at info@headhunters.lk</p>
+            </div>
+          </div>
+        )}
+
+        {!initError && messages.length === 0 && !conversationId && (
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 animate-in fade-in duration-500">
+            <div className="w-10 h-10 border-3 border-[#02695e]/20 border-t-[#02695e] rounded-full animate-spin" />
+            <p className="text-xs text-slate-400">Starting your session...</p>
+          </div>
+        )}
+
+        {!initError && messages.length === 0 && conversationId && (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-            <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center shadow-inner">
               <MessagesSquare className="text-[#02695e] w-8 h-8 opacity-80" />
             </div>
             <div className="space-y-2 max-w-[280px]">
-              <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                Hi! I can help you explore vacancies, submit your CV, request staff, or learn about our recruitment services. How can I help today?
+              <p className="text-sm text-slate-700 font-semibold leading-relaxed">
+                Hi! I'm your Headhunters AI assistant.
               </p>
-              <p className="text-[10px] text-slate-400">Answers are based on approved Headhunters.lk information.</p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                I can help you explore vacancies, submit your CV, request staff, or answer questions about our recruitment services.
+              </p>
             </div>
             
             <div className="flex flex-wrap justify-center gap-2 pt-2">
-              <button onClick={() => handleSendText("Find a job")} className="px-4 py-1.5 bg-white border border-slate-200 rounded-full text-[13px] font-semibold text-slate-700 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all">Find a job</button>
-              <button onClick={() => handleSendText("Submit my CV")} className="px-4 py-1.5 bg-white border border-slate-200 rounded-full text-[13px] font-semibold text-slate-700 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all">Submit my CV</button>
-              <button onClick={() => handleSendText("Hire talent")} className="px-4 py-1.5 bg-white border border-slate-200 rounded-full text-[13px] font-semibold text-slate-700 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all">Hire talent</button>
-              <button onClick={() => handleSendText("Ask a question")} className="px-4 py-1.5 bg-white border border-slate-200 rounded-full text-[13px] font-semibold text-slate-700 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all">Ask a question</button>
+              <button onClick={() => handleSendText("Find a job")} className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[12px] font-semibold text-slate-600 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all hover:shadow-md">🔍 Find a job</button>
+              <button onClick={() => handleSendText("Submit my CV")} className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[12px] font-semibold text-slate-600 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all hover:shadow-md">📄 Submit my CV</button>
+              <button onClick={() => handleSendText("Hire talent")} className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[12px] font-semibold text-slate-600 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all hover:shadow-md">🤝 Hire talent</button>
+              <button onClick={() => handleSendText("What services do you offer?")} className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[12px] font-semibold text-slate-600 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all hover:shadow-md">❓ Our services</button>
             </div>
           </div>
         )}
@@ -570,18 +605,18 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
           return (
             <div key={m.id} className={`flex items-end gap-2.5 ${m.senderType === "USER" ? "flex-row-reverse" : ""}`}>
               {m.senderType !== "USER" && (
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${m.senderType === "ADMIN" ? "bg-[#04a891]" : "bg-[#02695e]"}`}>
-                   {m.senderType === "ADMIN" ? <User size={12} className="text-white" /> : <Bot size={12} className="text-white" />}
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${m.senderType === "ADMIN" ? "bg-gradient-to-br from-[#02695e] to-[#04a891]" : "bg-gradient-to-br from-[#02695e] to-[#04a891]"}`}>
+                   {m.senderType === "ADMIN" ? <User size={12} className="text-white" /> : <img src="/logo/favicon-mark.png" alt="AI" className="w-4 h-4 object-contain rounded" />}
                 </div>
               )}
               
               <div className="max-w-[75%] space-y-1">
                 {m.senderType === "SYSTEM" ? (
-                   <div className="text-center w-full px-4 text-xs font-medium text-slate-400 my-2">{m.content}</div>
+                   <div className="text-center w-full px-4 text-xs font-medium text-slate-400 my-2 italic">{m.content}</div>
                 ) : (
                   <div className={`px-4 py-2.5 text-[13px] leading-relaxed font-medium overflow-wrap-anywhere ${
                     m.senderType === "USER" 
-                      ? "bg-slate-800 text-white rounded-[18px] rounded-br-[6px] shadow-sm" 
+                      ? "bg-gradient-to-br from-[#02695e] to-[#04a891] text-white rounded-[18px] rounded-br-[6px] shadow-sm" 
                       : m.senderType === "ADMIN"
                       ? "bg-[#04a891] text-white rounded-[18px] rounded-bl-[6px] shadow-sm"
                       : "bg-white border border-slate-100 text-slate-800 rounded-[18px] rounded-bl-[6px] shadow-sm prose prose-sm prose-slate max-w-none"
@@ -597,7 +632,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                             if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
                               return <span>{props.children}</span>; 
                             }
-                            return <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#04a891] font-bold hover:underline break-all" />;
+                            return <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#02695e] font-bold hover:underline break-all" />;
                           },
                           code: ({ node, ...props }) => <code {...props} className="bg-slate-50 text-[#02695e] px-1 py-0.5 rounded text-[11px] break-words" />,
                           p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />
@@ -609,8 +644,8 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                   </div>
                 )}
                 {m.senderType === "BOT" && m.grounded && (
-                  <div className="flex items-center gap-1 text-[9px] text-slate-400 font-semibold uppercase tracking-wider ml-2">
-                    <Check size={10} /> Verified
+                  <div className="flex items-center gap-1 text-[9px] text-[#02695e]/70 font-semibold uppercase tracking-wider ml-2">
+                    <Check size={10} /> Verified info
                   </div>
                 )}
               </div>
@@ -620,31 +655,17 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
         {isTyping && (
           <div className="flex items-end gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-[#02695e] flex items-center justify-center shrink-0">
-               <Bot size={12} className="text-white" />
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] flex items-center justify-center shrink-0">
+               <img src="/logo/favicon-mark.png" alt="AI" className="w-4 h-4 object-contain rounded" />
             </div>
             <div className="px-4 py-3 bg-white border border-slate-100 rounded-[18px] rounded-bl-[6px] shadow-sm">
-              <span className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></span>
+              <span className="flex gap-1.5 items-center">
+                <span className="w-1.5 h-1.5 bg-[#02695e]/40 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-1.5 h-1.5 bg-[#02695e]/40 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-1.5 h-1.5 bg-[#02695e]/40 rounded-full animate-bounce"></span>
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 ml-1 mb-1 font-medium">Checking our approved information...</span>
-          </div>
-        )}
-
-        {messages.length > 0 && mode === "AI" && config?.humanSupportProvider !== 'DISABLED' && (
-          <div className="mt-8 mb-2 flex justify-center">
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 w-[280px] shadow-sm text-center space-y-3">
-              <p className="text-xs text-slate-500 font-medium">Need personal assistance? Connect with a recruitment consultant.</p>
-              <button 
-                onClick={initiateHumanHandoff}
-                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-bold rounded-xl transition-colors"
-              >
-                Speak with our team
-              </button>
-            </div>
+            <span className="text-[10px] text-slate-400 ml-1 mb-1 font-medium">Searching our knowledge base...</span>
           </div>
         )}
 
@@ -669,15 +690,15 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                 }
               }}
               placeholder="Ask about jobs or recruitment services..."
-              className="flex-1 max-h-32 min-h-[44px] bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none shadow-inner"
+              className="flex-1 max-h-32 min-h-[44px] bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none shadow-inner placeholder:text-slate-400"
               disabled={isSubmitting}
             />
             <button
               type="submit"
               disabled={!inputVal.trim() || isSubmitting}
-              className="w-11 h-11 shrink-0 rounded-full bg-[#02695e] text-white flex items-center justify-center hover:bg-[#027d6f] transition-all disabled:opacity-50 shadow-sm"
+              className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] text-white flex items-center justify-center hover:shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-50 shadow-sm"
             >
-              <Send size={18} className={inputVal.trim() ? "ml-0.5" : ""} />
+              <Send size={17} className={inputVal.trim() ? "ml-0.5" : ""} />
             </button>
           </form>
         </div>

@@ -35,16 +35,20 @@ function decrypt(hash: string) {
 aiSettingsRouter.get('/', requireAuth, async (req, res) => {
   try {
     const settingsRows = await db.select().from(content).where(eq(content.key, 'ai_settings'));
-    let aiSettings = {};
+    let aiSettings: any = {};
     if (settingsRows.length > 0) {
       aiSettings = JSON.parse(settingsRows[0].value);
     }
     
-    // Return whether API key and Tawk Secret are configured
-    const apiKeyConfigured = !!(aiSettings as any).apiKey;
-    const tawkSecretConfigured = !!(aiSettings as any).tawkSecret;
-    delete (aiSettings as any).apiKey;
-    delete (aiSettings as any).tawkSecret;
+    const apiKeyConfigured = !!aiSettings.apiKey;
+    const tawkSecretConfigured = !!aiSettings.tawkSecret;
+    
+    if (apiKeyConfigured) {
+      aiSettings.apiKey = '••••••••';
+    }
+    if (tawkSecretConfigured) {
+      aiSettings.tawkSecret = '••••••••';
+    }
 
     res.json({
       enabled: true,
@@ -94,7 +98,7 @@ aiSettingsRouter.put('/', requireAuth, async (req, res) => {
     if (data.removeApiKey) {
       delete existingSettings.apiKey;
       console.log(`[SECURITY AUDIT] API Key removed by admin user: ${req.user?.id || 'unknown'}`);
-    } else if (data.apiKey) {
+    } else if (data.apiKey && data.apiKey !== '••••••••') {
       existingSettings.apiKey = encrypt(data.apiKey);
       console.log(`[SECURITY AUDIT] API Key replaced by admin user: ${req.user?.id || 'unknown'}`);
     }
@@ -102,16 +106,19 @@ aiSettingsRouter.put('/', requireAuth, async (req, res) => {
     if (data.removeTawkSecret) {
       delete existingSettings.tawkSecret;
       console.log(`[SECURITY AUDIT] Tawk Secret removed by admin user: ${req.user?.id || 'unknown'}`);
-    } else if (data.tawkSecret) {
+    } else if (data.tawkSecret && data.tawkSecret !== '••••••••') {
       existingSettings.tawkSecret = encrypt(data.tawkSecret);
       console.log(`[SECURITY AUDIT] Tawk Secret replaced by admin user: ${req.user?.id || 'unknown'}`);
     }
 
-    // Merge other operational settings
+    // Clean payload properties before merging
     delete data.apiKey;
     delete data.removeApiKey;
     delete data.tawkSecret;
     delete data.removeTawkSecret;
+    delete data.apiKeyConfigured;
+    delete data.tawkSecretConfigured;
+    
     const newSettings = { ...existingSettings, ...data };
 
     // Save as JSON inside the `content` table under `ai_settings` key
@@ -130,9 +137,9 @@ aiSettingsRouter.post('/test', requireAuth, async (req, res) => {
   try {
     const { baseUrl, apiKey, modelName } = req.body;
     
-    // If apiKey is masked, decode it
+    // If apiKey is masked or empty, load decrypted stored key from DB
     let finalKey = apiKey;
-    if (finalKey === '••••••••') {
+    if (!finalKey || finalKey === '••••••••') {
       const settingsRows = await db.select().from(content).where(eq(content.key, 'ai_settings'));
       if (settingsRows.length > 0) {
         const oldSettings = JSON.parse(settingsRows[0].value);
@@ -140,14 +147,16 @@ aiSettingsRouter.post('/test', requireAuth, async (req, res) => {
       }
     }
 
+    const targetUrl = (baseUrl || 'http://localhost:11434').replace(/\/+$/, '');
+
     // Ping Ollama
     const controller = new AbortController();
-    const timeout = setTimeout(() => { controller.abort(); }, 5000);
+    const timeout = setTimeout(() => { controller.abort(); }, 8000);
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (finalKey) headers["Authorization"] = `Bearer ${finalKey}`;
 
-    const response = await fetch(`${baseUrl}/api/tags`, {
+    const response = await fetch(`${targetUrl}/api/tags`, {
       method: "GET",
       headers,
       signal: controller.signal
@@ -159,13 +168,13 @@ aiSettingsRouter.post('/test', requireAuth, async (req, res) => {
       const data = await response.json();
       const hasModel = data.models?.some((m: any) => m.name === modelName || m.name.startsWith(modelName));
       if (!hasModel) {
-        return res.json({ success: false, message: `Connected to Ollama, but model '${modelName}' was not found.` });
+        return res.json({ success: false, message: `Connected to Ollama at ${targetUrl}, but model '${modelName}' was not found in available models.` });
       }
-      return res.json({ success: true, message: `Successfully connected to Ollama and found model '${modelName}'.` });
+      return res.json({ success: true, message: `Successfully connected to Ollama at ${targetUrl} and found model '${modelName}'.` });
     } else {
-      return res.json({ success: false, message: `Ollama returned status: ${response.status} ${response.statusText}` });
+      return res.json({ success: false, message: `Ollama at ${targetUrl} returned status ${response.status}: ${response.statusText}` });
     }
   } catch (error: any) {
-    res.json({ success: false, message: error.message });
+    res.json({ success: false, message: `Connection failed: ${error.message}` });
   }
 });

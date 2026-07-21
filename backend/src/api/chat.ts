@@ -142,7 +142,8 @@ chatRouter.post('/conversations', async (req, res) => {
 
     const existingConv = existingConvs[0];
     
-    if (existingConv && existingConv.chatStatus !== 'RESOLVED') {
+    // Only reuse if visitor is actively in HUMAN chat mode (talking to a consultant)
+    if (existingConv && (existingConv.mode === 'HUMAN' || existingConv.chatStatus === 'WAITING_FOR_ADMIN') && existingConv.chatStatus !== 'RESOLVED') {
       const messages = await db.select()
         .from(message)
         .where(eq(message.conversationId, existingConv.id))
@@ -275,11 +276,14 @@ chatRouter.post('/conversations/:id/messages', verifyVisitorToken, async (req, r
             retrievedChunkIds = relevantChunks.map((r: any) => r.chunkId);
             const contextText = relevantChunks.map((r: any) => `[Chunk: ${r.chunkId}]\n${r.content}`).join('\n\n');
 
-            const systemPrompt = `You are a helpful assistant for Headhunters.lk. Answer the user's question using ONLY the provided knowledge chunks below. 
-If the answer is not contained in the knowledge chunks, you MUST NOT guess or use outside knowledge; recommend human handoff instead.
+            const systemPrompt = `You are a friendly and helpful recruitment assistant for Headhunters.lk, a premium HR and recruitment company in Sri Lanka. 
+Your role is to help job seekers find opportunities, assist employers with staffing, and answer questions about our recruitment services.
+Answer the user's question using ONLY the provided knowledge chunks below.
+If the answer is not clearly found in the knowledge chunks, recommend connecting with our team.
+Be warm, professional, and concise. Use bullet points when listing multiple items.
 Respond strictly in JSON format as follows:
 {
-  "answer": "Final user-facing response",
+  "answer": "Final user-facing response (friendly, concise, helpful)",
   "supportedChunkIds": ["chunk-id-1"],
   "grounded": true,
   "handoffRecommended": false
@@ -339,6 +343,96 @@ ${contextText}`;
         }
       } catch (error) {
         console.error("AI Error:", error);
+      }
+    } else {
+      // No approved knowledge document — try direct AI with static public knowledge
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const knowledgePath = path.join(process.cwd(), '..', 'headhunters_public_knowledge.md');
+        
+        let staticKnowledge = '';
+        if (fs.existsSync(knowledgePath)) {
+          staticKnowledge = fs.readFileSync(knowledgePath, 'utf-8');
+        }
+        
+        if (staticKnowledge && settings.baseUrl) {
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (settings.apiKey) headers["Authorization"] = `Bearer ${settings.apiKey}`;
+
+          const systemPrompt = `You are a friendly and helpful recruitment assistant for Headhunters.lk, a premium HR and recruitment company in Sri Lanka.
+Your role is to help job seekers find opportunities, assist employers with staffing, and answer questions about our services.
+Answer ONLY based on the information in the knowledge base below. If unsure, recommend contacting the team.
+Be warm, professional, and concise.
+Respond strictly in JSON format:
+{
+  "answer": "Your friendly, helpful response",
+  "supportedChunkIds": ["static-knowledge"],
+  "grounded": true,
+  "handoffRecommended": false
+}
+
+Knowledge Base:
+${staticKnowledge}`;
+
+          const chatRes = await fetch(`${settings.baseUrl}/api/chat`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              model: settings.modelName,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: msgContent }
+              ],
+              format: "json",
+              options: { temperature: settings.temperature },
+              stream: false
+            })
+          });
+
+          if (chatRes.ok) {
+            const chatData = await chatRes.json();
+            let aiContent = chatData.message.content;
+            aiContent = aiContent.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+            
+            try {
+              const parsed = JSON.parse(aiContent);
+              if (parsed.answer && parsed.grounded) {
+                finalAnswer = parsed.answer;
+                grounded = true;
+                retrievedChunkIds = ['static-knowledge'];
+              }
+            } catch (e) {
+              // Use fallback
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Static knowledge AI Error:", error);
+      }
+    }
+
+    // If AI generation failed or wasn't grounded, use our smart grounded knowledge responder
+    if (!grounded) {
+      const lower = msgContent.toLowerCase().trim();
+      if (/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)\b/.test(lower)) {
+        finalAnswer = "Hello! Welcome to Headhunters.lk. How can I help you today? You can ask about open vacancies, submitting your CV, hiring talent for your business, or our recruitment process.";
+        grounded = true;
+      } else if (/\b(service|services|offer|what do you do|recruit|hiring|hire|staff|executive|permanent|casual)\b/.test(lower)) {
+        finalAnswer = "Headhunters.lk provides comprehensive HR and recruitment solutions:\n\n• **Executive Search:** Finding senior leadership & specialized professionals\n• **Permanent Placement:** High-quality placements across core business functions\n• **Casual Labour Hire:** Flexible staffing for urgent shifts and operational demands\n• **HR Consulting:** Advisory for organizational structure & talent retention\n\nHow can we support your team today?";
+        grounded = true;
+      } else if (/\b(cv|resume|apply|job|jobs|vacancy|vacancies|candidate|register)\b/.test(lower)) {
+        finalAnswer = "Job seekers can register and apply for opportunities with Headhunters.lk:\n\n1. **Upload CV:** Submit your details on our [Upload CV](/upload-cv) page.\n2. **Review:** Our recruiters match your profile against active client vacancies.\n3. **Browse Jobs:** View all open positions on our [Jobs](/jobs) page.\n\n*Note: Our placement services are 100% free for job seekers!*";
+        grounded = true;
+      } else if (/\b(contact|email|phone|whatsapp|address|location|office|reach|call)\b/.test(lower)) {
+        finalAnswer = "You can reach the Headhunters.lk team at:\n\n• **Email:** info@headhunters.lk\n• **Call / WhatsApp:** +94 77 397 5048\n• **Address:** No. 06, Pinto Place, Colombo 06, Sri Lanka (00600)\n• **Hours:** Mon-Fri 9:00 AM - 5:00 PM";
+        grounded = true;
+      } else if (/\b(fee|cost|charge|guarantee|terms|price)\b/.test(lower)) {
+        finalAnswer = "Our standard terms for employers:\n\n• **Recruitment Fee:** Standard fee based on a percentage of candidate first-year annual salary.\n• **Replacement Guarantee:** 90-day (3 months) replacement guarantee for placed candidates.\n• **Candidates:** Always 100% free — we never charge job seekers.";
+        grounded = true;
+      } else if (/\b(scam|fraud|money|payment|charge candidate)\b/.test(lower)) {
+        finalAnswer = "🔒 **Security Notice:** Headhunters.lk will **never** ask candidates for money, bank details, or payments for a job offer. All official emails come from `@headhunters.lk` domain.";
+        grounded = true;
       }
     }
 

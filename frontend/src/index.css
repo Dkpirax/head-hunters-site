@@ -169,3 +169,17 @@ select {
   from { height: var(--radix-accordion-content-height); }
   to { height: 0; }
 }
+
+/* ─── Hide Tawk.to Default Floating Widget & Branding ─────────────────────── */
+#tawk-bubble-container,
+.tawk-min-container,
+.tawk-button,
+a[href*="tawk.to"],
+div[class*="tawk-branding"],
+span[class*="tawk-branding"],
+#tawk-header-text {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
