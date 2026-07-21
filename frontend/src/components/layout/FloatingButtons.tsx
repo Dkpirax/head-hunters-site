@@ -87,15 +87,26 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
         <div className="relative">
           <button
             onClick={handleToggleChat}
-            className="group flex items-center gap-2 pl-3 pr-4 h-14 rounded-full bg-gradient-to-r from-[#02695e] to-[#04a891] text-white shadow-[0_8px_30px_rgba(4,168,145,0.45)] hover:shadow-[0_8px_40px_rgba(4,168,145,0.65)] hover:scale-105 transition-all cursor-pointer z-50 relative flex items-center"
+            className={`group text-white shadow-[0_8px_30px_rgba(4,168,145,0.45)] hover:shadow-[0_8px_40px_rgba(4,168,145,0.65)] hover:scale-105 transition-all cursor-pointer z-50 relative flex items-center justify-center bg-gradient-to-r from-[#02695e] to-[#04a891] ${
+              isChatOpen 
+                ? "w-14 h-14 rounded-full" 
+                : "h-14 pl-3 pr-5 rounded-full gap-2.5"
+            }`}
             aria-label={isChatOpen ? "Close chat" : "Open chat"}
+            title={isChatOpen ? "Close chat" : "Open chat"}
           >
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              {isChatOpen ? <X size={16} /> : <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />}
-            </div>
-            <span className="text-[13px] font-bold tracking-wide whitespace-nowrap">
-              {isChatOpen ? "Close" : "Chat with us"}
-            </span>
+            {isChatOpen ? (
+              <X size={22} className="text-white" />
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />
+                </div>
+                <span className="text-[13px] font-bold tracking-wide whitespace-nowrap">
+                  Chat with us
+                </span>
+              </>
+            )}
           </button>
           {hasUnread && !isChatOpen && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-[9px] text-white font-black animate-pulse shadow-md">1</span>

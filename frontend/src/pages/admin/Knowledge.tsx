@@ -130,18 +130,15 @@ export function AdminKnowledgePage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-8 space-y-6">
+      <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Database className="w-6 h-6 text-[#04a891]" />
-            Knowledge Base
-          </h1>
-          <p className="text-white/60 mt-1">Manage documents used by the AI Chat Agent.</p>
+          <h1 className="text-2xl font-black text-white mb-1">Knowledge Base</h1>
+          <p className="text-white/40 text-sm">Manage documents used by the AI Chat Agent</p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[320px_1fr] gap-8">
+      <div className="grid lg:grid-cols-[340px_1fr] gap-6">
         {/* Upload Form */}
         <div className="bg-[#1a1c1b] border border-white/10 rounded-xl p-6 h-fit">
           <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">

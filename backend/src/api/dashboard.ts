@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../lib/db';
 import { job, enquiry, conversation, message } from '../db/schema';
-import { eq, inArray, desc, sql } from 'drizzle-orm';
+import { eq, inArray, desc, asc, sql } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth';
 
 export const dashboardRouter = Router();
@@ -14,7 +14,6 @@ dashboardRouter.get('/', requireAuth, async (req, res) => {
       unreadEnquiriesCountRes,
       cvsCountRes,
       recentEnquiriesRes,
-      recentChatsRes,
       allConversationsRes,
     ] = await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(job).where(eq(job.status, "ACTIVE")),
@@ -22,8 +21,6 @@ dashboardRouter.get('/', requireAuth, async (req, res) => {
       db.select({ count: sql<number>`count(*)` }).from(enquiry).where(eq(enquiry.status, "NEW")),
       db.select({ count: sql<number>`count(*)` }).from(enquiry).where(eq(enquiry.type, "CANDIDATE")),
       db.select().from(enquiry).orderBy(desc(enquiry.createdAt)).limit(4),
-      db.select().from(conversation).where(inArray(conversation.status, ["BOT_ACTIVE", "HUMAN_ACTIVE"])).orderBy(desc(conversation.updatedAt)).limit(4),
-      // All conversations with messages to compute avg response time
       db.select().from(conversation).limit(100),
     ]);
 
@@ -32,11 +29,23 @@ dashboardRouter.get('/', requireAuth, async (req, res) => {
     const unreadEnquiriesCount = Number(unreadEnquiriesCountRes[0].count);
     const cvsCount = Number(cvsCountRes[0].count);
 
-    // Fetch latest message for each recent chat
-    const recentChats = await Promise.all(recentChatsRes.map(async (c) => {
-      const msgs = await db.select().from(message).where(eq(message.conversationId, c.id)).orderBy(desc(message.createdAt)).limit(1);
+    // Fetch recent active conversations (excluding abandoned bot-only sessions and resolved chats)
+    const allRecentConvs = await db.select().from(conversation).orderBy(desc(conversation.updatedAt)).limit(20);
+    const recentChatsWithMsgs = await Promise.all(allRecentConvs.map(async (c) => {
+      const msgs = await db.select().from(message).where(eq(message.conversationId, c.id)).orderBy(asc(message.createdAt));
       return { ...c, messages: msgs };
     }));
+
+    const recentChats = recentChatsWithMsgs
+      .filter((c) => {
+        if (c.chatStatus === 'RESOLVED' || c.mode === 'CLOSED') return false;
+        // Exclude single-greeting abandoned bot chats
+        if ((c.mode === 'AI' || c.status === 'BOT_ACTIVE') && c.messages.length <= 1 && !c.needsHuman && c.chatStatus !== 'WAITING_FOR_ADMIN') {
+          return false;
+        }
+        return true;
+      })
+      .slice(0, 4);
 
     // Calculate avg response time like the old site
     let avgResponseMin = 0;

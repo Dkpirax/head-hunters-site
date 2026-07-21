@@ -153,7 +153,7 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto h-[calc(100vh-64px)] flex flex-col">
+    <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">User Management</h1>

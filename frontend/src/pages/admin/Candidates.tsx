@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Search, FileText } from 'lucide-react';
+import { Download, Search, FileText, Trash2 } from 'lucide-react';
 
 interface Candidate {
   id: string;
@@ -38,18 +38,42 @@ export function AdminCandidatesPage() {
 
   const handleDownloadCV = (filename: string, candidateName: string) => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    if (!filename) {
+      alert("No CV file available for this candidate.");
+      return;
+    }
+    const downloadUrl = `${apiUrl}/api/candidates/download/${filename}`;
     
     // Trigger download
     const link = document.createElement('a');
-    link.href = `${apiUrl}/api/candidates/download/${filename}`;
+    link.href = downloadUrl;
     
     // Set a nice filename for the downloaded file
     const ext = filename.split('.').pop() || 'pdf';
-    link.download = `CV_${candidateName.replace(/\s+/g, '_')}.${ext}`;
+    link.download = `${candidateName.replace(/\s+/g, '_')}_CV.${ext}`;
     
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDeleteCandidate = async (id: string, candidateName: string) => {
+    if (!window.confirm(`Are you sure you want to delete candidate "${candidateName}"?`)) return;
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/candidates/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        setCandidates(prev => prev.filter(c => c.id !== id));
+      } else {
+        alert("Failed to delete candidate.");
+      }
+    } catch (error) {
+      alert("Error deleting candidate.");
+    }
   };
 
   const filteredCandidates = candidates.filter(
@@ -136,13 +160,24 @@ export function AdminCandidatesPage() {
                       {new Date(c.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleDownloadCV(c.cvFileName, c.name || 'Candidate')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-medium transition-colors"
-                      >
-                        <Download size={14} />
-                        Download CV
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {c.cvFileName && (
+                          <button
+                            onClick={() => handleDownloadCV(c.cvFileName, c.name || 'Candidate')}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-medium transition-colors"
+                          >
+                            <Download size={14} />
+                            Download CV
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteCandidate(c.id, c.name || c.email)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                          title="Delete Candidate"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

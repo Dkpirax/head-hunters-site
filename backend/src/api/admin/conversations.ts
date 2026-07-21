@@ -119,8 +119,9 @@ adminConversationsRouter.put('/:id/status', async (req, res) => {
         updateData.mode = 'AI';
       } else if (status === 'CLOSED') {
         updateData.chatStatus = 'RESOLVED';
-        updateData.mode = 'CLOSED';
+        updateData.mode = 'AI';
         updateData.needsHuman = false;
+        updateData.takenBy = null;
       }
     }
     if (takenBy !== undefined) updateData.takenBy = takenBy;

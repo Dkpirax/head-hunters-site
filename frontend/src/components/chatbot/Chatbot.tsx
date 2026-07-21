@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, X, RotateCcw, User, ChevronDown, Check, MessagesSquare, Headphones, MessageCircle } from "lucide-react";
+import { Send, X, RotateCcw, User, ChevronDown, Check, MessagesSquare, Headphones, MessageCircle, Paperclip } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiClient } from "@/lib/api";
 import { playSound } from "@/lib/sounds";
@@ -231,28 +231,8 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
     }
   };
 
-  const initiateHumanHandoff = async () => {
-    if (!conversationId || !config) return;
-
-    if (config.humanSupportProvider === 'TAWK') {
-      if (window.Tawk_API) {
-        window.Tawk_API.addEvent("human_handoff_requested", { conversationId });
-      }
-      setHandoffStep("CONSENT");
-      await updateHandoffStatus(conversationId, "DETAILS_REQUIRED");
-    } else if (config.humanSupportProvider === 'INTERNAL') {
-      setIsSubmitting(true);
-      try {
-        await requestInternalHumanTakeover(conversationId);
-        setMode("HUMAN");
-        setChatStatus("WAITING_FOR_ADMIN");
-        playSound("reverted");
-      } catch (error) {
-        console.error("Failed to request human", error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
+  const initiateHumanHandoff = () => {
+    setHandoffStep("DETAILS");
   };
 
   const proceedToTawk = async () => {
@@ -292,26 +272,27 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         console.warn("Failed to update conv status:", err);
       }
 
-      const identity = await tawkIdentity(conversationId, visitorDetails);
-      
-      if (identity && window.Tawk_API) {
-        if (identity.visitor.hash && window.Tawk_API.secureMode) {
-          window.Tawk_API.secureMode(identity.visitor.hash);
+      const identity = await tawkIdentity(conversationId, visitorDetails).catch(() => null);
+
+      if (window.Tawk_API || config?.humanSupportProvider === 'TAWK') {
+        if (identity && window.Tawk_API) {
+          if (identity.visitor?.hash && window.Tawk_API.secureMode) {
+            window.Tawk_API.secureMode(identity.visitor.hash);
+          }
+          window.Tawk_API.setAttributes({
+            name: identity.visitor?.name || visitorDetails.name,
+            email: identity.visitor?.email || visitorDetails.email,
+            phone: identity.visitor?.phone || visitorDetails.phone,
+            "visitor-type": visitorDetails.type,
+            "handoff-reason": visitorDetails.reason,
+            "ai-conversation-id": conversationId
+          });
+          window.Tawk_API.addTags(["headhunters-ai-handoff", visitorDetails.type === "employer" ? "employer-lead" : "candidate-lead"]);
         }
-        window.Tawk_API.setAttributes({
-          name: identity.visitor.name,
-          email: identity.visitor.email,
-          phone: identity.visitor.phone,
-          "visitor-type": visitorDetails.type,
-          "handoff-reason": visitorDetails.reason,
-          "ai-conversation-id": conversationId
-        });
-        window.Tawk_API.addTags(["headhunters-ai-handoff", visitorDetails.type === "employer" ? "employer-lead" : "candidate-lead"]);
         
-        if (tawkStatus === 'online') {
-          openTawkChat();
-          return;
-        }
+        // Always switch to Tawk.to live chat widget!
+        await openTawkChat();
+        return;
       }
 
       // Fallback: details saved successfully to Admin Enquiries
@@ -387,45 +368,45 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         )}
 
         {handoffStep === "DETAILS" && (
-          <div className="flex flex-col h-full overflow-y-auto pb-4">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-slate-800">Your Details</h3>
-              <button onClick={cancelHandoff} className="p-2 -mr-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
-                <X size={18} />
+          <div className="flex flex-col h-full justify-between overflow-hidden">
+            <div className="flex items-center justify-between mb-2 shrink-0">
+              <h3 className="text-base font-bold text-slate-800">Your Details</h3>
+              <button onClick={cancelHandoff} className="p-1.5 -mr-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                <X size={16} />
               </button>
             </div>
-            <div className="space-y-4 flex-1">
+            <div className="space-y-2 flex-1 min-h-0">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">I am a</label>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">I am a</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'candidate'})} className={`h-10 text-sm font-semibold rounded-xl border-2 transition-all ${visitorDetails.type === 'candidate' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Job Seeker</button>
-                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'employer'})} className={`h-10 text-sm font-semibold rounded-xl border-2 transition-all ${visitorDetails.type === 'employer' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Employer</button>
+                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'candidate'})} className={`h-8.5 text-xs font-semibold rounded-xl border transition-all ${visitorDetails.type === 'candidate' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Job Seeker</button>
+                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'employer'})} className={`h-8.5 text-xs font-semibold rounded-xl border transition-all ${visitorDetails.type === 'employer' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Employer</button>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Name *</label>
-                <input type="text" value={visitorDetails.name} onChange={e => setVisitorDetails({...visitorDetails, name: e.target.value})} className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="Your full name" />
+                <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">Name *</label>
+                <input type="text" value={visitorDetails.name} onChange={e => setVisitorDetails({...visitorDetails, name: e.target.value})} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="Your full name" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Email *</label>
-                <input type="email" value={visitorDetails.email} onChange={e => setVisitorDetails({...visitorDetails, email: e.target.value})} className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="you@example.com" />
+                <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">Email *</label>
+                <input type="email" value={visitorDetails.email} onChange={e => setVisitorDetails({...visitorDetails, email: e.target.value})} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="you@example.com" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Phone (optional)</label>
-                <input type="tel" value={visitorDetails.phone} onChange={e => setVisitorDetails({...visitorDetails, phone: e.target.value})} className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="+94 77 ..." />
+                <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">Phone (optional)</label>
+                <input type="tel" value={visitorDetails.phone} onChange={e => setVisitorDetails({...visitorDetails, phone: e.target.value})} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="+94 77 ..." />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">How can we help?</label>
-                <textarea value={visitorDetails.reason} onChange={e => setVisitorDetails({...visitorDetails, reason: e.target.value})} className="w-full h-20 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none" placeholder="Briefly describe what you need..." />
+                <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">How can we help?</label>
+                <textarea value={visitorDetails.reason} onChange={e => setVisitorDetails({...visitorDetails, reason: e.target.value})} className="w-full h-14 p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none" placeholder="Briefly describe what you need..." />
               </div>
             </div>
-            <div className="pt-5 mt-auto">
+            <div className="pt-2 shrink-0">
               <button 
                 disabled={!visitorDetails.name || !visitorDetails.email}
                 onClick={proceedToTawk}
-                className="w-full h-12 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-semibold rounded-[14px] hover:shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full h-10 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white text-xs font-semibold rounded-xl hover:shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Headphones size={16} />
+                <Headphones size={14} />
                 Connect with our team
               </button>
             </div>
@@ -495,22 +476,20 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   const getStatusText = () => {
     if (handoffStep === "CONNECTING") return "Connecting...";
     if (mode === "TAWK_HANDOFF") return "Live Support Active";
-    if (mode === "HUMAN") {
-      return chatStatus === "WAITING_FOR_ADMIN" ? "Waiting for a consultant..." : "Consultant joined";
-    }
+    if (chatStatus === "ADMIN_JOINED") return "Consultant joined";
+    if (chatStatus === "WAITING_FOR_ADMIN") return "Waiting for a consultant...";
     return "AI-powered recruitment support";
   };
 
   const getLiveAgentButtonLabel = () => {
     if (!config) return null;
-    if (config.humanSupportProvider === 'TAWK') return 'Speak to a Consultant';
-    if (config.humanSupportProvider === 'INTERNAL') return 'Talk to a Human';
+    if (config.humanSupportProvider === 'TAWK' || config.humanSupportProvider === 'INTERNAL') return 'Live Support';
     return null;
   };
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
         <button 
           onClick={() => {
             setIsMinimized(false);
@@ -519,7 +498,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
               setMode("AI");
             }
           }}
-          className="bg-white px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.15)] border border-slate-200 flex items-center gap-2.5 hover:scale-105 transition-all cursor-pointer"
+          className="bg-white h-12 px-5 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.15)] border border-slate-200 flex items-center gap-2.5 hover:scale-105 transition-all cursor-pointer"
         >
           <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />
           <span className="text-xs sm:text-sm font-bold text-slate-700 whitespace-nowrap">Return to AI Assistant</span>
@@ -527,11 +506,11 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         {onClose && (
           <button
             onClick={onClose}
-            className="h-11 px-4 rounded-full bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-bold text-xs flex items-center gap-1.5 shadow-[0_8px_24px_rgba(4,168,145,0.3)] hover:scale-105 transition-all cursor-pointer"
+            className="w-12 h-12 rounded-full bg-gradient-to-r from-[#02695e] to-[#04a891] text-white flex items-center justify-center shadow-[0_8px_24px_rgba(4,168,145,0.35)] hover:scale-105 transition-all cursor-pointer shrink-0"
             aria-label="Close Chat"
+            title="Close"
           >
-            <X size={15} />
-            <span>Close</span>
+            <X size={20} />
           </button>
         )}
       </div>
@@ -539,50 +518,49 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 25, scale: 0.96 }}
+    <motion.div 
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 25, scale: 0.96 }}
-      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className={inline 
-        ? "w-full h-[600px] rounded-[24px] bg-white border border-slate-100 shadow-[0_8px_30px_rgba(2,105,94,0.08)] flex flex-col overflow-hidden text-slate-800 font-sans relative"
-        : "fixed top-0 left-0 w-full h-[100dvh] rounded-none md:absolute md:top-auto md:left-auto md:bottom-20 md:right-0 md:w-[400px] md:h-[680px] md:max-w-[calc(100vw-32px)] md:max-h-[calc(100vh-100px)] md:rounded-[22px] bg-white md:border border-slate-100 shadow-[0_24px_60px_rgba(2,105,94,0.12)] flex flex-col overflow-hidden z-40 md:z-[100] text-slate-800 font-sans"
+      exit={{ opacity: 0, y: 20, scale: 0.95 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className={
+        inline
+          ? "w-full h-full flex flex-col bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden relative"
+          : "w-[92vw] sm:w-[390px] h-[520px] sm:h-[580px] max-h-[calc(100dvh-120px)] flex flex-col bg-white rounded-3xl border border-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.2)] overflow-hidden relative"
       }
     >
       {renderHandoffFlow()}
-
-      {/* Header */}
-      <div className="px-3.5 py-3 pt-[max(env(safe-area-inset-top,0.75rem),0.75rem)] md:pt-3 bg-gradient-to-r from-[#02695e] to-[#04a891] flex items-center justify-between gap-2 shrink-0 shadow-sm">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />
+      {/* Top Header */}
+      <div className="px-4 py-3 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white flex items-center justify-between shrink-0 shadow-sm gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="relative shrink-0">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/20">
+              <img src="/logo/favicon-mark.png" alt="HH" className="w-4 h-4 object-contain" />
+            </div>
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border border-[#02695e]" />
           </div>
           <div className="min-w-0">
-            <h4 className="text-xs sm:text-[13px] font-bold text-white leading-tight tracking-wide whitespace-nowrap overflow-hidden text-ellipsis">
-              Headhunters Assistant
-            </h4>
-            <p className="text-[10px] text-white/80 mt-0.5 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-              {getStatusText()}
-            </p>
+            <h3 className="font-bold text-xs sm:text-sm leading-tight text-white truncate">Headhunters Assistant</h3>
+            <p className="text-[10px] text-white/80 font-medium truncate">{getStatusText()}</p>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {mode === "AI" && config?.humanSupportProvider && config.humanSupportProvider !== 'DISABLED' && getLiveAgentButtonLabel() && (
+          {getLiveAgentButtonLabel() && (
             <button
               onClick={initiateHumanHandoff}
-              disabled={isSubmitting}
-              className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 text-white rounded-full text-[10.5px] font-semibold transition-all whitespace-nowrap border border-white/30 shadow-sm"
+              disabled={isSubmitting || handoffStep === "CONNECTING"}
+              className="text-[11px] font-bold bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-full text-white transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 border border-white/20"
+              title="Connect with a Live Agent"
             >
-              <Headphones size={11} />
-              <span className="hidden sm:inline">{getLiveAgentButtonLabel()}</span>
-              <span className="sm:hidden">Consultant</span>
+              <Headphones size={12} />
+              <span>Live Support</span>
             </button>
           )}
           <button
             onClick={startFreshConversation}
             disabled={isSubmitting || mode === "TAWK_HANDOFF"}
             className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer text-white/80 hover:text-white disabled:opacity-40"
-            title="New conversation"
+            title="Reset Conversation"
           >
             <RotateCcw size={13} />
           </button>
@@ -596,13 +574,6 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
             </button>
           )}
         </div>
-      </div>
-
-      {/* Privacy Notice */}
-      <div className="px-4 py-2 bg-amber-50 border-b border-amber-100/80 flex items-center justify-center text-center shrink-0">
-        <p className="text-[10px] leading-tight text-amber-700/80 font-medium">
-          🔒 Never share passwords, bank details or identity documents in this chat.
-        </p>
       </div>
 
       {/* Messages list */}
@@ -731,8 +702,55 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         <div className="px-4 py-4 bg-white border-t border-slate-100 shrink-0 mb-[env(safe-area-inset-bottom,0px)]">
           <form
             onSubmit={(e) => { e.preventDefault(); handleSendText(inputVal); }}
-            className="flex items-end gap-2"
+            className="flex items-center gap-2"
           >
+            <label
+              className="p-2.5 rounded-full text-slate-400 hover:text-[#02695e] hover:bg-teal-50 transition-colors cursor-pointer shrink-0"
+              title="Upload CV (.pdf, .doc, .docx)"
+            >
+              <Paperclip size={18} />
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={async (e) => {
+                  const selectedFile = e.target.files?.[0];
+                  if (!selectedFile) return;
+
+                  if (selectedFile.size > 10 * 1024 * 1024) {
+                    alert("File too large. Please upload a CV under 10 MB.");
+                    return;
+                  }
+
+                  const formData = new FormData();
+                  formData.append('file', selectedFile);
+
+                  try {
+                    const res = await fetch('/api/chat/upload-cv', {
+                      method: 'POST',
+                      body: formData
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.file) {
+                      setVisitorDetails(prev => ({ ...prev, cvFileName: data.file.fileName }));
+                      setMessages(prev => [...prev, {
+                        id: `cv-${Date.now()}`,
+                        senderType: 'USER',
+                        sender: 'USER',
+                        content: `📄 Uploaded CV: ${data.file.originalName}`,
+                        createdAt: new Date()
+                      }]);
+                      setHandoffStep("DETAILS");
+                    } else {
+                      alert(`CV Upload failed: ${data.error || 'Invalid file format'}`);
+                    }
+                  } catch (err) {
+                    alert("Error uploading CV. Please try again.");
+                  }
+                }}
+              />
+            </label>
+
             <textarea
               rows={1}
               value={inputVal}
@@ -743,16 +761,17 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                   handleSendText(inputVal);
                 }
               }}
-              placeholder="Ask about jobs or recruitment services..."
+              placeholder="Type a message..."
               className="flex-1 max-h-32 min-h-[44px] bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none shadow-inner placeholder:text-slate-400"
               disabled={isSubmitting}
             />
             <button
               type="submit"
               disabled={!inputVal.trim() || isSubmitting}
-              className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] text-white flex items-center justify-center hover:shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-50 shadow-sm"
+              className="w-11 h-11 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white rounded-2xl flex items-center justify-center shrink-0 hover:shadow-md hover:scale-105 transition-all disabled:opacity-40 disabled:hover:scale-100 cursor-pointer shadow-sm"
+              aria-label="Send message"
             >
-              <Send size={17} className={inputVal.trim() ? "ml-0.5" : ""} />
+              <Send size={16} />
             </button>
           </form>
         </div>

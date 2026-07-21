@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { LayoutDashboard, Briefcase, Inbox, MessageSquare, FileText, Users, Settings, LogOut, ExternalLink, Database, Cpu, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -21,6 +21,7 @@ const NAV = [
 export function AdminLayout() {
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     apiClient("/api/auth/session")
@@ -50,17 +51,27 @@ export function AdminLayout() {
           <p className="text-[10px] text-white/25 font-semibold uppercase tracking-widest mt-2 ml-11">Admin portal</p>
         </div>
 
-        <nav className="flex-1 p-3 space-y-0.5">
-          {NAV.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              to={href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-all duration-150 group"
-            >
-              <Icon size={16} className="group-hover:text-[#04a891] transition-colors" strokeWidth={1.8} />
-              {label}
-            </Link>
-          ))}
+        <nav className="flex-1 p-3 space-y-1">
+          {NAV.map(({ href, label, icon: Icon }) => {
+            const isActive = href === "/admin" 
+              ? location.pathname === "/admin" 
+              : location.pathname.startsWith(href);
+
+            return (
+              <Link
+                key={href}
+                to={href}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] text-sm font-semibold transition-all duration-150 group ${
+                  isActive 
+                    ? "bg-[#04a891]/15 text-[#04a891] border-l-2 border-[#04a891] shadow-sm" 
+                    : "text-white/50 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Icon size={16} className={isActive ? "text-[#04a891]" : "group-hover:text-[#04a891] transition-colors"} strokeWidth={1.8} />
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="p-3 border-t border-white/6 space-y-0.5">
@@ -78,7 +89,7 @@ export function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto flex flex-col">
+      <main className="flex-1 overflow-y-auto flex flex-col min-h-0">
         <header className="h-16 shrink-0 border-b border-white/6 flex items-center justify-end px-8 bg-[#0B0B0C]/40 backdrop-blur-md sticky top-0 z-20 gap-4">
           <AdminNotifications />
           <div className="flex items-center gap-2.5 pl-4 border-l border-white/10">
@@ -91,7 +102,7 @@ export function AdminLayout() {
             </div>
           </div>
         </header>
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <Outlet />
         </div>
       </main>

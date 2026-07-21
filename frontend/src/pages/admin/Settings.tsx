@@ -67,7 +67,7 @@ export function AdminSettingsPage() {
   ];
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-8 space-y-6">
       {/* Title */}
       <div className="mb-8">
         <h1 className="text-2xl font-black text-white mb-1">General Settings</h1>

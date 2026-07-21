@@ -1,12 +1,16 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { db } from '../lib/db';
 import { conversation, message, content, knowledgeDocument } from '../db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import crypto from 'crypto';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { searchKnowledge } from '../lib/vector-store';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
+import { createOrUpdateCandidate, createEmployerLead, searchJobs, getJobDetails } from './chat/tools';
+import { processChatIntent } from './chat/router';
 
 const groundedAnswerSchema = z.object({
   answer: z.string().trim().min(1).max(3000),
@@ -231,10 +235,49 @@ chatRouter.post('/conversations/:id/messages', verifyVisitorToken, async (req, r
     await db.update(conversation).set({ updatedAt: new Date() }).where(eq(conversation.id, String(id)));
 
     if (conv.mode !== 'AI') {
-      return res.json({ success: true, ai_generated: false });
+      if (conv.chatStatus === 'RESOLVED' || conv.chatStatus === 'CLOSED' || conv.status === 'CLOSED') {
+        // Admin resolved/closed the chat — AI takes back over automatically!
+        await db.update(conversation).set({
+          mode: 'AI',
+          chatStatus: 'OPEN',
+          needsHuman: false,
+          takenBy: null,
+          updatedAt: new Date()
+        }).where(eq(conversation.id, String(id)));
+        conv.mode = 'AI';
+      } else {
+        return res.json({ success: true, ai_generated: false });
+      }
     }
 
-    // AI Generation
+    // 1. INTENT ROUTER & STATE MACHINE CHECK
+    const currentState = conv.handoffReason || 'IDLE';
+    const routerResult = await processChatIntent(msgContent, currentState);
+
+    if (routerResult.intent !== 'GENERAL_COMPANY_INFORMATION' && routerResult.intent !== 'UNKNOWN') {
+      const botMsgId = crypto.randomUUID();
+      await db.insert(message).values({
+        id: botMsgId,
+        conversationId: String(id),
+        senderType: 'BOT',
+        sender: 'AI',
+        content: routerResult.response,
+        grounded: true,
+      });
+
+      // Update state machine progress in conversation
+      await db.update(conversation)
+        .set({ 
+          handoffReason: routerResult.nextState || 'IDLE',
+          updatedAt: new Date()
+        })
+        .where(eq(conversation.id, String(id)));
+
+      const [botMsg] = await db.select().from(message).where(eq(message.id, botMsgId)).limit(1);
+      return res.json({ success: true, message: botMsg });
+    }
+
+    // AI Generation Fallback for General Knowledge
     const startTime = Date.now();
     const settings = await getAiSettings();
     if (!settings.enabled) {
@@ -629,5 +672,121 @@ chatRouter.post('/conversations/:id/handoff-status', verifyVisitorToken, async (
     res.json({ success: true, status });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Configure Multer for in-chat CV uploads
+const cvUploadDir = path.resolve(process.cwd(), '../uploads/cvs');
+if (!fs.existsSync(cvUploadDir)) {
+  fs.mkdirSync(cvUploadDir, { recursive: true });
+}
+
+const cvUpload = multer({
+  storage: multer.diskStorage({
+    destination: cvUploadDir,
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `cv-${crypto.randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    if (allowedTypes.includes(file.mimetype) || file.originalname.match(/\.(pdf|doc|docx)$/i)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file format. Please upload a PDF, DOC, or DOCX file under 10 MB.'));
+    }
+  }
+});
+
+// Endpoint: In-Chat CV Upload
+chatRouter.post('/upload-cv', cvUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No CV file provided.' });
+    }
+
+    const fileMeta = {
+      originalName: req.file.originalname,
+      fileName: req.file.filename,
+      size: req.file.size,
+      mimeType: req.file.mimetype,
+      url: `/uploads/cvs/${req.file.filename}`
+    };
+
+    return res.json({ success: true, file: fileMeta });
+  } catch (error: any) {
+    console.error("CV Upload error:", error);
+    return res.status(500).json({ error: error.message || 'CV Upload failed' });
+  }
+});
+
+// Endpoint: Candidate Chat Submission (Creates Candidate & Job Application)
+chatRouter.post('/candidate-apply', async (req, res) => {
+  try {
+    const { name, email, phone, interestedJob, cvFileName, conversationId } = req.body;
+    if (!email || !name) {
+      return res.status(400).json({ error: 'Name and email are required.' });
+    }
+
+    const { candidate: cand, isNew } = await createOrUpdateCandidate({
+      name,
+      email,
+      phone,
+      interestedJob,
+      cvFileName
+    });
+
+    const refNumber = `HH-CAN-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    return res.json({
+      success: true,
+      refNumber,
+      candidateId: cand.id,
+      isNew,
+      message: `Application submitted successfully for ${name}. Reference: ${refNumber}`
+    });
+  } catch (error: any) {
+    console.error("Candidate apply error:", error);
+    return res.status(500).json({ error: error.message || 'Failed to submit candidate application' });
+  }
+});
+
+// Endpoint: Employer Chat Submission (Creates Vacancy Enquiry)
+chatRouter.post('/employer-submit', async (req, res) => {
+  try {
+    const { name, companyName, email, phone, designation, vacancyTitle, vacancyCount, location, description } = req.body;
+    if (!name || !companyName || !email) {
+      return res.status(400).json({ error: 'Name, company name, and email are required.' });
+    }
+
+    const lead = await createEmployerLead({
+      name,
+      companyName,
+      email,
+      phone,
+      designation,
+      vacancyTitle,
+      vacancyCount,
+      location,
+      description
+    });
+
+    const refNumber = `HH-EMP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    return res.json({
+      success: true,
+      refNumber,
+      leadId: lead.id,
+      message: `Employer vacancy submitted successfully. Reference: ${refNumber}`
+    });
+  } catch (error: any) {
+    console.error("Employer submit error:", error);
+    return res.status(500).json({ error: error.message || 'Failed to submit employer vacancy' });
   }
 });

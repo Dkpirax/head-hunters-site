@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { db } from '../lib/db';
 import { candidate } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 
 const router = Router();
@@ -94,6 +95,30 @@ router.get('/download/:filename', (req, res) => {
     res.download(filePath);
   } else {
     res.status(404).json({ error: 'File not found' });
+  }
+});
+
+// DELETE /api/candidates/:id
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [existing] = await db.select().from(candidate).where(eq(candidate.id, id)).limit(1);
+    if (!existing) {
+      return res.status(404).json({ error: 'Candidate not found' });
+    }
+
+    if (existing.cvFileName) {
+      const filePath = path.join(uploadDir, existing.cvFileName);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (e) {}
+      }
+    }
+
+    await db.delete(candidate).where(eq(candidate.id, id));
+    res.json({ success: true, message: 'Candidate deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting candidate:', error);
+    res.status(500).json({ error: 'Failed to delete candidate' });
   }
 });
 
