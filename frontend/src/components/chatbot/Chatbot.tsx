@@ -101,20 +101,24 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
     if (!conversationId) return;
 
     let active = true;
-    async function poll() {
-      if (document.hidden) return; 
+    const poll = async () => {
+      if (document.hidden || isMinimized) return; 
       try {
         const result = await apiClient(`/api/chat/messages?conversationId=${conversationId}`);
         
         if (active && result) {
           if (result.mode === "HUMAN" && prevModeRef.current !== "HUMAN") {
             playSound("connected");
-          } else if (result.mode === "AI" && prevModeRef.current === "HUMAN") {
+          } else if ((result.mode === "AI" || result.chatStatus === "RESOLVED" || result.chatStatus === "CLOSED") && prevModeRef.current === "HUMAN") {
             playSound("reverted");
+            setMode("AI");
+            setChatStatus("OPEN");
           }
           prevModeRef.current = result.mode;
-          setMode(result.mode);
-          setChatStatus(result.chatStatus);
+          if (result.chatStatus !== "RESOLVED" && result.chatStatus !== "CLOSED") {
+            setMode(result.mode);
+            setChatStatus(result.chatStatus);
+          }
           
           if (result.messages.length !== messagesLengthRef.current) {
             messagesLengthRef.current = result.messages.length;
@@ -125,15 +129,19 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
       } catch (e) {}
     }
 
-    const interval = setInterval(poll, 3000);
+    const interval = setInterval(poll, 4000);
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, [conversationId]);
+  }, [conversationId, isMinimized]);
+
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages, isTyping, handoffStep]);
 
   // Tawk Callbacks
@@ -253,6 +261,37 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
     
     try {
       await updateHandoffStatus(conversationId, "REQUESTED");
+
+      // 1. Send enquiry directly to Admin Enquiries database
+      try {
+        await apiClient('/api/enquiries', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: visitorDetails.name,
+            email: visitorDetails.email,
+            phone: visitorDetails.phone || '',
+            type: visitorDetails.type === 'employer' ? 'EMPLOYER' : 'CANDIDATE',
+            message: `Chatbot Consultation Request: ${visitorDetails.reason || 'General inquiry'} (Session ID: ${conversationId})`
+          })
+        });
+      } catch (err) {
+        console.warn("Failed to post enquiry:", err);
+      }
+
+      // 2. Mark conversation in Admin Live Chat as requesting human
+      try {
+        await apiClient(`/api/admin/conversations/${conversationId}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            status: 'HUMAN_ACTIVE',
+            needsHuman: true,
+            chatStatus: 'WAITING_FOR_ADMIN'
+          })
+        });
+      } catch (err) {
+        console.warn("Failed to update conv status:", err);
+      }
+
       const identity = await tawkIdentity(conversationId, visitorDetails);
       
       if (identity && window.Tawk_API) {
@@ -271,23 +310,27 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         
         if (tawkStatus === 'online') {
           openTawkChat();
-        } else if (tawkStatus === 'away') {
-          setHandoffStep("AWAY_PROMPT");
-        } else {
-          setHandoffStep("OFFLINE_PROMPT");
+          return;
         }
-      } else {
-        throw new Error("Invalid identity response");
       }
-    } catch (e) {
-      console.error(e);
+
+      // Fallback: details saved successfully to Admin Enquiries
       setHandoffStep("NONE");
-      await updateHandoffStatus(conversationId, "FAILED", String(e));
       setMessages((prev) => [...prev, {
         id: `sys-${Date.now()}`,
         senderType: "SYSTEM",
         sender: "SYSTEM",
-        content: "Live support could not be opened right now. Please contact us at info@headhunters.lk or via WhatsApp.",
+        content: "Thank you! Your details and inquiry have been received. A recruitment consultant will review your request and get back to you shortly at " + visitorDetails.email + ".",
+        createdAt: new Date(),
+      }]);
+    } catch (e) {
+      console.error(e);
+      setHandoffStep("NONE");
+      setMessages((prev) => [...prev, {
+        id: `sys-${Date.now()}`,
+        senderType: "SYSTEM",
+        sender: "SYSTEM",
+        content: "Thank you! Your details have been submitted to our team. A consultant will respond to you shortly.",
         createdAt: new Date(),
       }]);
     }
@@ -467,7 +510,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
         <button 
           onClick={() => {
             setIsMinimized(false);
@@ -476,11 +519,21 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
               setMode("AI");
             }
           }}
-          className="bg-white px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-slate-100 flex items-center gap-3 hover:scale-105 transition-transform"
+          className="bg-white px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.15)] border border-slate-200 flex items-center gap-2.5 hover:scale-105 transition-all cursor-pointer"
         >
           <img src="/logo/favicon-mark.png" alt="HH" className="w-5 h-5 object-contain" />
-          <span className="text-sm font-semibold text-slate-700">Return to AI Assistant</span>
+          <span className="text-xs sm:text-sm font-bold text-slate-700 whitespace-nowrap">Return to AI Assistant</span>
         </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="h-11 px-4 rounded-full bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-bold text-xs flex items-center gap-1.5 shadow-[0_8px_24px_rgba(4,168,145,0.3)] hover:scale-105 transition-all cursor-pointer"
+            aria-label="Close Chat"
+          >
+            <X size={15} />
+            <span>Close</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -554,6 +607,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
       {/* Messages list */}
       <div 
+        ref={chatContainerRef}
         data-lenis-prevent
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}

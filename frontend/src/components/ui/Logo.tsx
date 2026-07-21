@@ -44,7 +44,7 @@ export function NavLogo({ className }: { className?: string }) {
         alt="Head Hunters Logo" 
         width={400} 
         height={124} 
-        className="w-auto h-[26px] sm:h-[30px] md:h-[32px] object-contain block"
+        className="w-auto h-[32px] sm:h-[36px] md:h-[40px] object-contain block"
       />
     </div>
   );

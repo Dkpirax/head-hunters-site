@@ -11,18 +11,14 @@ adminConversationsRouter.use(requireAuth);
 
 adminConversationsRouter.get('/', async (req, res) => {
   try {
-    // Fetch all non-resolved conversations (supports both legacy status field and new mode/chatStatus)
+    // Fetch all non-resolved conversations
     const convs = await db.select()
       .from(conversation)
       .orderBy(desc(conversation.updatedAt));
 
     // Filter: show active conversations only (exclude RESOLVED/CLOSED ones)
     const activeConvs = convs.filter(c => {
-      // New schema: exclude resolved
-      if (c.chatStatus === 'RESOLVED') return false;
-      // Legacy: exclude closed
-      if (c.status === 'CLOSED') return false;
-      // Must have some activity (mode or status present)
+      if (c.chatStatus === 'RESOLVED' || c.status === 'CLOSED') return false;
       return true;
     });
 
@@ -31,10 +27,19 @@ adminConversationsRouter.get('/', async (req, res) => {
       ? await db.select().from(message).where(inArray(message.conversationId, convIds)).orderBy(asc(message.createdAt))
       : [];
 
-    const formattedConvs = activeConvs.map(c => ({
-      ...c,
-      messages: allMessages.filter(m => m.conversationId === c.id)
-    }));
+    const formattedConvs = activeConvs
+      .map(c => ({
+        ...c,
+        messages: allMessages.filter(m => m.conversationId === c.id)
+      }))
+      .filter(c => {
+        // Exclude abandoned visitor sessions where only the initial bot greeting exists
+        // and no human assistance was requested
+        if (c.mode === 'AI' && c.messages.length <= 1 && !c.needsHuman && c.chatStatus !== 'WAITING_FOR_ADMIN') {
+          return false;
+        }
+        return true;
+      });
 
     return res.json(formattedConvs);
   } catch (error) {
@@ -126,6 +131,18 @@ adminConversationsRouter.put('/:id/status', async (req, res) => {
     return res.json({ success: true });
   } catch (error) {
     console.error('Failed to update status:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminConversationsRouter.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.delete(message).where(eq(message.conversationId, id));
+    await db.delete(conversation).where(eq(conversation.id, id));
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete conversation:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

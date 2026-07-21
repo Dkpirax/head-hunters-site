@@ -304,7 +304,7 @@ export function AdminUsersPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full h-9 px-3.5 rounded-[8px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
-                      placeholder="jane@headhunters.com.au"
+                      placeholder="info@headhunters.lk"
                       required
                     />
                   </div>

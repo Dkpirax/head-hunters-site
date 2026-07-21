@@ -170,16 +170,23 @@ select {
   to { height: 0; }
 }
 
-/* ─── Hide Tawk.to Default Floating Widget & Branding ─────────────────────── */
+/* ─── Hide Tawk.to Default Floating Widget, Placeholders & Branding ─────────── */
 #tawk-bubble-container,
 .tawk-min-container,
 .tawk-button,
 a[href*="tawk.to"],
 div[class*="tawk-branding"],
 span[class*="tawk-branding"],
-#tawk-header-text {
+#tawk-header-text,
+div[id*="tawk-bubble"],
+div[class*="tawk-card"],
+div[class*="tawk-widget"],
+iframe[title*="chat widget"],
+iframe[title*="tawk"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
 }

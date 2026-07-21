@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Upload, RefreshCw, CheckCircle, AlertCircle, FileText, Activity } from 'lucide-react';
+import { Database, Upload, RefreshCw, CheckCircle, AlertCircle, FileText, Activity, Trash2 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 
 export function AdminKnowledgePage() {
@@ -38,7 +38,6 @@ export function AdminKnowledgePage() {
     try {
       const res = await fetch('/api/admin/knowledge/upload', {
         method: 'POST',
-        // apiClient stringifies JSON, so we use fetch for FormData. We need the session cookie, which fetch automatically includes if we use apiClient's defaults, but wait, apiClient does `credentials: "same-origin"`. Let's just use fetch without the auth token since it's session cookie based!
         body: formData
       });
       const data = await res.json();
@@ -59,7 +58,6 @@ export function AdminKnowledgePage() {
 
   const handleReindex = async (version: string) => {
     try {
-      // Optimistically show processing
       setDocuments(docs => docs.map(d => d.version === version ? { ...d, status: 'PROCESSING' } : d));
       
       const data = await apiClient('/api/admin/knowledge/reindex', {
@@ -115,8 +113,24 @@ export function AdminKnowledgePage() {
     }
   };
 
+  const handleDelete = async (id: string, titleStr: string) => {
+    if (!confirm(`Are you sure you want to delete '${titleStr}'? This cannot be undone.`)) return;
+    try {
+      const data = await apiClient(`/api/admin/knowledge/${id}`, {
+        method: 'DELETE'
+      });
+      if (data && data.error) {
+        alert(`Delete failed: ${data.error}`);
+      } else {
+        fetchDocuments();
+      }
+    } catch (error) {
+      alert("Error deleting document.");
+    }
+  };
+
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -127,7 +141,7 @@ export function AdminKnowledgePage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-[300px_1fr] gap-8">
+      <div className="grid lg:grid-cols-[320px_1fr] gap-8">
         {/* Upload Form */}
         <div className="bg-[#1a1c1b] border border-white/10 rounded-xl p-6 h-fit">
           <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
@@ -157,7 +171,7 @@ export function AdminKnowledgePage() {
             <button
               type="submit"
               disabled={!file || uploading}
-              className="w-full bg-[#04a891] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#038c79] transition-colors disabled:opacity-50"
+              className="w-full bg-[#04a891] text-white px-4 py-2.5 rounded-lg font-medium hover:bg-[#038c79] transition-colors disabled:opacity-50"
             >
               {uploading ? 'Uploading...' : 'Upload Document'}
             </button>
@@ -165,85 +179,101 @@ export function AdminKnowledgePage() {
         </div>
 
         {/* Document List */}
-        <div className="bg-[#1a1c1b] border border-white/10 rounded-xl overflow-hidden">
-          <table className="w-full text-left table-fixed">
-            <thead>
-              <tr className="border-b border-white/10 bg-black/20">
-                <th className="p-4 text-sm font-medium text-white/60 w-2/5">Document</th>
-                <th className="p-4 text-sm font-medium text-white/60 w-1/5">Version & Checksum</th>
-                <th className="p-4 text-sm font-medium text-white/60 w-1/5">Status & Meta</th>
-                <th className="p-4 text-sm font-medium text-white/60 text-right w-1/5">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center text-white/40">No documents uploaded yet.</td>
+        <div className="bg-[#1a1c1b] border border-white/10 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="border-b border-white/10 bg-black/40">
+                  <th className="p-4 text-xs font-semibold text-white/60 uppercase tracking-wider">Document</th>
+                  <th className="p-4 text-xs font-semibold text-white/60 uppercase tracking-wider">Version & Meta</th>
+                  <th className="p-4 text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
+                  <th className="p-4 text-xs font-semibold text-white/60 uppercase tracking-wider text-right">Actions</th>
                 </tr>
-              ) : documents.map((doc) => (
-                <tr key={doc.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                  <td className="p-4 overflow-hidden">
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-white/40 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-white font-medium truncate" title={doc.title || doc.fileName}>{doc.title}</div>
-                        <div className="text-xs text-white/40 truncate" title={doc.fileName}>{doc.fileName}</div>
+              </thead>
+              <tbody>
+                {documents.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-white/40">No documents uploaded yet.</td>
+                  </tr>
+                ) : documents.map((doc) => (
+                  <tr key={doc.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-[#04a891]" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-white font-semibold text-sm truncate" title={doc.title || doc.fileName}>{doc.title || doc.fileName}</div>
+                          <div className="text-xs text-white/40 truncate mt-0.5" title={doc.fileName}>{doc.fileName}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="text-sm text-white/60 font-mono">{doc.version}</div>
-                    <div className="text-xs text-white/30 truncate max-w-[120px]" title={doc.checksum}>{doc.checksum || 'No checksum'}</div>
-                    <div className="text-[10px] text-white/40 mt-1">{doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ''}</div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex flex-col items-start gap-1">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border
-                        ${doc.status === 'APPROVED' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
-                          doc.status === 'INDEXED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
-                          doc.status === 'PROCESSING' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
-                          doc.status === 'FAILED' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
-                          doc.status === 'INACTIVE' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' : 
-                          'bg-white/5 text-white/60 border-white/10'}`}
-                      >
-                        {doc.status}
-                      </span>
-                      {doc.chunkCount !== undefined && <span className="text-[10px] text-white/40">{doc.chunkCount} chunks</span>}
-                      {doc.status === 'FAILED' && doc.errorMessage && <span className="text-[10px] text-red-400 max-w-[150px] truncate" title={doc.errorMessage}>{doc.errorMessage}</span>}
-                    </div>
-                  </td>
-                  <td className="p-4 text-right space-x-2">
-                    {(doc.status === 'DRAFT' || doc.status === 'FAILED' || doc.status === 'INACTIVE') && (
-                      <button
-                        onClick={() => handleReindex(doc.version)}
-                        className="text-sm bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded hover:bg-blue-500/20 transition-colors"
-                      >
-                        Parse & Index
-                      </button>
-                    )}
-                    
-                    {doc.status === 'INDEXED' && (
-                      <button
-                        onClick={() => handleApprove(doc.version)}
-                        className="text-sm bg-green-500/10 text-green-400 px-3 py-1.5 rounded hover:bg-green-500/20 transition-colors"
-                      >
-                        Approve & Activate
-                      </button>
-                    )}
+                    </td>
+                    <td className="p-4">
+                      <div className="text-xs text-white/70 font-mono font-medium">{doc.version}</div>
+                      <div className="text-[11px] text-white/40 mt-1">{doc.chunkCount !== undefined ? `${doc.chunkCount} chunks` : ''} • {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ''}</div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border
+                          ${doc.status === 'APPROVED' ? 'bg-green-500/15 text-green-400 border-green-500/30' : 
+                            doc.status === 'INDEXED' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' : 
+                            doc.status === 'PROCESSING' ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' : 
+                            doc.status === 'FAILED' ? 'bg-red-500/15 text-red-400 border-red-500/30' : 
+                            doc.status === 'INACTIVE' ? 'bg-slate-500/15 text-slate-400 border-slate-500/30' : 
+                            'bg-white/5 text-white/60 border-white/10'}`}
+                        >
+                          {doc.status}
+                        </span>
+                        {doc.status === 'FAILED' && doc.errorMessage && (
+                          <span className="text-[10px] text-red-400 max-w-[180px] truncate" title={doc.errorMessage}>
+                            {doc.errorMessage}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {(doc.status === 'DRAFT' || doc.status === 'FAILED' || doc.status === 'INACTIVE') && (
+                          <button
+                            onClick={() => handleReindex(doc.version)}
+                            className="text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/25 transition-all"
+                          >
+                            Parse & Index
+                          </button>
+                        )}
+                        
+                        {doc.status === 'INDEXED' && (
+                          <button
+                            onClick={() => handleApprove(doc.version)}
+                            className="text-xs font-semibold bg-green-500/15 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg hover:bg-green-500/25 transition-all"
+                          >
+                            Approve & Activate
+                          </button>
+                        )}
 
-                    {doc.status === 'APPROVED' && (
-                      <button
-                        onClick={() => handleDeactivate(doc.version)}
-                        className="text-sm bg-red-500/10 text-red-400 px-3 py-1.5 rounded hover:bg-red-500/20 transition-colors"
-                      >
-                        Deactivate
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        {doc.status === 'APPROVED' && (
+                          <button
+                            onClick={() => handleDeactivate(doc.version)}
+                            className="text-xs font-semibold bg-slate-500/15 text-slate-400 border border-slate-500/30 px-3 py-1.5 rounded-lg hover:bg-slate-500/25 transition-all"
+                          >
+                            Deactivate
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleDelete(doc.id, doc.title || doc.fileName)}
+                          className="p-1.5 rounded-lg text-red-400/70 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
+                          title="Delete Document"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

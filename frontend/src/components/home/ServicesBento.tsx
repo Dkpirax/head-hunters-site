@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 import {
   Target, BriefcaseBusiness, RefreshCcw,
-  Calculator, ShieldCheck, ArrowRight,
+  Calculator, ShieldCheck, ArrowRight, Globe,
 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -60,9 +60,12 @@ const SERVICES: any[] = [
     accent: true,
   },
   {
-    type: "image" as const,
-    image: "https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80",
-    imageAlt: "Tech professional working",
+    icon: Globe,
+    title: "Global & Offshore Sourcing",
+    description:
+      "Seamless access to specialized international talent, remote engineering, and dedicated offshore operational support.",
+    cta: { label: "Explore offshore staffing", href: "/#contact" },
+    wide: true,
   },
 ];
 

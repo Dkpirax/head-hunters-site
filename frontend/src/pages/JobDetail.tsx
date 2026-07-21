@@ -102,12 +102,12 @@ export function JobDetailPage() {
 
           {job.status === "ACTIVE" && (
             <div className="mt-12 flex justify-center">
-              <button 
-                onClick={() => document.querySelector<HTMLButtonElement>('button[aria-label="Open chat"]')?.click()}
-                className="h-14 px-10 rounded-[12px] bg-[#04a891] text-white font-bold text-lg hover:bg-[#039682] hover:scale-105 transition-all shadow-[0_8px_30px_rgba(4,168,145,0.4)] cursor-pointer"
+              <Link 
+                to={`/upload-cv?jobId=${job.id}&jobTitle=${encodeURIComponent(job.title)}`}
+                className="inline-flex items-center justify-center h-14 px-10 rounded-[12px] bg-[#04a891] text-white font-bold text-lg hover:bg-[#039682] hover:scale-105 transition-all shadow-[0_8px_30px_rgba(4,168,145,0.4)] cursor-pointer"
               >
                 Apply for this Role
-              </button>
+              </Link>
             </div>
           )}
         </article>

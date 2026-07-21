@@ -258,6 +258,29 @@ knowledgeRouter.post('/approve', async (req, res) => {
   res.json({ success: true, message: `Version ${version} is now APPROVED and active.` });
 });
 
+// Endpoint to delete a knowledge document
+knowledgeRouter.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [doc] = await db.select().from(knowledgeDocument).where(eq(knowledgeDocument.id, id)).limit(1);
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    // Remove file if exists
+    const filePath = path.join(uploadDir, doc.fileName);
+    if (fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch (e) {}
+    }
+
+    // Remove DB chunks and document
+    await db.delete(knowledgeChunk).where(eq(knowledgeChunk.documentId, id));
+    await db.delete(knowledgeDocument).where(eq(knowledgeDocument.id, id));
+
+    res.json({ success: true, message: 'Document deleted successfully.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint to deactivate a document version
 knowledgeRouter.post('/deactivate', async (req, res) => {
   const { version } = req.body;

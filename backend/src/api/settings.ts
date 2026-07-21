@@ -52,8 +52,8 @@ const defaultSettings = {
   flag_live_jobs_enabled: false,
 
   // Email Config
-  email_notify_list: "hello@headhunters.com.au",
-  email_from_address: "noreply@headhunters.com.au",
+  email_notify_list: "info@headhunters.lk",
+  email_from_address: "info@headhunters.lk",
 
   // Integrations
   integration_whatsapp_number: "",
