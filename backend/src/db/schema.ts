@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, text, boolean, timestamp, datetime, primaryKey, index, int, float } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, boolean, timestamp, datetime, primaryKey, index, uniqueIndex, int, float } from 'drizzle-orm/mysql-core';
 import { relations } from 'drizzle-orm';
 import crypto from 'crypto';
 
@@ -105,19 +105,25 @@ export const conversation = mysqlTable('Conversation', {
   aiModel: varchar('aiModel', { length: 191 }),
   knowledgeDocumentVersion: varchar('knowledgeDocumentVersion', { length: 191 }),
   lastRetrievalScore: float('lastRetrievalScore'),
-  handoffReason: text('handoffReason'),
+  handoffReason: text('handoffReason'), // Reason visitor requested human support (DO NOT repurpose)
   humanSupportProvider: varchar('humanSupportProvider', { length: 191 }).default('INTERNAL'),
   handoffRequestedAt: utcTimestamp('handoffRequestedAt'),
   tawkOpenedAt: utcTimestamp('tawkOpenedAt'),
   agentJoinedAt: utcTimestamp('agentJoinedAt'),
   handoffCompletedAt: utcTimestamp('handoffCompletedAt'),
   handoffFailureReason: text('handoffFailureReason'),
+  // --- Workflow state machine (added in migration 0004) ---
+  workflowType: varchar('workflowType', { length: 50 }).default('NONE'),   // NONE | CANDIDATE | EMPLOYER | JOB_APPLICATION | HUMAN_HANDOFF
+  workflowState: varchar('workflowState', { length: 100 }).default('IDLE'),// e.g. IDLE | EMPLOYER_COLLECTING_NAME | ...
+  workflowData: text('workflowData'),  // JSON-serialised collected data (stored as text for broad MySQL compat)
+  workflowUpdatedAt: utcTimestamp('workflowUpdatedAt'),
 }, (table) => {
   return {
     statusIdx: index('conversation_status_idx').on(table.status),
     userIdIdx: index('conversation_user_id_idx').on(table.userId),
   };
 });
+
 
 export const message = mysqlTable('Message', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -159,13 +165,59 @@ export const candidate = mysqlTable('Candidate', {
   email: varchar('email', { length: 191 }).notNull().unique(),
   name: varchar('name', { length: 191 }),
   phone: varchar('phone', { length: 191 }),
+  phoneNormalized: varchar('phoneNormalized', { length: 191 }),
+  whatsapp: varchar('whatsapp', { length: 191 }),
+  whatsappNormalized: varchar('whatsappNormalized', { length: 191 }),
+  location: varchar('location', { length: 191 }),
+  status: varchar('status', { length: 191 }).default('ACTIVE'), // ACTIVE, INCOMPLETE, ARCHIVED
+  source: varchar('source', { length: 191 }).default('WEBSITE'), // AI_CHAT, WEBSITE
   interestedJobs: text('interestedJobs'),
   cvFileName: varchar('cvFileName', { length: 191 }),
+  originalCvFileName: varchar('originalCvFileName', { length: 191 }),
+  consentAccepted: boolean('consentAccepted').notNull().default(false),
+  consentTimestamp: utcTimestamp('consentTimestamp'),
+  privacyPolicyVersion: varchar('privacyPolicyVersion', { length: 50 }).default('1.0'),
+  consentConversationId: varchar('consentConversationId', { length: 191 }),
   createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
   updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 }, (table) => {
   return {
     emailIdx: index('candidate_email_idx').on(table.email),
+    phoneIdx: index('candidate_phone_idx').on(table.phone),
+    phoneNormalizedIdx: index('candidate_phone_normalized_idx').on(table.phoneNormalized),
+    whatsappIdx: index('candidate_whatsapp_idx').on(table.whatsapp),
+    whatsappNormalizedIdx: index('candidate_whatsapp_normalized_idx').on(table.whatsappNormalized),
+  };
+});
+
+export const candidateConsent = mysqlTable('CandidateConsent', {
+  id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  candidateId: varchar('candidateId', { length: 191 }).notNull(),
+  conversationId: varchar('conversationId', { length: 191 }),
+  privacyPolicyVersion: varchar('privacyPolicyVersion', { length: 50 }).notNull().default('1.0'),
+  consentType: varchar('consentType', { length: 100 }).notNull().default('CANDIDATE_PROFILE_AND_CV'),
+  accepted: boolean('accepted').notNull().default(true),
+  acceptedAt: utcTimestamp('acceptedAt').notNull().defaultNow(),
+  source: varchar('source', { length: 50 }).notNull().default('AI_CHAT'),
+}, (table) => {
+  return {
+    candidateConsentIdx: index('candidate_consent_candidate_idx').on(table.candidateId),
+  };
+});
+
+export const jobApplication = mysqlTable('JobApplication', {
+  id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  candidateId: varchar('candidateId', { length: 191 }).notNull(),
+  jobId: varchar('jobId', { length: 191 }).notNull(),
+  applicationStatus: varchar('applicationStatus', { length: 191 }).notNull().default('SUBMITTED'), // SUBMITTED, REVIEWING, SHORTLISTED, REJECTED
+  source: varchar('source', { length: 191 }).notNull().default('AI_CHAT'),
+  conversationId: varchar('conversationId', { length: 191 }),
+  appliedAt: utcTimestamp('appliedAt').notNull().defaultNow(),
+}, (table) => {
+  return {
+    candidateIdIdx: index('job_application_candidate_id_idx').on(table.candidateId),
+    jobIdIdx: index('job_application_job_id_idx').on(table.jobId),
+    candidateJobUnique: uniqueIndex('job_application_candidate_job_unique').on(table.candidateId, table.jobId),
   };
 });
 

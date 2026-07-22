@@ -13,8 +13,13 @@ export interface CandidateData {
   name: string;
   email: string;
   phone?: string;
+  whatsapp?: string;
+  location?: string;
+  status?: string;
+  source?: string;
   interestedJob?: string;
   cvFileName?: string;
+  originalCvFileName?: string;
 }
 
 export interface EmployerData {
@@ -113,14 +118,53 @@ export async function getJobDetails(jobId: string) {
 }
 
 /**
- * Find existing candidate by email or phone
+ * Normalize phone numbers to standard format for reliable matching
+ * e.g., "0771112222", "+94771112222", "+94 77 111 2222" -> "+94771112222"
  */
-export async function findCandidateByContact(email: string, phone?: string) {
+export function normalizePhone(phone?: string): string | undefined {
+  if (!phone) return undefined;
+  const digits = phone.replace(/[^0-9]/g, '');
+  if (digits.startsWith('0') && digits.length === 10) {
+    return `+94${digits.slice(1)}`;
+  }
+  if (digits.startsWith('94') && digits.length === 11) {
+    return `+${digits}`;
+  }
+  if (digits.length >= 7) {
+    return `+${digits}`;
+  }
+  return phone.trim();
+}
+
+/**
+ * Find existing candidate by email, phone, or whatsapp (including normalized fields)
+ */
+export async function findCandidateByContact(email: string, phone?: string, whatsapp?: string) {
   try {
-    const conditions = [eq(candidate.email, email.toLowerCase().trim())];
+    const conditions = [];
+    if (email && email.trim()) {
+      conditions.push(eq(candidate.email, email.toLowerCase().trim()));
+    }
+
+    const normPhone = normalizePhone(phone);
     if (phone && phone.trim()) {
       conditions.push(eq(candidate.phone, phone.trim()));
+      if (normPhone) {
+        conditions.push(eq(candidate.phone, normPhone));
+        conditions.push(eq(candidate.phoneNormalized, normPhone));
+      }
     }
+
+    const normWa = normalizePhone(whatsapp);
+    if (whatsapp && whatsapp.trim()) {
+      conditions.push(eq(candidate.whatsapp, whatsapp.trim()));
+      if (normWa) {
+        conditions.push(eq(candidate.whatsapp, normWa));
+        conditions.push(eq(candidate.whatsappNormalized, normWa));
+      }
+    }
+
+    if (conditions.length === 0) return null;
 
     const [existing] = await db
       .select()
@@ -138,17 +182,34 @@ export async function findCandidateByContact(email: string, phone?: string) {
 /**
  * Create or update candidate record in database
  */
-export async function createOrUpdateCandidate(data: CandidateData) {
+export async function createOrUpdateCandidate(data: CandidateData & { conversationId?: string }) {
   try {
-    const cleanEmail = data.email.toLowerCase().trim();
-    const existing = await findCandidateByContact(cleanEmail, data.phone);
+    const cleanEmail = data.email ? data.email.toLowerCase().trim() : '';
+    const existing = await findCandidateByContact(cleanEmail, data.phone, data.whatsapp);
+
+    const normPhone = normalizePhone(data.phone) || data.phone || null;
+    const normWa = normalizePhone(data.whatsapp) || data.whatsapp || null;
+
+    let cRecord: any = null;
+    let isNew = false;
 
     if (existing) {
-      // Update candidate profile
+      // Update existing candidate profile without overwriting with nulls
       const updateData: any = { updatedAt: new Date() };
       if (data.name) updateData.name = data.name;
       if (data.phone) updateData.phone = data.phone;
+      if (normPhone) updateData.phoneNormalized = normPhone;
+      if (data.whatsapp) updateData.whatsapp = data.whatsapp;
+      if (normWa) updateData.whatsappNormalized = normWa;
+      if (data.location) updateData.location = data.location;
+      if (data.status) updateData.status = data.status;
+      if (data.source) updateData.source = data.source;
       if (data.cvFileName) updateData.cvFileName = data.cvFileName;
+      if (data.originalCvFileName) updateData.originalCvFileName = data.originalCvFileName;
+      updateData.consentAccepted = true;
+      updateData.consentTimestamp = new Date();
+      if (data.conversationId) updateData.consentConversationId = data.conversationId;
+
       if (data.interestedJob) {
         const jobs = existing.interestedJobs ? existing.interestedJobs.split(', ') : [];
         if (!jobs.includes(data.interestedJob)) {
@@ -159,24 +220,91 @@ export async function createOrUpdateCandidate(data: CandidateData) {
 
       await db.update(candidate).set(updateData).where(eq(candidate.id, existing.id));
       const [updated] = await db.select().from(candidate).where(eq(candidate.id, existing.id)).limit(1);
-      return { candidate: updated, isNew: false };
+      cRecord = updated;
+      isNew = false;
     } else {
-      // Insert new candidate
+      // Insert new candidate record
       const newId = crypto.randomUUID();
       await db.insert(candidate).values({
         id: newId,
         email: cleanEmail,
-        name: data.name,
-        phone: data.phone || null,
+        name: data.name || 'Candidate',
+        phone: data.phone || normPhone,
+        phoneNormalized: normPhone,
+        whatsapp: data.whatsapp || normWa,
+        whatsappNormalized: normWa,
+        location: data.location || null,
+        status: data.status || 'ACTIVE',
+        source: data.source || 'AI_CHAT',
         interestedJobs: data.interestedJob || 'General Application (AI Chat)',
         cvFileName: data.cvFileName || null,
+        originalCvFileName: data.originalCvFileName || null,
+        consentAccepted: true,
+        consentTimestamp: new Date(),
+        privacyPolicyVersion: '1.0',
+        consentConversationId: data.conversationId || null,
       });
 
       const [inserted] = await db.select().from(candidate).where(eq(candidate.id, newId)).limit(1);
-      return { candidate: inserted, isNew: true };
+      cRecord = inserted;
+      isNew = true;
     }
+
+    // Insert CandidateConsent history record
+    try {
+      const { candidateConsent } = await import('../../db/schema');
+      await db.insert(candidateConsent).values({
+        id: crypto.randomUUID(),
+        candidateId: cRecord.id,
+        conversationId: data.conversationId || null,
+        privacyPolicyVersion: '1.0',
+        consentType: 'CANDIDATE_PROFILE_AND_CV',
+        accepted: true,
+        acceptedAt: new Date(),
+        source: 'AI_CHAT',
+      });
+    } catch (consentErr) {
+      console.warn("CandidateConsent logging warning:", consentErr);
+    }
+
+    return { candidate: cRecord, isNew };
   } catch (error: any) {
     console.error("createOrUpdateCandidate error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create JobApplication record connecting Candidate to Job (Idempotent)
+ */
+export async function createJobApplication(candidateId: string, jobId: string, conversationId?: string) {
+  try {
+    const { jobApplication } = await import('../../db/schema');
+
+    // Check if application already exists for candidateId + jobId
+    const [existing] = await db
+      .select()
+      .from(jobApplication)
+      .where(and(eq(jobApplication.candidateId, candidateId), eq(jobApplication.jobId, jobId)))
+      .limit(1);
+
+    if (existing) {
+      return { ...existing, alreadyApplied: true };
+    }
+
+    const newId = crypto.randomUUID();
+    await db.insert(jobApplication).values({
+      id: newId,
+      candidateId,
+      jobId,
+      applicationStatus: 'SUBMITTED',
+      source: 'AI_CHAT',
+      conversationId: conversationId || null,
+    });
+    const [app] = await db.select().from(jobApplication).where(eq(jobApplication.id, newId)).limit(1);
+    return { ...app, alreadyApplied: false };
+  } catch (error: any) {
+    console.error("createJobApplication error:", error);
     throw error;
   }
 }

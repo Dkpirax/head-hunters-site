@@ -7,7 +7,9 @@ interface Candidate {
   email: string;
   phone: string | null;
   interestedJobs: string | null;
-  cvFileName: string;
+  cvFileName: string | null;
+  originalCvFileName?: string | null;
+  status?: string | null;
   createdAt: string;
 }
 
@@ -23,7 +25,6 @@ export function AdminCandidatesPage() {
   const fetchCandidates = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      // In a real app, you would pass the admin auth token in headers
       const res = await fetch(`${apiUrl}/api/candidates`);
       if (res.ok) {
         const data = await res.json();
@@ -36,7 +37,7 @@ export function AdminCandidatesPage() {
     }
   };
 
-  const handleDownloadCV = (filename: string, candidateName: string) => {
+  const handleDownloadCV = (filename: string, candidateName: string, originalName?: string | null) => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
     if (!filename) {
       alert("No CV file available for this candidate.");
@@ -50,7 +51,7 @@ export function AdminCandidatesPage() {
     
     // Set a nice filename for the downloaded file
     const ext = filename.split('.').pop() || 'pdf';
-    link.download = `${candidateName.replace(/\s+/g, '_')}_CV.${ext}`;
+    link.download = originalName || `${candidateName.replace(/\s+/g, '_')}_CV.${ext}`;
     
     document.body.appendChild(link);
     link.click();
@@ -115,6 +116,7 @@ export function AdminCandidatesPage() {
               <tr>
                 <th className="px-6 py-4 font-semibold tracking-wider">Candidate</th>
                 <th className="px-6 py-4 font-semibold tracking-wider">Contact</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">CV File</th>
                 <th className="px-6 py-4 font-semibold tracking-wider">Interested Roles</th>
                 <th className="px-6 py-4 font-semibold tracking-wider">Date Submitted</th>
                 <th className="px-6 py-4 font-semibold tracking-wider text-right">Action</th>
@@ -123,13 +125,13 @@ export function AdminCandidatesPage() {
             <tbody className="divide-y divide-white/4">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-white/40">
+                  <td colSpan={6} className="px-6 py-8 text-center text-white/40">
                     Loading candidates...
                   </td>
                 </tr>
               ) : filteredCandidates.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-white/40">
+                  <td colSpan={6} className="px-6 py-8 text-center text-white/40">
                     No candidates found matching your criteria.
                   </td>
                 </tr>
@@ -142,6 +144,20 @@ export function AdminCandidatesPage() {
                     <td className="px-6 py-4">
                       <div className="text-white">{c.email}</div>
                       {c.phone && <div className="text-white/50 text-xs mt-1">{c.phone}</div>}
+                    </td>
+                    <td className="px-6 py-4">
+                      {c.cvFileName ? (
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} className="text-[#04a891] shrink-0" />
+                          <span className="text-xs text-white/90 font-mono truncate max-w-[180px]" title={c.originalCvFileName || c.cvFileName}>
+                            {c.originalCvFileName || c.cvFileName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Pending CV
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       {c.interestedJobs ? (
@@ -161,18 +177,20 @@ export function AdminCandidatesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {c.cvFileName && (
+                        {c.cvFileName ? (
                           <button
-                            onClick={() => handleDownloadCV(c.cvFileName, c.name || 'Candidate')}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-medium transition-colors"
+                            onClick={() => handleDownloadCV(c.cvFileName!, c.name || 'Candidate', c.originalCvFileName)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#04a891]/20 hover:bg-[#04a891]/30 text-[#04a891] border border-[#04a891]/30 rounded-lg text-xs font-semibold transition-all cursor-pointer"
                           >
                             <Download size={14} />
                             Download CV
                           </button>
+                        ) : (
+                          <span className="text-xs text-white/30 italic px-2 py-1">No CV File</span>
                         )}
                         <button
                           onClick={() => handleDeleteCandidate(c.id, c.name || c.email)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-medium transition-colors cursor-pointer ml-1"
                           title="Delete Candidate"
                         >
                           <Trash2 size={14} />

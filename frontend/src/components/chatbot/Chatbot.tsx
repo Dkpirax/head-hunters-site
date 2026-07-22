@@ -137,12 +137,32 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   }, [conversationId, isMinimized]);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages, isTyping, handoffStep]);
+
+  const handleActionButton = (btnText: string) => {
+    const lower = btnText.toLowerCase();
+    if (lower.includes('upload') || lower.includes('cv')) {
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+        return;
+      }
+    }
+    if (lower.includes('speak') || lower.includes('consultant') || lower.includes('human')) {
+      initiateHumanHandoff();
+      return;
+    }
+    if (lower.includes('vacancy') || lower.includes('hire')) {
+      handleSendText('I need to hire staff for my company');
+      return;
+    }
+    handleSendText(btnText);
+  };
 
   // Tawk Callbacks
   useEffect(() => {
@@ -215,15 +235,14 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         window.Tawk_API.addEvent("ai_question_sent", { conversationId });
       }
       const result = await addChatMessage(conversationId, text);
-      if (result.ai_generated && result.message) {
+      if (result.message) {
         setMessages((prev) => {
-          // Replace temp message with actual messages from server on next poll
-          return [...prev.filter(m => m.id !== tempId), result.message];
+          const withoutTemp = prev.filter(m => m.id !== tempId);
+          return [...withoutTemp, result.message];
         });
       }
     } catch (error) {
       console.error("Failed to send message", error);
-      // Remove temp message on error
       setMessages((prev) => prev.filter(m => m.id !== tempId));
     } finally {
       setIsTyping(false);
@@ -663,10 +682,19 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                         components={{
                           a: ({ node, ...props }) => {
                             const href = props.href || '';
-                            if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
-                              return <span>{props.children}</span>; 
+                            // Block dangerous protocols
+                            if (/^(javascript:|data:|file:|vbscript:)/i.test(href)) {
+                              return <span>{props.children}</span>;
                             }
-                            return <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#02695e] font-bold hover:underline break-all" />;
+                            // Allow safe relative internal links (e.g. /jobs/123, /contact)
+                            if (href.startsWith('/')) {
+                              return <a href={href} className="text-[#02695e] font-bold hover:underline break-all">{props.children}</a>;
+                            }
+                            // External links — open in new tab
+                            if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+                              return <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#02695e] font-bold hover:underline break-all" />;
+                            }
+                            return <span>{props.children}</span>;
                           },
                           code: ({ node, ...props }) => <code {...props} className="bg-slate-50 text-[#02695e] px-1 py-0.5 rounded text-[11px] break-words" />,
                           p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />
@@ -699,7 +727,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                 <span className="w-1.5 h-1.5 bg-[#02695e]/40 rounded-full animate-bounce"></span>
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 ml-1 mb-1 font-medium">Searching our knowledge base...</span>
+            <span className="text-[10px] text-slate-400 ml-1 mb-1 font-medium">Thinking...</span>
           </div>
         )}
 
@@ -719,6 +747,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
             >
               <Paperclip size={18} />
               <input
+                ref={fileInputRef}
                 type="file"
                 accept=".pdf,.doc,.docx"
                 className="hidden"
@@ -742,14 +771,8 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                     const data = await res.json();
                     if (res.ok && data.file) {
                       setVisitorDetails(prev => ({ ...prev, cvFileName: data.file.fileName }));
-                      setMessages(prev => [...prev, {
-                        id: `cv-${Date.now()}`,
-                        senderType: 'USER',
-                        sender: 'USER',
-                        content: `📄 Uploaded CV: ${data.file.originalName}`,
-                        createdAt: new Date()
-                      }]);
-                      setHandoffStep("DETAILS");
+                      // Send CV attachment message to AI Chat
+                      handleSendText(`📄 Uploaded CV: ${data.file.originalName}`);
                     } else {
                       alert(`CV Upload failed: ${data.error || 'Invalid file format'}`);
                     }

@@ -10,7 +10,7 @@ import { searchKnowledge } from '../lib/vector-store';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { createOrUpdateCandidate, createEmployerLead, searchJobs, getJobDetails } from './chat/tools';
-import { processChatIntent } from './chat/router';
+import { processChatIntent, WorkflowContext, WorkflowType, WorkflowState, isWorkflowExpired } from './chat/router';
 
 const groundedAnswerSchema = z.object({
   answer: z.string().trim().min(1).max(3000),
@@ -250,34 +250,90 @@ chatRouter.post('/conversations/:id/messages', verifyVisitorToken, async (req, r
       }
     }
 
-    // 1. INTENT ROUTER & STATE MACHINE CHECK
-    const currentState = conv.handoffReason || 'IDLE';
-    const routerResult = await processChatIntent(msgContent, currentState);
+    // ── Intent Router & Workflow State Machine ──────────────────────────────
+    // Build WorkflowContext from the dedicated columns (NOT handoffReason)
+    let workflowType = (conv.workflowType || 'NONE') as WorkflowType;
+    let workflowState = (conv.workflowState || 'IDLE') as WorkflowState;
+    let workflowData: Record<string, any> = {};
 
-    if (routerResult.intent !== 'GENERAL_COMPANY_INFORMATION' && routerResult.intent !== 'UNKNOWN') {
-      const botMsgId = crypto.randomUUID();
-      await db.insert(message).values({
-        id: botMsgId,
-        conversationId: String(id),
-        senderType: 'BOT',
-        sender: 'AI',
-        content: routerResult.response,
-        grounded: true,
+    // Safely parse persisted workflow data
+    if (conv.workflowData) {
+      try {
+        workflowData = JSON.parse(conv.workflowData as string);
+      } catch {
+        workflowData = {};
+      }
+    }
+
+    // Reset expired workflows silently
+    if (workflowType !== 'NONE' && isWorkflowExpired(conv.workflowUpdatedAt as Date | null)) {
+      workflowType = 'NONE';
+      workflowState = 'IDLE';
+      workflowData = {};
+      await db.update(conversation).set({
+        workflowType: 'NONE',
+        workflowState: 'IDLE',
+        workflowData: null,
+        workflowUpdatedAt: new Date(),
+        updatedAt: new Date(),
+      }).where(eq(conversation.id, String(id)));
+    }
+
+    const workflowContext: WorkflowContext = { workflowType, workflowState, workflowData, conversationId: String(id) };
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[CHAT] Message received:', {
+        message: msgContent,
+        workflowType, workflowState,
+        conversationId: id,
       });
+    }
 
-      // Update state machine progress in conversation
-      await db.update(conversation)
-        .set({ 
-          handoffReason: routerResult.nextState || 'IDLE',
-          updatedAt: new Date()
-        })
-        .where(eq(conversation.id, String(id)));
+    const routerResult = await processChatIntent(msgContent, workflowContext);
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[CHAT] Router result:', {
+        intent: routerResult.intent,
+        confidence: routerResult.confidence,
+        callsRAG: routerResult.callsRAG,
+        nextState: routerResult.nextWorkflowState,
+      });
+    }
+
+    // All non-RAG intents: save response and persist workflow state atomically
+    if (!routerResult.callsRAG) {
+      const botMsgId = crypto.randomUUID();
+      const nextWorkflowType = routerResult.nextWorkflowType ?? workflowType;
+      const nextWorkflowState = routerResult.nextWorkflowState ?? workflowState;
+      const nextWorkflowData = routerResult.nextWorkflowData ?? workflowData;
+
+      await db.transaction(async (tx) => {
+        await tx.insert(message).values({
+          id: botMsgId,
+          conversationId: String(id),
+          senderType: 'BOT',
+          sender: 'AI',
+          content: routerResult.response,
+          grounded: true,
+        });
+
+        await tx.update(conversation)
+          .set({
+            workflowType: nextWorkflowType,
+            workflowState: nextWorkflowState,
+            workflowData: JSON.stringify(nextWorkflowData),
+            workflowUpdatedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(conversation.id, String(id)));
+      });
 
       const [botMsg] = await db.select().from(message).where(eq(message.id, botMsgId)).limit(1);
       return res.json({ success: true, message: botMsg });
     }
 
-    // AI Generation Fallback for General Knowledge
+    // Only GENERAL_COMPANY_INFORMATION reaches here — call RAG
+
     const startTime = Date.now();
     const settings = await getAiSettings();
     if (!settings.enabled) {
@@ -477,6 +533,16 @@ ${staticKnowledge}`;
         finalAnswer = "🔒 **Security Notice:** Headhunters.lk will **never** ask candidates for money, bank details, or payments for a job offer. All official emails come from `@headhunters.lk` domain.";
         grounded = true;
       }
+    }
+
+    // If nothing was grounded (no knowledge doc + no static match), ask clarification
+    // instead of the generic "I could not find that" error
+    if (!grounded) {
+      finalAnswer = "I don't have confirmed information about that at the moment.\n\nWould you like me to connect you with a recruitment consultant?\n\nOr I can help you with:";
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[CHAT] RAG result:', { grounded, retrievedChunkIds, finalAnswer: finalAnswer.slice(0, 100) });
     }
 
     // Atomic conversation state check and insert using a transaction
@@ -681,12 +747,56 @@ if (!fs.existsSync(cvUploadDir)) {
   fs.mkdirSync(cvUploadDir, { recursive: true });
 }
 
+// Enhanced magic byte and structural file signature validation helper
+function validateFileSignature(filePath: string, extension: string): boolean {
+  try {
+    const ext = extension.toLowerCase();
+    const buffer = Buffer.alloc(2048); // Read larger initial buffer for ZIP/PDF structural checks
+    const fd = fs.openSync(filePath, 'r');
+    const bytesRead = fs.readSync(fd, buffer, 0, 2048, 0);
+    fs.closeSync(fd);
+
+    if (bytesRead < 4) return false;
+
+    if (ext === '.pdf') {
+      // PDF header validation: must start with %PDF- (0x25 0x50 0x44 0x46)
+      const headerStr = buffer.toString('utf8', 0, 1024);
+      return headerStr.startsWith('%PDF-');
+    }
+
+    if (ext === '.docx') {
+      // DOCX is a PK Zip archive: PK\x03\x04 (0x50 0x4B 0x03 0x04)
+      const isZip = buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04;
+      if (!isZip) return false;
+
+      // Deep inspection: verify presence of DOCX XML structural entries in raw stream
+      const rawContent = buffer.toString('binary', 0, bytesRead);
+      const hasDocxEntry = rawContent.includes('[Content_Types].xml') || 
+                           rawContent.includes('word/document.xml') || 
+                           rawContent.includes('_rels/.rels');
+      return hasDocxEntry;
+    }
+
+    if (ext === '.doc') {
+      // DOC OLE Compound Binary Format magic bytes: D0 CF 11 E0 A1 B1 1A E1
+      const isOle = buffer[0] === 0xD0 && buffer[1] === 0xCF && buffer[2] === 0x11 && buffer[3] === 0xE0;
+      return isOle;
+    }
+
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
 const cvUpload = multer({
   storage: multer.diskStorage({
     destination: cvUploadDir,
     filename: (req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase();
-      cb(null, `cv-${crypto.randomUUID()}${ext}`);
+      // Sanitize original filename (strip path traversal characters)
+      const safeExt = ['.pdf', '.doc', '.docx'].includes(ext) ? ext : '.pdf';
+      cb(null, `cv-${crypto.randomUUID()}${safeExt}`);
     },
   }),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
@@ -696,7 +806,8 @@ const cvUpload = multer({
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
-    if (allowedTypes.includes(file.mimetype) || file.originalname.match(/\.(pdf|doc|docx)$/i)) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if ((allowedTypes.includes(file.mimetype) || ext.match(/\.(pdf|doc|docx)$/i)) && !file.originalname.includes('..')) {
       cb(null, true);
     } else {
       cb(new Error('Invalid file format. Please upload a PDF, DOC, or DOCX file under 10 MB.'));
@@ -705,19 +816,51 @@ const cvUpload = multer({
 });
 
 // Endpoint: In-Chat CV Upload
-chatRouter.post('/upload-cv', cvUpload.single('file'), async (req, res) => {
+chatRouter.post('/upload-cv', verifyVisitorToken, cvUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No CV file provided.' });
     }
 
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const filePath = req.file.path;
+
+    // Validate magic bytes to prevent executable files renamed as .pdf
+    if (!validateFileSignature(filePath, ext)) {
+      // Safely delete invalid file
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ error: 'File content does not match the valid PDF, DOC, or DOCX file format.' });
+    }
+
+    const sanitizeOriginalName = path.basename(req.file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
+
     const fileMeta = {
-      originalName: req.file.originalname,
+      originalName: sanitizeOriginalName,
       fileName: req.file.filename,
       size: req.file.size,
       mimeType: req.file.mimetype,
       url: `/uploads/cvs/${req.file.filename}`
     };
+
+    // Automatically bind uploaded CV to active candidate workflow if candidate state exists
+    const visitorId = (req as any).visitorId;
+    if (visitorId) {
+      const activeConvs = await db.select().from(conversation).where(eq(conversation.userId, visitorId)).orderBy(desc(conversation.updatedAt)).limit(1);
+      const conv = activeConvs[0];
+      if (conv && conv.workflowType === 'CANDIDATE') {
+        let data: any = {};
+        try { data = JSON.parse(conv.workflowData as string || '{}'); } catch {}
+        data.cvFileName = req.file.filename;
+        data.originalCvFileName = sanitizeOriginalName;
+        data.hasNoCv = false;
+
+        await db.update(conversation).set({
+          workflowData: JSON.stringify(data),
+          workflowUpdatedAt: new Date(),
+          updatedAt: new Date(),
+        }).where(eq(conversation.id, conv.id));
+      }
+    }
 
     return res.json({ success: true, file: fileMeta });
   } catch (error: any) {

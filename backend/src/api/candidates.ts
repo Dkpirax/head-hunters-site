@@ -10,7 +10,8 @@ import crypto from 'crypto';
 const router = Router();
 
 // Ensure uploads directory exists
-const uploadDir = path.join(process.cwd(), 'uploads', 'cvs');
+const uploadDir = path.resolve(process.cwd(), 'uploads/cvs');
+const parentUploadDir = path.resolve(process.cwd(), '../uploads/cvs');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -60,6 +61,9 @@ router.post('/upload', upload.single('cv'), async (req, res) => {
       phone: phone || null,
       interestedJobs: interestedJobs || null,
       cvFileName: file.filename,
+      originalCvFileName: file.originalname,
+      status: 'ACTIVE',
+      source: 'DIRECT_UPLOAD'
     };
 
     await db.insert(candidate).values(newCandidate);
@@ -75,7 +79,6 @@ router.post('/upload', upload.single('cv'), async (req, res) => {
 });
 
 // GET /api/candidates
-// Note: In a real app this should have admin authentication middleware
 router.get('/', async (req, res) => {
   try {
     const candidates = await db.select().from(candidate).orderBy(candidate.createdAt);
@@ -89,7 +92,11 @@ router.get('/', async (req, res) => {
 // GET /api/candidates/download/:filename
 router.get('/download/:filename', (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(uploadDir, filename);
+  let filePath = path.join(uploadDir, filename);
+
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(parentUploadDir, filename);
+  }
 
   if (fs.existsSync(filePath)) {
     res.download(filePath);
