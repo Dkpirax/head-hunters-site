@@ -84,7 +84,7 @@ export function FloatingButtons({ chatbotEnabled = true }: { chatbotEnabled?: bo
       </AnimatePresence>
       
       {chatbotEnabled && (
-        <div className="relative">
+        <div className={`relative ${isChatOpen ? 'hidden sm:block' : ''}`}>
           <button
             onClick={handleToggleChat}
             className={`group text-white shadow-[0_8px_30px_rgba(4,168,145,0.45)] hover:shadow-[0_8px_40px_rgba(4,168,145,0.65)] hover:scale-105 transition-all cursor-pointer z-50 relative flex items-center justify-center bg-gradient-to-r from-[#02695e] to-[#04a891] ${

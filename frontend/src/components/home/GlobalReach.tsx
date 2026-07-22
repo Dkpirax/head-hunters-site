@@ -138,7 +138,7 @@ function CobeGlobe() {
   ];
 
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[500px] flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing scale-90 md:scale-100 transform-origin-center mt-10 md:mt-0">
+    <div ref={containerRef} className="w-full h-full min-h-[500px] flex items-center justify-center overflow-hidden pointer-events-none md:pointer-events-auto md:cursor-grab md:active:cursor-grabbing scale-90 md:scale-100 transform-origin-center mt-10 md:mt-0">
       <Globe
         ref={globeEl}
         width={dimensions.width}

@@ -51,6 +51,11 @@ const SERVICES: any[] = [
       "Practical offshore payroll, worker management and Xero or MYOB bookkeeping support.",
   },
   {
+    type: "image" as const,
+    image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1200&q=80",
+    imageAlt: "Team working together",
+  },
+  {
     icon: ShieldCheck,
     title: "Service Standards",
     description:
