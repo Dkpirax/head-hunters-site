@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 
@@ -96,35 +96,34 @@ function HomePage() {
   );
 }
 
-import { LoginPage } from "./pages/Login";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
-
-import { AdminJobsPage } from "./pages/admin/Jobs";
-import { AdminSettingsPage } from "./pages/admin/Settings";
-import { AdminDashboardPage } from "./pages/admin/Dashboard";
-import { AdminChatPage } from "./pages/admin/Chat";
-import { AdminInsightsPage } from "./pages/admin/Insights";
-import { AdminUsersPage } from "./pages/admin/Users";
-import { AdminEnquiriesPage } from "./pages/admin/Enquiries";
-import { AdminAISettingsPage } from "./pages/admin/AISettings";
-import { AdminKnowledgePage } from "./pages/admin/Knowledge";
-import { AdminNotFound } from "./pages/admin/NotFound";
-
 import { SmoothScroll } from "./components/layout/SmoothScroll";
 import { FloatingButtons } from "./components/layout/FloatingButtons";
-import { JobsPage } from "./pages/Jobs";
-import { JobDetailPage } from "./pages/JobDetail";
-import { InsightsPage } from "./pages/Insights";
-import { UploadCVPage } from "./pages/UploadCV";
-import { AdminCandidatesPage } from "./pages/admin/Candidates";
-import { InsightDetailPage } from "./pages/InsightDetail";
 
+// Lazy-loaded pages
+const LoginPage = lazy(() => import('./pages/Login').then(module => ({ default: module.LoginPage })));
+const AdminJobsPage = lazy(() => import('./pages/admin/Jobs').then(module => ({ default: module.AdminJobsPage })));
+const AdminSettingsPage = lazy(() => import('./pages/admin/Settings').then(module => ({ default: module.AdminSettingsPage })));
+const AdminDashboardPage = lazy(() => import('./pages/admin/Dashboard').then(module => ({ default: module.AdminDashboardPage })));
+const AdminChatPage = lazy(() => import('./pages/admin/Chat').then(module => ({ default: module.AdminChatPage })));
+const AdminInsightsPage = lazy(() => import('./pages/admin/Insights').then(module => ({ default: module.AdminInsightsPage })));
+const AdminUsersPage = lazy(() => import('./pages/admin/Users').then(module => ({ default: module.AdminUsersPage })));
+const AdminEnquiriesPage = lazy(() => import('./pages/admin/Enquiries').then(module => ({ default: module.AdminEnquiriesPage })));
+const AdminAISettingsPage = lazy(() => import('./pages/admin/AISettings').then(module => ({ default: module.AdminAISettingsPage })));
+const AdminKnowledgePage = lazy(() => import('./pages/admin/Knowledge').then(module => ({ default: module.AdminKnowledgePage })));
+const AdminNotFound = lazy(() => import('./pages/admin/NotFound').then(module => ({ default: module.AdminNotFound })));
+const AdminCandidatesPage = lazy(() => import('./pages/admin/Candidates').then(module => ({ default: module.AdminCandidatesPage })));
 
-import { ContactPage } from "./pages/Contact";
-import { PrivacyPolicyPage } from "./pages/PrivacyPolicy";
-import { TermsAndConditionsPage } from "./pages/TermsAndConditions";
-import { JobScamAwarenessPage } from "./pages/JobScamAwareness";
+const JobsPage = lazy(() => import('./pages/Jobs').then(module => ({ default: module.JobsPage })));
+const JobDetailPage = lazy(() => import('./pages/JobDetail').then(module => ({ default: module.JobDetailPage })));
+const InsightsPage = lazy(() => import('./pages/Insights').then(module => ({ default: module.InsightsPage })));
+const InsightDetailPage = lazy(() => import('./pages/InsightDetail').then(module => ({ default: module.InsightDetailPage })));
+const UploadCVPage = lazy(() => import('./pages/UploadCV').then(module => ({ default: module.UploadCVPage })));
+const ContactPage = lazy(() => import('./pages/Contact').then(module => ({ default: module.ContactPage })));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicy').then(module => ({ default: module.PrivacyPolicyPage })));
+const TermsAndConditionsPage = lazy(() => import('./pages/TermsAndConditions').then(module => ({ default: module.TermsAndConditionsPage })));
+const JobScamAwarenessPage = lazy(() => import('./pages/JobScamAwareness').then(module => ({ default: module.JobScamAwarenessPage })));
 
 function App() {
   return (
@@ -132,42 +131,48 @@ function App() {
       <div className="grain" aria-hidden="true" />
       <div className="aurora" aria-hidden="true" />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
+        <Suspense fallback={
+          <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center">
+            <div className="w-10 h-10 border-4 border-[#04a891] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        }>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
 
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/upload-cv" element={<UploadCVPage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
-          <Route path="/job-scam-awareness" element={<JobScamAwarenessPage />} />
-          <Route path="/jobs" element={<JobsPage />} />
-          <Route path="/jobs/:id" element={<JobDetailPage />} />
-          <Route path="/insights" element={<InsightsPage />} />
-          <Route path="/insights/:slug" element={<InsightDetailPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          
-          {/* Admin Routes */}
-          <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
-            } 
-          >
-            <Route index element={<AdminDashboardPage />} />
-            <Route path="jobs" element={<AdminJobsPage />} />
-            <Route path="insights" element={<AdminInsightsPage />} />
-            <Route path="enquiries" element={<AdminEnquiriesPage />} />
-            <Route path="chat" element={<AdminChatPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="candidates" element={<AdminCandidatesPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
-            <Route path="ai-settings" element={<AdminAISettingsPage />} />
-            <Route path="knowledge" element={<AdminKnowledgePage />} />
-            <Route path="*" element={<AdminNotFound />} />
-          </Route>
-        </Routes>
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/upload-cv" element={<UploadCVPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+            <Route path="/job-scam-awareness" element={<JobScamAwarenessPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:id" element={<JobDetailPage />} />
+            <Route path="/insights" element={<InsightsPage />} />
+            <Route path="/insights/:slug" element={<InsightDetailPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            
+            {/* Admin Routes */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              } 
+            >
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="jobs" element={<AdminJobsPage />} />
+              <Route path="insights" element={<AdminInsightsPage />} />
+              <Route path="enquiries" element={<AdminEnquiriesPage />} />
+              <Route path="chat" element={<AdminChatPage />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="candidates" element={<AdminCandidatesPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
+              <Route path="ai-settings" element={<AdminAISettingsPage />} />
+              <Route path="knowledge" element={<AdminKnowledgePage />} />
+              <Route path="*" element={<AdminNotFound />} />
+            </Route>
+          </Routes>
+        </Suspense>
         <FloatingButtons chatbotEnabled={true} />
       </BrowserRouter>
     </SmoothScroll>

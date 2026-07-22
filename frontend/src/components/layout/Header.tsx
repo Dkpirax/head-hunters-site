@@ -35,7 +35,7 @@ export function Header() {
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
       }
-    } else if (location.pathname === '/') {
+    } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [location]);
@@ -49,7 +49,7 @@ export function Header() {
     <>
       <header
         className={cn(
-          "hh-header-anim fixed top-3 left-1/2 -translate-x-1/2 z-50",
+          "hh-header-anim fixed top-3 left-1/2 -translate-x-1/2 z-[101]",
           "w-[min(1200px,calc(100%-24px))]",
           "h-16 px-4 sm:px-6",
           "flex items-center justify-between gap-4 md:gap-8",
@@ -99,7 +99,7 @@ export function Header() {
       {/* Mobile overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 lg:hidden transition-all duration-300",
+          "fixed inset-0 z-[100] lg:hidden transition-all duration-300",
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
       >
