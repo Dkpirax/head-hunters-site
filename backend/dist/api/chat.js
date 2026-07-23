@@ -42,152 +42,356 @@ const db_1 = require("../lib/db");
 const schema_1 = require("../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
 const crypto_1 = __importDefault(require("crypto"));
+const vector_store_1 = require("../lib/vector-store");
+const zod_1 = require("zod");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const groundedAnswerSchema = zod_1.z.object({
+    answer: zod_1.z.string().trim().min(1).max(3000),
+    supportedChunkIds: zod_1.z.array(zod_1.z.string()).min(1),
+    grounded: zod_1.z.literal(true),
+    handoffRecommended: zod_1.z.boolean()
+});
 exports.chatRouter = (0, express_1.Router)();
-// Get or Create Conversation — only returns ACTIVE (BOT_ACTIVE or HUMAN_ACTIVE) conversations.
-// If the existing conversation is CLOSED, creates a new one.
+const visitorTokenSecret = process.env.VISITOR_TOKEN_SECRET || 'dev_secret_only_for_local_testing_purposes';
+function getOrCreateVisitorToken(req, res) {
+    let token = req.cookies.visitor_token;
+    if (token) {
+        try {
+            const decoded = jsonwebtoken_1.default.verify(token, visitorTokenSecret, { audience: 'headhunters-chat', issuer: 'headhunters-backend' });
+            if (decoded && decoded.sub) {
+                return decoded.sub;
+            }
+        }
+        catch (e) {
+            // Invalid token, fall through to create a new one
+        }
+    }
+    const visitorId = crypto_1.default.randomUUID();
+    token = jsonwebtoken_1.default.sign({ type: 'visitor' }, visitorTokenSecret, {
+        subject: visitorId,
+        audience: 'headhunters-chat',
+        issuer: 'headhunters-backend',
+        expiresIn: '30d'
+    });
+    res.cookie('visitor_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+    return visitorId;
+}
+function verifyVisitorToken(req, res, next) {
+    const token = req.cookies.visitor_token;
+    if (!token)
+        return res.status(401).json({ error: 'Unauthorized: Missing visitor token' });
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, visitorTokenSecret, { audience: 'headhunters-chat', issuer: 'headhunters-backend' });
+        if (decoded && decoded.sub) {
+            req.visitorId = decoded.sub;
+            return next();
+        }
+    }
+    catch (e) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid visitor token' });
+    }
+    return res.status(401).json({ error: 'Unauthorized' });
+}
+const algorithm = 'aes-256-ctr';
+const secretKey = (process.env.AUTH_SECRET || 'fallback_secret_must_be_32_bytes_long_').padEnd(32, '0').slice(0, 32);
+function decrypt(hash) {
+    try {
+        const parts = hash.split(':');
+        const iv = Buffer.from(parts[0], 'hex');
+        const encryptedText = Buffer.from(parts[1], 'hex');
+        const decipher = crypto_1.default.createDecipheriv(algorithm, secretKey, iv);
+        const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+        return decrypted.toString();
+    }
+    catch (err) {
+        return null;
+    }
+}
+async function getAiSettings() {
+    const rows = await db_1.db.select().from(schema_1.content).where((0, drizzle_orm_1.eq)(schema_1.content.key, 'ai_settings'));
+    let settings = {};
+    if (rows.length > 0) {
+        settings = JSON.parse(rows[0].value);
+    }
+    return {
+        enabled: settings.enabled ?? true,
+        baseUrl: settings.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+        modelName: settings.modelName || process.env.OLLAMA_MODEL || 'deepseek-r1:7b',
+        embeddingModel: settings.embeddingModel || process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text',
+        temperature: settings.temperature ?? 0.1,
+        apiKey: settings.apiKey ? decrypt(settings.apiKey) : null,
+        retrievalCount: settings.retrievalCount ?? 5,
+        minRelevanceScore: settings.minRelevanceScore ?? 0.70,
+        fallbackMessage: settings.fallbackMessage || "I’m sorry, but I could not find that information in the approved Headhunters.lk information. Please contact our team at info@headhunters.lk or WhatsApp/call +94 77 397 5048.",
+    };
+}
 exports.chatRouter.post('/conversations', async (req, res) => {
     try {
-        const { visitorId } = req.body;
-        if (!visitorId)
-            return res.status(400).json({ error: 'visitorId required' });
-        // ONLY look for non-closed conversations
+        const visitorId = getOrCreateVisitorToken(req, res);
         const existingConvs = await db_1.db.select()
             .from(schema_1.conversation)
             .where((0, drizzle_orm_1.eq)(schema_1.conversation.userId, visitorId))
             .orderBy((0, drizzle_orm_1.desc)(schema_1.conversation.updatedAt))
             .limit(1);
         const existingConv = existingConvs[0];
-        // If found and NOT closed, return it with messages
-        if (existingConv && existingConv.status !== 'CLOSED') {
+        if (existingConv && existingConv.chatStatus !== 'RESOLVED') {
             const messages = await db_1.db.select()
                 .from(schema_1.message)
                 .where((0, drizzle_orm_1.eq)(schema_1.message.conversationId, existingConv.id))
                 .orderBy(schema_1.message.createdAt);
-            return res.json({
-                ...existingConv,
-                messages,
-            });
+            return res.json({ ...existingConv, messages });
         }
-        // Otherwise create a fresh conversation
-        const settings = await db_1.db.select()
-            .from(schema_1.content)
-            .where((0, drizzle_orm_1.eq)(schema_1.content.key, 'chatbot_greeting'))
-            .limit(1);
-        const greetingText = settings[0]?.value || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
+        const setRows = await db_1.db.select().from(schema_1.content).where((0, drizzle_orm_1.eq)(schema_1.content.key, 'chatbot_greeting')).limit(1);
+        const greetingText = setRows[0]?.value || "Welcome to Head Hunters. I am your assistant. How can I help you today?";
         const { newConv, botGreeting } = await db_1.db.transaction(async (tx) => {
             const conversationId = crypto_1.default.randomUUID();
             const greetingId = crypto_1.default.randomUUID();
             await tx.insert(schema_1.conversation).values({
                 id: conversationId,
                 userId: visitorId,
-                status: 'BOT_ACTIVE',
+                mode: 'AI',
+                chatStatus: 'OPEN',
+                status: 'BOT_ACTIVE', // Legacy fallback
             });
             await tx.insert(schema_1.message).values({
                 id: greetingId,
                 conversationId,
-                senderType: 'BOT',
+                senderType: 'BOT', // Legacy fallback
+                sender: 'AI',
                 content: greetingText,
             });
-            const [createdConversation] = await tx.select()
-                .from(schema_1.conversation)
-                .where((0, drizzle_orm_1.eq)(schema_1.conversation.id, conversationId))
-                .limit(1);
-            const [createdGreeting] = await tx.select()
-                .from(schema_1.message)
-                .where((0, drizzle_orm_1.eq)(schema_1.message.id, greetingId))
-                .limit(1);
-            return { newConv: createdConversation, botGreeting: createdGreeting };
+            const [c] = await tx.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, conversationId)).limit(1);
+            const [m] = await tx.select().from(schema_1.message).where((0, drizzle_orm_1.eq)(schema_1.message.id, greetingId)).limit(1);
+            return { newConv: c, botGreeting: m };
         });
-        return res.json({
-            ...newConv,
-            messages: [botGreeting]
-        });
+        return res.json({ ...newConv, messages: [botGreeting] });
     }
     catch (error) {
-        console.error('Failed to get/create conversation:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Add Message
-exports.chatRouter.post('/conversations/:id/messages', async (req, res) => {
+exports.chatRouter.post('/conversations/:id/messages', verifyVisitorToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const { senderType, content } = req.body;
-        if (!content)
+        const visitorId = req.visitorId;
+        const { content: msgContent } = req.body; // Always from USER
+        if (!msgContent)
             return res.status(400).json({ error: 'Message content required' });
-        const newMsg = await db_1.db.transaction(async (tx) => {
-            const messageId = crypto_1.default.randomUUID();
-            await tx.insert(schema_1.message).values({
-                id: messageId,
-                conversationId: id,
-                senderType,
-                content,
-            });
-            await tx.update(schema_1.conversation).set({ updatedAt: new Date() }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, id));
-            const [createdMessage] = await tx.select()
-                .from(schema_1.message)
-                .where((0, drizzle_orm_1.eq)(schema_1.message.id, messageId))
-                .limit(1);
-            return createdMessage;
+        // Ensure conversation exists and is owned by the visitor
+        let [conv] = await db_1.db.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id))).limit(1);
+        if (!conv || conv.userId !== visitorId)
+            return res.status(404).json({ error: 'Conversation not found' });
+        // Insert user message
+        await db_1.db.insert(schema_1.message).values([{
+                conversationId: String(id),
+                senderType: 'USER',
+                sender: 'USER',
+                content: msgContent,
+            }]);
+        // Update conv timestamp
+        await db_1.db.update(schema_1.conversation).set({ updatedAt: new Date() }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id)));
+        if (conv.mode !== 'AI') {
+            return res.json({ success: true, ai_generated: false });
+        }
+        // AI Generation
+        const startTime = Date.now();
+        const settings = await getAiSettings();
+        if (!settings.enabled) {
+            return res.json({ success: true, ai_generated: false });
+        }
+        // Determine Approved Document
+        const [approvedDoc] = await db_1.db.select().from(schema_1.knowledgeDocument).where((0, drizzle_orm_1.eq)(schema_1.knowledgeDocument.status, 'APPROVED')).limit(1);
+        let finalAnswer = settings.fallbackMessage;
+        let grounded = false;
+        let retrievedChunkIds = [];
+        if (approvedDoc) {
+            try {
+                const headers = { "Content-Type": "application/json" };
+                if (settings.apiKey)
+                    headers["Authorization"] = `Bearer ${settings.apiKey}`;
+                // Get Embedding
+                const embedRes = await fetch(`${settings.baseUrl}/api/embed`, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                        model: settings.embeddingModel,
+                        input: msgContent
+                    })
+                });
+                if (embedRes.ok) {
+                    const embedData = await embedRes.json();
+                    const queryVector = embedData.embeddings[0];
+                    // LanceDB search
+                    const results = await (0, vector_store_1.searchKnowledge)(approvedDoc.version, queryVector, settings.retrievalCount);
+                    const relevantChunks = results.filter((r) => r.normalisedRelevance >= settings.minRelevanceScore);
+                    if (relevantChunks.length > 0) {
+                        retrievedChunkIds = relevantChunks.map((r) => r.chunkId);
+                        const contextText = relevantChunks.map((r) => `[Chunk: ${r.chunkId}]\n${r.content}`).join('\n\n');
+                        const systemPrompt = `You are a helpful assistant for Headhunters.lk. Answer the user's question using ONLY the provided knowledge chunks below. 
+If the answer is not contained in the knowledge chunks, you MUST NOT guess or use outside knowledge; recommend human handoff instead.
+Respond strictly in JSON format as follows:
+{
+  "answer": "Final user-facing response",
+  "supportedChunkIds": ["chunk-id-1"],
+  "grounded": true,
+  "handoffRecommended": false
+}
+
+Knowledge Chunks:
+${contextText}`;
+                        // Generate AI Answer
+                        const chatRes = await fetch(`${settings.baseUrl}/api/chat`, {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({
+                                model: settings.modelName,
+                                messages: [
+                                    { role: "system", content: systemPrompt },
+                                    { role: "user", content: msgContent }
+                                ],
+                                format: "json",
+                                options: { temperature: settings.temperature },
+                                stream: false
+                            })
+                        });
+                        if (chatRes.ok) {
+                            const chatData = await chatRes.json();
+                            let aiContent = chatData.message.content;
+                            // DeepSeek-R1 strip <think>
+                            aiContent = aiContent.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+                            try {
+                                const parsed = JSON.parse(aiContent);
+                                const validated = groundedAnswerSchema.parse(parsed);
+                                // Verify that supportedChunkIds are actually in retrievedChunkIds
+                                const valid = validated.supportedChunkIds.every((chunkId) => retrievedChunkIds.includes(chunkId));
+                                if (valid) {
+                                    finalAnswer = validated.answer;
+                                    grounded = true;
+                                    if (validated.handoffRecommended) {
+                                        // Handoff requested by AI
+                                        await db_1.db.update(schema_1.conversation).set({
+                                            mode: 'HUMAN',
+                                            chatStatus: 'WAITING_FOR_ADMIN',
+                                            needsHuman: true // legacy
+                                        }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id)));
+                                    }
+                                }
+                                else {
+                                    console.warn("AI used hallucinated chunk IDs:", validated.supportedChunkIds);
+                                }
+                            }
+                            catch (parseError) {
+                                console.error("AI returned invalid JSON or schema mismatch:", aiContent);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (error) {
+                console.error("AI Error:", error);
+            }
+        }
+        // Atomic conversation state check and insert using a transaction
+        const saved = await db_1.db.transaction(async (tx) => {
+            // Locking the conversation row to prevent race conditions during human handoff
+            const [recheckConv] = await tx.execute((0, drizzle_orm_1.sql) `SELECT mode FROM Conversation WHERE id = ${id} FOR UPDATE`);
+            // Fallback in case raw SQL execute behaves differently, or if we just use drizzle select
+            const [dbConv] = await tx.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id))).limit(1);
+            if (dbConv && dbConv.mode === 'AI') {
+                const aiMsgId = crypto_1.default.randomUUID();
+                await tx.insert(schema_1.message).values([{
+                        id: aiMsgId,
+                        conversationId: String(id),
+                        senderType: 'BOT',
+                        sender: 'AI',
+                        content: finalAnswer,
+                        grounded,
+                        retrievedChunkIds: JSON.stringify(retrievedChunkIds),
+                        modelName: settings.modelName,
+                        latencyMs: Date.now() - startTime,
+                    }]);
+                await tx.update(schema_1.conversation).set({ updatedAt: new Date() }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id)));
+                const [newMsg] = await tx.select().from(schema_1.message).where((0, drizzle_orm_1.eq)(schema_1.message.id, aiMsgId)).limit(1);
+                return newMsg;
+            }
+            return null;
         });
-        return res.json(newMsg);
+        if (saved) {
+            return res.json({ success: true, ai_generated: true, message: saved });
+        }
+        else {
+            return res.json({ success: true, ai_generated: false });
+        }
     }
     catch (error) {
-        console.error('Failed to add message:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Close Conversation
-exports.chatRouter.post('/conversations/:id/close', async (req, res) => {
+exports.chatRouter.post('/conversations/:id/request-human', verifyVisitorToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const visitorId = req.visitorId;
+        let [conv] = await db_1.db.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id))).limit(1);
+        if (!conv || conv.userId !== visitorId)
+            return res.status(404).json({ error: 'Conversation not found' });
         await db_1.db.update(schema_1.conversation).set({
-            status: 'CLOSED',
-            needsHuman: false,
-        }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, id));
-        return res.json({ success: true });
-    }
-    catch (error) {
-        console.error('Failed to close conversation:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-// Request Human Takeover
-exports.chatRouter.post('/conversations/:id/takeover', async (req, res) => {
-    try {
-        const { id } = req.params;
-        await db_1.db.update(schema_1.conversation).set({
+            mode: 'HUMAN',
+            chatStatus: 'WAITING_FOR_ADMIN',
             needsHuman: true,
             updatedAt: new Date()
-        }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, id));
-        return res.json({ success: true });
+        }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id)));
+        res.json({ success: true });
     }
     catch (error) {
-        console.error('Failed to request human takeover:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-// Poll Messages
-exports.chatRouter.get('/messages', async (req, res) => {
+exports.chatRouter.post('/conversations/:id/resolve', verifyVisitorToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const visitorId = req.visitorId;
+        let [conv] = await db_1.db.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id))).limit(1);
+        if (!conv || conv.userId !== visitorId)
+            return res.status(404).json({ error: 'Conversation not found' });
+        await db_1.db.update(schema_1.conversation).set({
+            mode: 'CLOSED',
+            chatStatus: 'RESOLVED',
+            status: 'CLOSED',
+            needsHuman: false,
+        }).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, String(id)));
+        res.json({ success: true });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.chatRouter.get('/messages', verifyVisitorToken, async (req, res) => {
     try {
         const { conversationId } = req.query;
-        if (!conversationId || typeof conversationId !== 'string') {
+        const visitorId = req.visitorId;
+        if (!conversationId || typeof conversationId !== 'string')
             return res.status(400).json({ error: 'conversationId required' });
-        }
         const { asc } = await Promise.resolve().then(() => __importStar(require('drizzle-orm')));
         const [conv] = await db_1.db.select().from(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, conversationId)).limit(1);
-        if (!conv) {
+        if (!conv || conv.userId !== visitorId)
             return res.status(404).json({ error: 'Conversation not found' });
-        }
         const msgs = await db_1.db.select().from(schema_1.message).where((0, drizzle_orm_1.eq)(schema_1.message.conversationId, conversationId)).orderBy(asc(schema_1.message.createdAt));
-        return res.json({
+        res.json({
+            mode: conv.mode,
+            chatStatus: conv.chatStatus,
+            assignedAdminId: conv.assignedAdminId,
             status: conv.status,
             takenBy: conv.takenBy,
             messages: msgs
         });
     }
     catch (error) {
-        console.error('Failed to poll messages:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

@@ -34,7 +34,7 @@ function HomePage() {
         const jobsData = await jobsRes.json();
         
         setSettings(settingsData);
-        setLatestJobs(jobsData);
+        setLatestJobs(Array.isArray(jobsData) ? jobsData : []);
       } catch (error) {
         console.error("Failed to load homepage data:", error);
       } finally {
@@ -68,7 +68,7 @@ function HomePage() {
                 <div>
                   <p className="eyebrow-dark eyebrow mb-4">People. Precision. Progress.</p>
                   <h2 className="text-[clamp(30px,4.5vw,58px)] font-black text-[#111413] leading-[0.95] tracking-tight">
-                    Not a job board. A complete workforce partner.
+                    A complete workforce partner.
                   </h2>
                 </div>
                 <div>
@@ -107,6 +107,8 @@ import { AdminChatPage } from "./pages/admin/Chat";
 import { AdminInsightsPage } from "./pages/admin/Insights";
 import { AdminUsersPage } from "./pages/admin/Users";
 import { AdminEnquiriesPage } from "./pages/admin/Enquiries";
+import { AdminAISettingsPage } from "./pages/admin/AISettings";
+import { AdminKnowledgePage } from "./pages/admin/Knowledge";
 import { AdminNotFound } from "./pages/admin/NotFound";
 
 import { SmoothScroll } from "./components/layout/SmoothScroll";
@@ -114,7 +116,15 @@ import { FloatingButtons } from "./components/layout/FloatingButtons";
 import { JobsPage } from "./pages/Jobs";
 import { JobDetailPage } from "./pages/JobDetail";
 import { InsightsPage } from "./pages/Insights";
+import { UploadCVPage } from "./pages/UploadCV";
+import { AdminCandidatesPage } from "./pages/admin/Candidates";
 import { InsightDetailPage } from "./pages/InsightDetail";
+
+
+import { ContactPage } from "./pages/Contact";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicy";
+import { TermsAndConditionsPage } from "./pages/TermsAndConditions";
+import { JobScamAwarenessPage } from "./pages/JobScamAwareness";
 
 function App() {
   return (
@@ -124,6 +134,12 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/upload-cv" element={<UploadCVPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+          <Route path="/job-scam-awareness" element={<JobScamAwarenessPage />} />
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/insights" element={<InsightsPage />} />
@@ -145,7 +161,10 @@ function App() {
             <Route path="enquiries" element={<AdminEnquiriesPage />} />
             <Route path="chat" element={<AdminChatPage />} />
             <Route path="users" element={<AdminUsersPage />} />
+            <Route path="candidates" element={<AdminCandidatesPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="ai-settings" element={<AdminAISettingsPage />} />
+            <Route path="knowledge" element={<AdminKnowledgePage />} />
             <Route path="*" element={<AdminNotFound />} />
           </Route>
         </Routes>

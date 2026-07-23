@@ -95,19 +95,19 @@ export function Hero({ settings }: { settings: any }) {
 
             <div className="hh-cta flex flex-wrap gap-3">
               <Link
-                to="/#staff"
+                to="/contact"
                 id="hero-cta-staff"
                 className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] bg-[#02695e] text-white text-[15px] font-semibold transition-all hover:bg-[#027d6f] hover:shadow-[0_14px_36px_rgba(2,105,94,0.42)] active:scale-[0.98]"
               >
-                {settings.hero_cta_primary}
+                Talk to a consultant
                 <ArrowRight size={16} />
               </Link>
               <Link
-                to="/#jobs"
+                to="/upload-cv"
                 id="hero-cta-jobs"
                 className="inline-flex items-center gap-2 h-12 px-6 rounded-[10px] border border-white/14 bg-white/8 text-white text-[15px] font-semibold transition-all hover:bg-white/12 active:scale-[0.98]"
               >
-                {settings.hero_cta_secondary}
+                Upload CV
               </Link>
             </div>
           </div>
@@ -163,7 +163,7 @@ export function Hero({ settings }: { settings: any }) {
               {[
                 "Shortlist with care",
                 "Quote within 24 hours",
-                "Australia, New Zealand, Sri Lanka",
+                "Serving across Sri Lanka",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2.5 text-[13px] text-white/75">
                   <CheckCircle size={15} className="text-[#04a891] shrink-0" strokeWidth={2} />

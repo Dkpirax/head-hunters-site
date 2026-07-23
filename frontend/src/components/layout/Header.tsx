@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LinkButton } from "@/components/ui/Button";
 import { NavLogo } from "@/components/ui/Logo";
 
 const navLinks = [
-  { label: "For Employers", href: "/#staff" },
+  { label: "For Employers", href: "/#contact" },
   { label: "For Candidates", href: "/#jobs" },
   { label: "Services", href: "/#services" },
-  { label: "Our Story", href: "/#story" },
+  { label: "About", href: "/#story" },
   { label: "Insights", href: "/insights" },
   { label: "Jobs", href: "/jobs" },
 ];
@@ -20,11 +20,25 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const location = useLocation();
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (location.pathname === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location]);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -46,27 +60,27 @@ export function Header() {
         )}
         id="top"
       >
-        <Link to="/" aria-label="Head Hunters home">
+        <Link to="/" aria-label="Headhunters.lk home">
           <NavLogo />
         </Link>
 
         {/* Desktop nav */}
         <nav aria-label="Primary navigation" className="hidden lg:flex items-center justify-center gap-7">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.href}
-              href={link.href}
+              to={link.href}
               className="text-[13px] text-white/60 hover:text-white transition-colors duration-200 font-medium"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
         {/* Desktop CTAs */}
         <div className="hidden lg:flex items-center gap-2">
-          <LinkButton href="/#jobs" variant="ghost" size="sm">Submit CV</LinkButton>
-          <LinkButton href="/#contact" variant="solid" size="sm">
+          <LinkButton href="/upload-cv" variant="ghost" size="sm">Upload CV</LinkButton>
+          <LinkButton href="/contact" variant="solid" size="sm">
             Talk to a consultant <ArrowRight size={13} />
           </LinkButton>
         </div>
@@ -90,11 +104,11 @@ export function Header() {
         )}
       >
         <div className="absolute inset-0 bg-[#0B0B0C]/96 backdrop-blur-2xl" onClick={() => setIsOpen(false)} />
-        <div className="absolute inset-x-0 top-24 px-6 space-y-1.5">
+        <div className="absolute inset-x-0 top-24 px-6 space-y-1.5 h-[calc(100vh-6rem)] overflow-y-auto pb-8">
           {navLinks.map((link, i) => (
-            <a
+            <Link
               key={link.href}
-              href={link.href}
+              to={link.href}
               onClick={() => setIsOpen(false)}
               className={cn(
                 "flex items-center justify-between px-5 py-4 rounded-[12px]",
@@ -104,25 +118,25 @@ export function Header() {
                 isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0",
                 [
                   "delay-[0ms]",
+                  "delay-[20ms]",
                   "delay-[40ms]",
+                  "delay-[60ms]",
                   "delay-[80ms]",
+                  "delay-[100ms]",
                   "delay-[120ms]",
-                  "delay-[160ms]",
-                  "delay-[200ms]",
-                  "delay-[240ms]",
-                  "delay-[280ms]"
+                  "delay-[140ms]"
                 ][i]
               )}
             >
               {link.label}
               <ArrowRight size={16} className="text-[#04a891]" />
-            </a>
+            </Link>
           ))}
           <div className="pt-4 flex flex-col gap-3">
-            <LinkButton href="/#jobs" variant="ghost" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
-              Submit CV
+            <LinkButton href="/upload-cv" variant="ghost" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
+              Upload CV
             </LinkButton>
-            <LinkButton href="/#contact" variant="solid" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
+            <LinkButton href="/contact" variant="solid" size="lg" className="w-full justify-center" onClick={() => setIsOpen(false)}>
               Talk to a consultant
             </LinkButton>
           </div>

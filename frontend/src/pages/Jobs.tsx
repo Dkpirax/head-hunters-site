@@ -189,7 +189,7 @@ export function JobsPage() {
             {!loading && (
               <div className="mt-10 text-center">
                 <p className="text-white/35 text-sm mb-4">Showing {filteredJobs.length} active roles.</p>
-                <Link to="/#contact" className="inline-flex items-center gap-2 text-sm text-[#04a891] font-semibold hover:gap-3 transition-all">
+                <Link to="/upload-cv" className="inline-flex items-center gap-2 text-sm text-[#04a891] font-semibold hover:gap-3 transition-all">
                   Can't find the right role? Register your interest
                   <ArrowRight size={14} />
                 </Link>
