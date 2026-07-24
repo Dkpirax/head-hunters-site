@@ -185,7 +185,7 @@ export function AdminEnquiriesPage() {
   );
 
   return (
-    <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
+    <div className="flex h-full min-h-0 flex-col p-8">
       <div className="flex items-center justify-between mb-8 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">Enquiries</h1>
@@ -256,10 +256,10 @@ export function AdminEnquiriesPage() {
         </div>
       ) : (
         <div className="grid lg:grid-cols-[1fr_380px] gap-5 flex-1 min-h-0">
-          <div className="bg-white/3 border border-white/8 rounded-[16px] p-6 h-full flex flex-col overflow-y-auto">
+          <div className="bg-white/3 border border-white/8 rounded-[16px] p-6 flex flex-col overflow-y-auto min-h-0">
             {selected ? (
-              <div className="space-y-6 flex-1">
-                <div className="flex items-center gap-3 pb-5 border-b border-white/6">
+              <div className="space-y-6 flex-1 min-h-0 flex flex-col">
+                <div className="flex items-center gap-3 pb-5 border-b border-white/6 shrink-0">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] grid place-items-center text-white font-bold shrink-0">
                     {selected.name[0]}
                   </div>
@@ -289,7 +289,7 @@ export function AdminEnquiriesPage() {
                   </span>
                 </div>
 
-                <div>
+                <div className="shrink-0">
                   <p className="text-xs font-semibold text-white/35 uppercase tracking-wider mb-2">
                     Enquiry type
                   </p>
@@ -302,7 +302,7 @@ export function AdminEnquiriesPage() {
                   </span>
                 </div>
 
-                <div>
+                <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                   <p className="text-xs font-semibold text-white/35 uppercase tracking-wider mb-2">
                     Message
                   </p>
@@ -311,7 +311,7 @@ export function AdminEnquiriesPage() {
                   </p>
                 </div>
 
-                <div className="flex gap-2 flex-wrap pt-4 border-t border-white/6 mt-auto flex-col">
+                <div className="flex gap-2 flex-wrap pt-4 border-t border-white/6 mt-auto flex-col shrink-0">
                   {/* In-app email reply */}
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-white/35 uppercase tracking-wider">Reply via email</p>
@@ -375,7 +375,7 @@ export function AdminEnquiriesPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="flex flex-col items-center justify-center h-full text-center min-h-0">
                 <Mail size={28} className="text-white/15 mb-3" />
                 <p className="text-white/30 text-sm">
                   Select an enquiry to view details
@@ -384,14 +384,14 @@ export function AdminEnquiriesPage() {
             )}
           </div>
 
-          <div className="bg-white/3 border border-white/8 rounded-[16px] overflow-hidden flex flex-col h-full min-h-0">
+          <div className="bg-white/3 border border-white/8 rounded-[16px] flex flex-col min-h-0">
             {filteredEnquiries.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8 text-white/30">
+              <div className="flex flex-col items-center justify-center h-full text-center p-8 text-white/30 min-h-0">
                 <Mail size={32} className="text-white/15 mb-3" />
                 <p className="text-sm">No enquiries found</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/4 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+              <div className="divide-y divide-white/4 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1 min-h-0">
                 {filteredEnquiries.map((e) => (
                   <div
                     key={e.id}

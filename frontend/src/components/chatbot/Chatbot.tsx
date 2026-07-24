@@ -545,7 +545,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
       className={
         inline
           ? "w-full h-full flex flex-col bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden relative"
-          : "fixed inset-0 sm:inset-auto sm:relative sm:w-[390px] h-[100dvh] sm:h-[580px] sm:max-h-[calc(100dvh-120px)] flex flex-col bg-white sm:rounded-3xl border-0 sm:border border-slate-100 sm:shadow-[0_20px_60px_rgba(0,0,0,0.2)] overflow-hidden z-[100] w-full"
+          : "fixed inset-0 sm:inset-auto sm:relative sm:w-[390px] sm:h-[580px] sm:max-h-[calc(100dvh-120px)] flex flex-col bg-white sm:rounded-3xl border-0 sm:border border-slate-100 sm:shadow-[0_20px_60px_rgba(0,0,0,0.2)] overflow-hidden z-[100] w-full"
       }
     >
       {renderHandoffFlow()}
@@ -766,7 +766,8 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                   try {
                     const res = await fetch('/api/chat/upload-cv', {
                       method: 'POST',
-                      body: formData
+                      body: formData,
+                      credentials: 'include'
                     });
                     const data = await res.json();
                     if (res.ok && data.file) {
@@ -778,6 +779,8 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                     }
                   } catch (err) {
                     alert("Error uploading CV. Please try again.");
+                  } finally {
+                    e.target.value = '';
                   }
                 }}
               />

@@ -90,7 +90,7 @@ export function AdminInsightsPage() {
   }
 
   return (
-    <div className="p-8 h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col p-8 overflow-hidden">
       <div className="flex items-center justify-between mb-8 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">Insights & Case Studies</h1>
@@ -104,10 +104,10 @@ export function AdminInsightsPage() {
       </div>
 
       <div className="bg-white/3 border border-white/8 rounded-[16px] overflow-hidden flex flex-col flex-1 min-h-0">
-        <div className="overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-white/10">
+        <div className="overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-white/10">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-[#0f1110] z-10">
-              <tr className="border-b border-white/6 bg-[#0f1110]">
+            <thead className="sticky top-0 bg-[#0f1110] z-10 border-b border-white/6 shadow-sm">
+              <tr>
                 {["Title", "Category", "Slug", "Status", "Actions"].map((h) => (
                   <th key={h} className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-widest text-white/35">{h}</th>
                 ))}

@@ -67,9 +67,9 @@ export function AdminSettingsPage() {
   ];
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="flex h-full min-h-0 flex-col p-8 space-y-6">
       {/* Title */}
-      <div className="mb-8">
+      <div className="mb-8 shrink-0">
         <h1 className="text-2xl font-black text-white mb-1">General Settings</h1>
         <p className="text-white/40 text-sm">
           Configure site content copy, toggle active features, and manage recruitment platforms.
@@ -83,7 +83,7 @@ export function AdminSettingsPage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`mb-6 p-4.5 rounded-[12px] flex items-center gap-3 text-sm font-semibold border ${
+            className={`mb-6 shrink-0 p-4.5 rounded-[12px] flex items-center gap-3 text-sm font-semibold border ${
               status.type === "success"
                 ? "bg-[#02695e]/15 border-[#04a891]/25 text-[#04a891]"
                 : "bg-red-500/10 border-red-500/20 text-red-400"
@@ -95,10 +95,10 @@ export function AdminSettingsPage() {
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        <div className="grid md:grid-cols-[220px_1fr] gap-6 items-start">
+      <form onSubmit={handleSave} className="flex-1 min-h-0 flex flex-col space-y-6">
+        <div className="grid md:grid-cols-[220px_1fr] gap-6 items-start flex-1 min-h-0">
           {/* Tab Sidebar */}
-          <div className="flex md:flex-col gap-1 overflow-x-auto shrink-0 bg-white/3 border border-white/8 rounded-[16px] p-2">
+          <div className="flex md:flex-col gap-1 overflow-auto shrink-0 bg-white/3 border border-white/8 rounded-[16px] p-2 max-h-full">
             {tabs.map((t) => {
               const Icon = t.icon;
               const isSelected = activeTab === t.id;
@@ -121,11 +121,11 @@ export function AdminSettingsPage() {
           </div>
 
           {/* Form Content panel */}
-          <div className="bg-white/3 border border-white/8 rounded-[16px] p-6 min-h-[420px] flex flex-col justify-between">
-            <div>
+          <div className="bg-white/3 border border-white/8 rounded-[16px] p-6 flex flex-col min-h-0 h-full">
+            <div className="overflow-y-auto flex-1 min-h-0 pr-2">
               {/* TAB: Homepage Copy */}
               {activeTab === "homepage" && (
-                <div className="space-y-4 pr-2">
+                <div className="space-y-4">
                   <h3 className="text-sm font-bold text-white mb-2">Homepage Copy Settings</h3>
 
                   <div className="space-y-3">
@@ -646,7 +646,7 @@ export function AdminSettingsPage() {
             </div>
 
             {/* Submit Actions */}
-            <div className="mt-8 pt-4 border-t border-white/6 flex justify-end shrink-0">
+            <div className="mt-6 pt-4 border-t border-white/6 flex justify-end shrink-0">
               <button
                 type="submit"
                 disabled={isSubmitting}

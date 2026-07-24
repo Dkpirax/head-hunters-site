@@ -182,7 +182,15 @@ export function Footer({ settings }: { settings?: any }) {
       {/* Bottom bar */}
       <div className="border-t border-white/6">
         <div className="max-w-[1200px] mx-auto px-5 py-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/28">
-          <p>{s.copyright_text}</p>
+          <p>
+            {s.copyright_text}{" "}
+            <span>
+              Designed and developed by{" "}
+              <a href="https://www.thefenra.com" target="_blank" rel="noopener noreferrer" className="fenra-link">
+                Fenra
+              </a>
+            </span>
+          </p>
           <div className="flex items-center gap-6">
             <Link to="/privacy-policy" className="hover:text-white/60 transition-colors">
               Privacy Policy

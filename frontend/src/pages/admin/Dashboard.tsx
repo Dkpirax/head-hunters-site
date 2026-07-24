@@ -149,8 +149,8 @@ export function AdminDashboardPage() {
   ];
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="flex h-full min-h-0 flex-col p-8">
+      <div className="mb-8 shrink-0">
         <h1 className="text-2xl font-black text-white mb-1">Dashboard</h1>
         <p className="text-white/40 text-sm">
           Head Hunters Workforce Management ·{" "}
@@ -164,7 +164,7 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8 shrink-0">
         {STATS.map((s) => {
           const Icon = s.icon;
           return (
@@ -180,12 +180,12 @@ export function AdminDashboardPage() {
         })}
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_380px] gap-6">
+      <div className="grid lg:grid-cols-[1fr_380px] gap-6 min-h-0 flex-1">
         {/* Feed: Recent Enquiries + Active Chats */}
-        <div className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
+        <div className="flex min-h-0 flex-col space-y-6">
+          <div className="grid md:grid-cols-2 gap-6 min-h-0 flex-1">
             {/* Recent Enquiries */}
-            <div className="bg-white/3 border border-white/8 rounded-[16px] overflow-hidden flex flex-col h-[350px]">
+            <div className="bg-white/3 border border-white/8 rounded-[16px] flex flex-col min-h-0">
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/6 shrink-0">
                 <h2 className="text-white font-bold text-sm">Recent Enquiries</h2>
                 <Link
@@ -195,7 +195,7 @@ export function AdminDashboardPage() {
                   View all <ArrowRight size={11} />
                 </Link>
               </div>
-              <div className="divide-y divide-white/4 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1">
+              <div className="divide-y divide-white/4 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1 min-h-0">
                 {stats.recentEnquiries.length === 0 ? (
                   <div className="p-8 text-center text-white/30 text-xs">
                     No recent enquiries found.
@@ -241,7 +241,7 @@ export function AdminDashboardPage() {
             </div>
 
             {/* Active Chats */}
-            <div className="bg-white/3 border border-white/8 rounded-[16px] overflow-hidden flex flex-col h-[350px]">
+            <div className="bg-white/3 border border-white/8 rounded-[16px] flex flex-col min-h-0">
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/6 shrink-0">
                 <h2 className="text-white font-bold text-sm">Active Chats</h2>
                 <Link
@@ -251,7 +251,7 @@ export function AdminDashboardPage() {
                   View all <ArrowRight size={11} />
                 </Link>
               </div>
-              <div className="divide-y divide-white/4 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1">
+              <div className="divide-y divide-white/4 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex-1 min-h-0">
                 {stats.recentChats.length === 0 ? (
                   <div className="p-8 text-center text-white/30 text-xs">
                     No active chats found.
@@ -304,7 +304,7 @@ export function AdminDashboardPage() {
         </div>
 
         {/* Quick Actions sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-4 shrink-0 overflow-y-auto">
           <div className="bg-white/3 border border-white/8 rounded-[16px] p-6">
             <h2 className="text-white font-bold text-sm mb-4">Quick Actions</h2>
             <div className="space-y-2.5">

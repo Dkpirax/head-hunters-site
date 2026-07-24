@@ -130,7 +130,7 @@ export function AdminKnowledgePage() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="flex h-full min-h-0 flex-col p-8 space-y-6">
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">Knowledge Base</h1>
@@ -138,9 +138,9 @@ export function AdminKnowledgePage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[340px_1fr] gap-6">
+      <div className="grid lg:grid-cols-[340px_1fr] gap-6 min-h-0 flex-1">
         {/* Upload Form */}
-        <div className="bg-[#1a1c1b] border border-white/10 rounded-xl p-6 h-fit">
+        <div className="bg-[#1a1c1b] border border-white/10 rounded-xl p-6 h-fit shrink-0 overflow-y-auto max-h-full">
           <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
             <Upload className="w-5 h-5 text-[#04a891]" />
             Upload Document
@@ -168,7 +168,7 @@ export function AdminKnowledgePage() {
             <button
               type="submit"
               disabled={!file || uploading}
-              className="w-full bg-[#04a891] text-white px-4 py-2.5 rounded-lg font-medium hover:bg-[#038c79] transition-colors disabled:opacity-50"
+              className="w-full bg-[#04a891] text-white px-4 py-2.5 rounded-lg font-medium hover:bg-[#038c79] transition-colors disabled:opacity-50 cursor-pointer"
             >
               {uploading ? 'Uploading...' : 'Upload Document'}
             </button>
@@ -176,10 +176,10 @@ export function AdminKnowledgePage() {
         </div>
 
         {/* Document List */}
-        <div className="bg-[#1a1c1b] border border-white/10 rounded-xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="bg-[#1a1c1b] border border-white/10 rounded-xl flex flex-col min-h-0 shadow-sm">
+          <div className="overflow-auto flex-1 min-h-0">
             <table className="w-full text-left border-collapse min-w-[700px]">
-              <thead>
+              <thead className="sticky top-0 z-10 backdrop-blur-md">
                 <tr className="border-b border-white/10 bg-black/40">
                   <th className="p-4 text-xs font-semibold text-white/60 uppercase tracking-wider">Document</th>
                   <th className="p-4 text-xs font-semibold text-white/60 uppercase tracking-wider">Version & Meta</th>
@@ -233,7 +233,7 @@ export function AdminKnowledgePage() {
                         {(doc.status === 'DRAFT' || doc.status === 'FAILED' || doc.status === 'INACTIVE') && (
                           <button
                             onClick={() => handleReindex(doc.version)}
-                            className="text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/25 transition-all"
+                            className="text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/25 transition-all cursor-pointer"
                           >
                             Parse & Index
                           </button>
@@ -242,7 +242,7 @@ export function AdminKnowledgePage() {
                         {doc.status === 'INDEXED' && (
                           <button
                             onClick={() => handleApprove(doc.version)}
-                            className="text-xs font-semibold bg-green-500/15 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg hover:bg-green-500/25 transition-all"
+                            className="text-xs font-semibold bg-green-500/15 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg hover:bg-green-500/25 transition-all cursor-pointer"
                           >
                             Approve & Activate
                           </button>
@@ -251,7 +251,7 @@ export function AdminKnowledgePage() {
                         {doc.status === 'APPROVED' && (
                           <button
                             onClick={() => handleDeactivate(doc.version)}
-                            className="text-xs font-semibold bg-slate-500/15 text-slate-400 border border-slate-500/30 px-3 py-1.5 rounded-lg hover:bg-slate-500/25 transition-all"
+                            className="text-xs font-semibold bg-slate-500/15 text-slate-400 border border-slate-500/30 px-3 py-1.5 rounded-lg hover:bg-slate-500/25 transition-all cursor-pointer"
                           >
                             Deactivate
                           </button>

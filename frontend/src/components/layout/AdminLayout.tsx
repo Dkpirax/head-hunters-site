@@ -43,15 +43,15 @@ export function AdminLayout() {
   const role = user?.role || "ADMIN";
 
   return (
-    <div className="min-h-screen bg-[#0f1110] flex relative z-10">
+    <div className="flex h-dvh overflow-hidden bg-[#0f1110]">
       {/* Sidebar */}
       <aside className="w-60 shrink-0 border-r border-white/6 flex flex-col bg-[#0B0B0C]">
-        <div className="p-5 border-b border-white/6">
+        <div className="p-5 border-b border-white/6 shrink-0">
           <Link to="/admin"><Logo variant="mark" color="green" size="md" /></Link>
           <p className="text-[10px] text-white/25 font-semibold uppercase tracking-widest mt-2 ml-11">Admin portal</p>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto min-h-0">
           {NAV.map(({ href, label, icon: Icon }) => {
             const isActive = href === "/admin" 
               ? location.pathname === "/admin" 
@@ -74,7 +74,7 @@ export function AdminLayout() {
           })}
         </nav>
 
-        <div className="p-3 border-t border-white/6 space-y-0.5">
+        <div className="p-3 border-t border-white/6 space-y-0.5 shrink-0">
           <a href="/" target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-sm font-medium text-white/30 hover:text-white/60 transition-all">
             <ExternalLink size={15} strokeWidth={1.8} /> View live site
@@ -89,7 +89,7 @@ export function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto flex flex-col min-h-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#0B0B0C]">
         <header className="h-16 shrink-0 border-b border-white/6 flex items-center justify-end px-8 bg-[#0B0B0C]/40 backdrop-blur-md sticky top-0 z-20 gap-4">
           <AdminNotifications />
           <div className="flex items-center gap-2.5 pl-4 border-l border-white/10">
@@ -102,10 +102,10 @@ export function AdminLayout() {
             </div>
           </div>
         </header>
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

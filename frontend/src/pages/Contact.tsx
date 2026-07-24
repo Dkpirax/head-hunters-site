@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Send, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Chatbot } from '../components/chatbot/Chatbot';
+import { apiClient } from '../lib/api';
 
 type Tab = "Hiring" | "Candidate" | "General";
 
@@ -14,13 +15,32 @@ export function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get('contact-name') as string,
+      email: formData.get('contact-email') as string,
+      phone: formData.get('contact-phone') as string,
+      type: activeTab.toUpperCase(),
+      message: formData.get('contact-message') as string,
+    };
+
+    try {
+      await apiClient('/api/enquiries', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
       setSubmitted(true);
-    }, 800);
+    } catch (error) {
+      console.error('Error submitting enquiry:', error);
+      alert('There was a problem submitting your enquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -86,6 +106,7 @@ export function ContactPage() {
                       </label>
                       <input
                         id={field.id}
+                        name={field.id}
                         type={field.type}
                         placeholder={field.placeholder}
                         required={field.required}
@@ -100,6 +121,7 @@ export function ContactPage() {
                     </label>
                     <textarea
                       id="contact-message"
+                      name="contact-message"
                       placeholder={
                         activeTab === "Hiring"
                           ? "Tell us the role, headcount, location and start date..."

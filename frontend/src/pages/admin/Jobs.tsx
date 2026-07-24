@@ -70,8 +70,8 @@ export function AdminJobsPage() {
   const STATUS_COLORS = { ACTIVE: "bg-[#04a891]/15 text-[#04a891]", CLOSED: "bg-white/8 text-white/30", DRAFT: "bg-orange-500/15 text-orange-400" };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="flex h-full min-h-0 flex-col p-8">
+      <div className="flex items-center justify-between mb-8 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">Job Listings</h1>
           <p className="text-white/40 text-sm">
@@ -84,55 +84,57 @@ export function AdminJobsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white/3 border border-white/8 rounded-[16px] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/6">
-              {["Title", "Location", "Type", "Status", "Hot", "Actions"].map((h) => (
-                <th key={h} className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-widest text-white/35">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/4">
-            {jobs.length === 0 && !loading && (
-              <tr><td colSpan={6} className="px-5 py-8 text-center text-white/40">No job listings found. Create one to get started.</td></tr>
-            )}
-            {jobs.map((job) => (
-              <tr key={job.id} className="hover:bg-white/3 transition-colors">
-                <td className="px-5 py-4 text-white font-medium">{job.title}</td>
-                <td className="px-5 py-4 text-white/50">{job.location}</td>
-                <td className="px-5 py-4">
-                  <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-white/8 text-white/50 uppercase">{job.type}</span>
-                </td>
-                <td className="px-5 py-4">
-                  <span className={`px-2 py-0.5 rounded-[5px] text-[10px] font-bold uppercase ${STATUS_COLORS[job.status as keyof typeof STATUS_COLORS]}`}>{job.status}</span>
-                </td>
-                <td className="px-5 py-4">
-                  {job.isHot && <Flame size={15} className="text-orange-500" />}
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => { setEditing(job); setIsNew(false); }}
-                      className="p-1.5 rounded-[6px] text-white/30 hover:text-white hover:bg-white/8 transition-all cursor-pointer">
-                      <Pencil size={13} />
-                    </button>
-                    {deletingId === job.id ? (
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => remove(job.id)} className="px-2 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-[4px] uppercase transition-colors">Confirm</button>
-                        <button onClick={() => setDeletingId(null)} className="px-2 py-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white rounded-[4px] uppercase transition-colors">Cancel</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setDeletingId(job.id)}
-                        className="p-1.5 rounded-[6px] text-white/30 hover:text-red-400 hover:bg-red-400/8 transition-all cursor-pointer">
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
-                </td>
+      <div className="bg-white/3 border border-white/8 rounded-[16px] flex flex-col min-h-0 flex-1">
+        <div className="overflow-auto flex-1 min-h-0">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-[#111413] border-b border-white/6 shadow-sm">
+              <tr>
+                {["Title", "Location", "Type", "Status", "Hot", "Actions"].map((h) => (
+                  <th key={h} className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-widest text-white/35">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/4">
+              {jobs.length === 0 && !loading && (
+                <tr><td colSpan={6} className="px-5 py-8 text-center text-white/40">No job listings found. Create one to get started.</td></tr>
+              )}
+              {jobs.map((job) => (
+                <tr key={job.id} className="hover:bg-white/3 transition-colors">
+                  <td className="px-5 py-4 text-white font-medium">{job.title}</td>
+                  <td className="px-5 py-4 text-white/50">{job.location}</td>
+                  <td className="px-5 py-4">
+                    <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-white/8 text-white/50 uppercase">{job.type}</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`px-2 py-0.5 rounded-[5px] text-[10px] font-bold uppercase ${STATUS_COLORS[job.status as keyof typeof STATUS_COLORS]}`}>{job.status}</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    {job.isHot && <Flame size={15} className="text-orange-500" />}
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { setEditing(job); setIsNew(false); }}
+                        className="p-1.5 rounded-[6px] text-white/30 hover:text-white hover:bg-white/8 transition-all cursor-pointer">
+                        <Pencil size={13} />
+                      </button>
+                      {deletingId === job.id ? (
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => remove(job.id)} className="px-2 py-1 text-[10px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-[4px] uppercase transition-colors">Confirm</button>
+                          <button onClick={() => setDeletingId(null)} className="px-2 py-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white rounded-[4px] uppercase transition-colors">Cancel</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeletingId(job.id)}
+                          className="p-1.5 rounded-[6px] text-white/30 hover:text-red-400 hover:bg-red-400/8 transition-all cursor-pointer">
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Edit modal */}

@@ -153,7 +153,7 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
+    <div className="flex h-full min-h-0 flex-col p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">User Management</h1>
@@ -189,7 +189,7 @@ export function AdminUsersPage() {
             />
           </div>
 
-          <div className="divide-y divide-white/4 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-white/10">
+          <div className="divide-y divide-white/4 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-white/10">
             {filteredUsers.length === 0 ? (
               <div className="p-12 text-center text-white/30 text-xs flex flex-col items-center justify-center gap-2">
                 <UsersIcon size={24} className="text-white/10" />
@@ -267,7 +267,7 @@ export function AdminUsersPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="bg-white/3 border border-white/8 rounded-[16px] p-5 flex flex-col justify-between"
+              className="bg-white/3 border border-white/8 rounded-[16px] p-5 flex flex-col justify-between overflow-y-auto max-h-full"
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-white/6 pb-3 mb-2">
@@ -371,7 +371,7 @@ export function AdminUsersPage() {
                     />
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-3 border-t border-white/6 mt-4">
+                  <div className="flex justify-end gap-2 pt-3 border-t border-white/6 mt-4 shrink-0">
                     <button
                       type="button"
                       onClick={resetForm}

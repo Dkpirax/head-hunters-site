@@ -76,7 +76,7 @@ export function AdminAISettingsPage() {
   if (loading) return <div className="p-8 text-white/50">Loading settings...</div>;
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="flex h-full min-h-0 flex-col p-8 space-y-6">
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">AI Agent Settings</h1>
@@ -92,7 +92,7 @@ export function AdminAISettingsPage() {
         </button>
       </div>
 
-      <div className="bg-[#1a1c1b] border border-white/10 rounded-xl p-6 space-y-8">
+      <div className="bg-[#1a1c1b] border border-white/10 rounded-xl p-6 space-y-8 overflow-y-auto min-h-0 flex-1 scrollbar-thin scrollbar-thumb-white/10">
         
         {/* Toggle Agent */}
         <div>

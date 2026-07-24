@@ -85,7 +85,7 @@ export function AdminCandidatesPage() {
   );
 
   return (
-    <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
+    <div className="flex h-full min-h-0 flex-col p-8">
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
           <h1 className="text-2xl font-black text-white mb-1">Candidates</h1>
@@ -93,8 +93,8 @@ export function AdminCandidatesPage() {
         </div>
       </div>
 
-      <div className="bg-white/3 border border-white/8 rounded-[16px] overflow-hidden flex flex-col min-h-0">
-        <div className="p-4 border-b border-white/8 flex items-center justify-between bg-white/1 shrink-0">
+      <div className="bg-white/3 border border-white/8 rounded-[16px] flex flex-col min-h-0 flex-1">
+        <div className="p-4 border-b border-white/8 flex items-center justify-between bg-white/1 shrink-0 rounded-t-[16px]">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={16} />
             <input
@@ -110,9 +110,9 @@ export function AdminCandidatesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-auto flex-1 min-h-0">
           <table className="w-full text-left text-sm text-white/70">
-            <thead className="bg-white/5 text-xs uppercase text-white/50 border-b border-white/8">
+            <thead className="bg-white/5 text-xs uppercase text-white/50 border-b border-white/8 sticky top-0 z-10 backdrop-blur-md">
               <tr>
                 <th className="px-6 py-4 font-semibold tracking-wider">Candidate</th>
                 <th className="px-6 py-4 font-semibold tracking-wider">Contact</th>

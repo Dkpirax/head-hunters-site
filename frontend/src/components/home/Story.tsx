@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 
 
 const TIMELINE = [
-  { year: "Early 1990s", event: "A practical recruitment business begins from home in Ivanhoe, Victoria." },
-  { year: "First client", event: "Mail Management and urgent deadline support — the foundation of a service-first approach." },
-  { year: "Expansion", event: "Labour hire, permanent recruitment and remote staffing teams across three markets." },
-  { year: "Today", event: "A modern workforce partner with service standards, technology, and a clear human-first philosophy." },
+  { year: "OUR FOUNDATION", event: "Headhunters (Pvt) Ltd was launched by Digital Cherry, Switzerland, to deliver professional talent solutions in Sri Lanka." },
+  { year: "OUR BELIEF", event: "We believe every successful business begins with the right people. Exceptional talent creates lasting business value." },
+  { year: "BEYOND RECRUITMENT", event: "Alongside recruitment, we provide Digital Marketing and Branding Solutions to help businesses strengthen their market presence." },
+  { year: "YOUR BUSINESS PARTNER", event: "Whether you need one key professional or an entire workforce, we become your trusted business partner—not just your recruitment agency." },
 ];
 
 export function Story({ settings }: { settings: any }) {
@@ -28,8 +28,8 @@ export function Story({ settings }: { settings: any }) {
             <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/60 to-transparent" />
             {/* Floating stat card */}
             <div className="absolute bottom-6 left-6 right-6 p-4 rounded-[12px] bg-[#0B0B0C]/80 border border-white/10 backdrop-blur-xl">
-              <p className="text-xs text-[#04a891] font-bold uppercase tracking-widest mb-1">Est. early 1990s</p>
-              <p className="text-white font-semibold text-sm">From a home office in Ivanhoe to three workforce markets.</p>
+              <p className="text-xs text-[#04a891] font-bold uppercase tracking-widest mb-1">SRI LANKAN TALENT SOLUTIONS</p>
+              <p className="text-white font-semibold text-sm">Connecting exceptional people with businesses ready to grow.</p>
             </div>
           </motion.div>
 
@@ -38,19 +38,19 @@ export function Story({ settings }: { settings: any }) {
             <motion.p className="eyebrow mb-4"
               initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.5 }}>
-              Our story
+              WHO WE ARE
             </motion.p>
             <motion.h2
               id="story-title"
               className="text-[clamp(32px,4.5vw,58px)] font-black text-white leading-[0.95] tracking-tight mb-5"
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}>
-              {settings.story_title}
+              Building Businesses Through Exceptional People
             </motion.h2>
             <motion.p className="text-white/55 text-[17px] leading-relaxed mb-10"
               initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }}>
-              {settings.story_text}
+              A Sri Lankan talent solutions company helping organisations build exceptional teams and stronger brands.
             </motion.p>
 
             {/* Timeline */}

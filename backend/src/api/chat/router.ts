@@ -754,7 +754,7 @@ async function handleCandidateStep(text: string, workflow: WorkflowContext): Pro
         return generateCandidateConfirmation({ ...data, hasNoCv: true });
       }
       // If CV was uploaded (via file upload route or attachment message)
-      if (data.cvFileName || val.includes('Uploaded CV:')) {
+      if (data.cvFileName || val.includes('uploaded cv:')) {
         return generateCandidateConfirmation({ ...data, hasNoCv: false });
       }
       return {
