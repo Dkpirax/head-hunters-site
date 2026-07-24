@@ -28,9 +28,9 @@ const defaultFooterSettings = {
   phonePrimary: "+94 77 397 5048",
   phoneSecondary: "+94 77 400 1484",
   address: "No. 06, Pinto Place, Colombo 06, Sri Lanka (00600)",
-  linkedin_url: "https://linkedin.com/company/headhunters",
-  twitter_url: "https://twitter.com/headhunters",
-  facebook_url: "https://facebook.com/headhunters",
+  linkedin_url: "https://www.linkedin.com/company/headhunters-co/?viewAsMember=true",
+  instagram_url: "https://www.instagram.com/headhunters.lk/?fbclid=IwY2xjawTQcYFleHRuA2FlbQIxMQBicmlkETFaSFNPeUdnNkgwMHFIWU1Sc3J0YwZhcHBfaWQBMAABHvV8YQu4Ww6UUVtQRqKnKAJ8fwvpKJslN8aXFvpk-0lEduWeFmIo1-1qtjsF_aem_o7DJaotpcRE3HaZEQIxaFg",
+  facebook_url: "https://web.facebook.com/profile.php?id=61591778439524#",
   copyright_text: "© 2026 Headhunters.lk. All rights reserved.",
   ios_app_url: "",
   android_app_url: "",
@@ -42,6 +42,9 @@ export function Footer({ settings }: { settings?: any }) {
     ...settings,
     notifyEmails: settings?.email_notify_list || settings?.notifyEmails || defaultFooterSettings.notifyEmails,
     whatsappNumber: settings?.integration_whatsapp_number || settings?.whatsappNumber || defaultFooterSettings.whatsappNumber,
+    facebook_url: defaultFooterSettings.facebook_url,
+    instagram_url: defaultFooterSettings.instagram_url,
+    linkedin_url: defaultFooterSettings.linkedin_url,
   };
 
   return (
@@ -128,9 +131,9 @@ export function Footer({ settings }: { settings?: any }) {
                   LinkedIn
                 </a>
               )}
-              {s.twitter_url && (
-                <a href={s.twitter_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors text-[11px] font-semibold">
-                  Twitter
+              {s.instagram_url && (
+                <a href={s.instagram_url} target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors text-[11px] font-semibold">
+                  Instagram
                 </a>
               )}
               {s.facebook_url && (
