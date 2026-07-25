@@ -62,7 +62,7 @@ const RECRUITMENT_SERVICES = [
   },
 ];
 
-const DIGITAL_CHERRY_URL = "http://digitalcherry.lk/";
+const DIGITAL_CHERRY_URL = "https://digitalcherry.lk/";
 const DIGITAL_CHERRY_SERVICES = [
   "Social Media Management", "Search Engine Optimization",
   "Google Ads & PPC Campaigns", "Meta Advertising",
@@ -72,7 +72,7 @@ const DIGITAL_CHERRY_SERVICES = [
   "Marketing Analytics & Reporting"
 ];
 
-const FENRA_URL = "http://thefenra.com";
+const FENRA_URL = "https://thefenra.com";
 const FENRA_SERVICES = [
   "Branding Solutions", "Brand Strategy",
   "Logo Design", "Corporate Identity",
@@ -222,7 +222,9 @@ export function ServicesBento({ settings }: { settings?: any }) {
           {/* Card 1: Digital Cherry */}
           <BentoCard className="flex flex-col h-full bg-gradient-to-br from-[#12161b] to-[#0a0c0f] border-white/5">
             <div className="mb-6 flex items-center justify-between">
-              <img src="/logo/digital-cherry-logo.png" alt="Digital Cherry" className="h-10 object-contain" />
+              <a href={DIGITAL_CHERRY_URL} target="_blank" rel="noopener noreferrer" className="relative z-10 inline-block transition-transform hover:scale-105">
+                <img src="/logo/Digital_Cherry_logo.png" alt="Digital Cherry" className="h-14 object-contain" />
+              </a>
               <span className="text-[10px] uppercase font-bold tracking-widest text-[#04a891] bg-[#04a891]/10 px-3 py-1 rounded-full">
                 Digital Marketing Solutions
               </span>
@@ -249,7 +251,7 @@ export function ServicesBento({ settings }: { settings?: any }) {
                 href={DIGITAL_CHERRY_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-white hover:text-[#04a891] text-sm font-semibold transition-colors duration-200"
+                className="relative z-10 inline-flex items-center gap-2 text-white hover:text-[#04a891] text-sm font-semibold transition-colors duration-200"
               >
                 Visit Digital Cherry <ExternalLink size={14} />
               </a>
@@ -259,7 +261,9 @@ export function ServicesBento({ settings }: { settings?: any }) {
           {/* Card 2: Fenra */}
           <BentoCard className="flex flex-col h-full bg-gradient-to-br from-[#12161b] to-[#0a0c0f] border-white/5">
             <div className="mb-6 flex items-center justify-between">
-              <img src="/logo/fenra-logo.png" alt="Fenra" className="h-10 object-contain" />
+              <a href={FENRA_URL} target="_blank" rel="noopener noreferrer" className="relative z-10 inline-block transition-transform hover:scale-105">
+                <img src="/logo/Fenra_logo.png" alt="Fenra" className="h-14 object-contain" />
+              </a>
               <span className="text-[10px] uppercase font-bold tracking-widest text-[#04a891] bg-[#04a891]/10 px-3 py-1 rounded-full">
                 Branding & Technology Solutions
               </span>
@@ -286,7 +290,7 @@ export function ServicesBento({ settings }: { settings?: any }) {
                 href={FENRA_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-white hover:text-[#04a891] text-sm font-semibold transition-colors duration-200"
+                className="relative z-10 inline-flex items-center gap-2 text-white hover:text-[#04a891] text-sm font-semibold transition-colors duration-200"
               >
                 Explore Fenra Solutions <ExternalLink size={14} />
               </a>

@@ -38,7 +38,7 @@ export function BentoCard({ children, className, wide, tall, accent }: BentoCard
         "will-change-transform",
         "[--mx:30%] [--my:20%]",
         // pointer glow via CSS variable
-        "before:absolute before:inset-0 before:rounded-[14px] before:opacity-0 before:transition-opacity before:duration-300",
+        "before:absolute before:inset-0 before:pointer-events-none before:rounded-[14px] before:opacity-0 before:transition-opacity before:duration-300",
         "hover:before:opacity-100",
         "before:[background:radial-gradient(circle_at_var(--mx)_var(--my),rgba(4,168,145,0.18),transparent_50%)]",
         accent
