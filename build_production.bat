@@ -32,6 +32,12 @@ mkdir cpanel_deploy
 xcopy /E /I /Y backend\dist cpanel_deploy
 copy backend\package.json cpanel_deploy\package.json
 copy .env cpanel_deploy\.env
+copy backend\drizzle.config.ts cpanel_deploy\drizzle.config.ts
+xcopy /E /I /Y backend\drizzle cpanel_deploy\drizzle
+
+:: Copy schema file for drizzle migrations
+mkdir cpanel_deploy\src\db
+copy backend\src\db\schema.ts cpanel_deploy\src\db\schema.ts
 
 :: Copy frontend files to public
 mkdir cpanel_deploy\public
