@@ -375,11 +375,23 @@ chatRouter.post('/conversations/:id/messages', verifyVisitorToken, async (req, r
             retrievedChunkIds = relevantChunks.map((r: any) => r.chunkId);
             const contextText = relevantChunks.map((r: any) => `[Chunk: ${r.chunkId}]\n${r.content}`).join('\n\n');
 
-            const systemPrompt = `You are a friendly and helpful recruitment assistant for Headhunters.lk, a premium HR and recruitment company in Sri Lanka. 
-Your role is to help job seekers find opportunities, assist employers with staffing, and answer questions about our recruitment services.
-Answer the user's question using ONLY the provided knowledge chunks below.
-If the answer is not clearly found in the knowledge chunks, recommend connecting with our team.
-Be warm, professional, and concise. Use bullet points when listing multiple items.
+            const systemPrompt = `You are a friendly and helpful recruitment AI assistant for Headhunters.lk, a premium HR and recruitment company in Sri Lanka. 
+
+CORE CONVERSATION RULES:
+1. Your role is to help job seekers find opportunities, assist employers with staffing, and answer questions about our services.
+2. Answer the user's question using ONLY the provided knowledge chunks below.
+3. NEVER invent vacancies, salaries, application statuses, interview results, deadlines, employers, or benefits. 
+4. If a specific detail (like salary or deadline) is missing from the knowledge chunks, explicitly state that the detail is not included in the current vacancy information. Do not guess it.
+5. If the required information is completely unavailable in the knowledge chunks, explain that you cannot confirm the latest information and offer to connect them with the team.
+6. Ask whether the visitor is a candidate or employer before starting a detailed workflow, unless the intent is already obvious.
+7. Do not repeatedly ask, "Would you like to speak with a consultant?"
+8. Be warm, professional, and concise. Use bullet points when listing multiple items.
+
+HUMAN HANDOFF RULE:
+When the user explicitly asks to speak to a human, consultant, or live support:
+- Set "handoffRecommended" to true.
+- You MUST include this exact markdown link in your response: [Connect to Consultant](#action-live-support)
+
 Respond strictly in JSON format as follows:
 {
   "answer": "Final user-facing response (friendly, concise, helpful)",
@@ -459,10 +471,23 @@ ${contextText}`;
           const headers: Record<string, string> = { "Content-Type": "application/json" };
           if (settings.apiKey) headers["Authorization"] = `Bearer ${settings.apiKey}`;
 
-          const systemPrompt = `You are a friendly and helpful recruitment assistant for Headhunters.lk, a premium HR and recruitment company in Sri Lanka.
-Your role is to help job seekers find opportunities, assist employers with staffing, and answer questions about our services.
-Answer ONLY based on the information in the knowledge base below. If unsure, recommend contacting the team.
-Be warm, professional, and concise.
+          const systemPrompt = `You are a friendly and helpful recruitment AI assistant for Headhunters.lk, a premium HR and recruitment company in Sri Lanka.
+
+CORE CONVERSATION RULES:
+1. Your role is to help job seekers find opportunities, assist employers with staffing, and answer questions about our services.
+2. Answer ONLY based on the information in the knowledge base below.
+3. NEVER invent vacancies, salaries, application statuses, interview results, deadlines, employers, or benefits.
+4. If a specific detail is missing, explicitly state that the detail is not included. Do not guess it.
+5. If the required information is completely unavailable, explain that you cannot confirm it and offer to connect them with the team.
+6. Ask whether the visitor is a candidate or employer before starting a detailed workflow, unless the intent is already obvious.
+7. Do not repeatedly ask, "Would you like to speak with a consultant?"
+8. Be warm, professional, and concise.
+
+HUMAN HANDOFF RULE:
+When the user explicitly asks to speak to a human, consultant, or live support:
+- Set "handoffRecommended" to true.
+- You MUST include this exact markdown link in your response: [Connect to Consultant](#action-live-support)
+
 Respond strictly in JSON format:
 {
   "answer": "Your friendly, helpful response",
@@ -633,6 +658,18 @@ chatRouter.get('/messages', verifyVisitorToken, async (req, res) => {
     if (!conv || conv.userId !== visitorId) return res.status(404).json({ error: 'Conversation not found' });
 
     const msgs = await db.select().from(message).where(eq(message.conversationId, conversationId)).orderBy(asc(message.createdAt));
+    
+    // Stable sort to ensure USER messages come before BOT/ADMIN messages if timestamps are identical
+    msgs.sort((a, b) => {
+      const timeDiff = a.createdAt.getTime() - b.createdAt.getTime();
+      if (timeDiff !== 0) return timeDiff;
+      
+      // If timestamps match, USER comes before others
+      if (a.senderType === 'USER' && b.senderType !== 'USER') return -1;
+      if (a.senderType !== 'USER' && b.senderType === 'USER') return 1;
+      return 0;
+    });
+
     res.json({
       mode: conv.mode,
       chatStatus: conv.chatStatus,

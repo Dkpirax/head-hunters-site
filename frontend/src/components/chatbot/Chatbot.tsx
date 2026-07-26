@@ -237,7 +237,11 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
       const result = await addChatMessage(conversationId, text);
       if (result.message) {
         setMessages((prev) => {
+          const userMsg = prev.find(m => m.id === tempId);
           const withoutTemp = prev.filter(m => m.id !== tempId);
+          if (userMsg) {
+            return [...withoutTemp, { ...userMsg, id: `user-${Date.now()}` }, result.message];
+          }
           return [...withoutTemp, result.message];
         });
       }
@@ -685,6 +689,18 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                             // Block dangerous protocols
                             if (/^(javascript:|data:|file:|vbscript:)/i.test(href)) {
                               return <span>{props.children}</span>;
+                            }
+                            // Render Special Action Links as Buttons
+                            if (href === '#action-live-support' || href === '#action:live-support') {
+                              return (
+                                <button 
+                                  onClick={initiateHumanHandoff}
+                                  className="mt-2 mb-1 px-4 py-2 bg-[#02695e] text-white font-semibold rounded-xl text-xs hover:bg-[#04a891] transition-colors shadow-sm flex items-center gap-1.5"
+                                >
+                                  <Headphones size={14} />
+                                  {props.children || "Live Support"}
+                                </button>
+                              );
                             }
                             // Allow safe relative internal links (e.g. /jobs/123, /contact)
                             if (href.startsWith('/')) {

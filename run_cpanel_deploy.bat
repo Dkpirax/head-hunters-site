@@ -16,6 +16,11 @@ if not exist cpanel_deploy (
 
 cd cpanel_deploy
 
+if not exist node_modules (
+    echo Installing dependencies...
+    call npm install
+)
+
 echo Starting Express Server...
 node index.js
 
