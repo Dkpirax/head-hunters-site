@@ -22,7 +22,7 @@ const defaultSettings = {
     story_title: "Our Story",
     story_text: "From a home‑based startup to a trusted recruitment partner across three countries.",
     global_reach_title: "Global Reach, Local Expertise",
-    global_reach_text: "Serving Australia, New Zealand, and Sri Lanka.",
+    global_reach_text: "Serving Australia, New Zealand, Sri Lanka, and Switzerland.",
     testimonials_title: "What Our Clients Say",
     contact_title: "Let’s Talk",
     copyright_text: "© Head Hunters. All rights reserved.",
@@ -48,8 +48,8 @@ const defaultSettings = {
     flag_rate_limiting_enabled: true,
     flag_live_jobs_enabled: false,
     // Email Config
-    email_notify_list: "hello@headhunters.com.au",
-    email_from_address: "noreply@headhunters.com.au",
+    email_notify_list: "info@headhunters.lk",
+    email_from_address: "info@headhunters.lk",
     // Integrations
     integration_whatsapp_number: "",
     integration_calendly_url: "https://calendly.com/headhunters/15min",

@@ -51,12 +51,12 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   const [mode, setMode] = useState<string>("AI");
   const [chatStatus, setChatStatus] = useState<string>("OPEN");
   const [config, setConfig] = useState<any>(null);
-  
+
   const [inputVal, setInputVal] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initError, setInitError] = useState(false);
-  
+
   // Tawk Handoff state
   const [handoffStep, setHandoffStep] = useState<"NONE" | "CONSENT" | "DETAILS" | "CONNECTING" | "AWAY_PROMPT" | "OFFLINE_PROMPT">("NONE");
   const [visitorDetails, setVisitorDetails] = useState({ name: "", email: "", phone: "", reason: "", type: "candidate" });
@@ -102,10 +102,10 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
 
     let active = true;
     const poll = async () => {
-      if (document.hidden || isMinimized) return; 
+      if (document.hidden || isMinimized) return;
       try {
         const result = await apiClient(`/api/chat/messages?conversationId=${conversationId}`);
-        
+
         if (active && result) {
           if (result.mode === "HUMAN" && prevModeRef.current !== "HUMAN") {
             playSound("connected");
@@ -119,14 +119,14 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
             setMode(result.mode);
             setChatStatus(result.chatStatus);
           }
-          
+
           if (result.messages.length !== messagesLengthRef.current) {
             messagesLengthRef.current = result.messages.length;
             setMessages(result.messages);
             localStorage.setItem("hh_chat_read_timestamp", Date.now().toString());
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const interval = setInterval(poll, 4000);
@@ -257,7 +257,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   const proceedToTawk = async () => {
     if (!conversationId) return;
     setHandoffStep("CONNECTING");
-    
+
     try {
       await updateHandoffStatus(conversationId, "REQUESTED");
 
@@ -308,7 +308,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
           });
           window.Tawk_API.addTags(["headhunters-ai-handoff", visitorDetails.type === "employer" ? "employer-lead" : "candidate-lead"]);
         }
-        
+
         // Always switch to Tawk.to live chat widget!
         await openTawkChat();
         return;
@@ -370,13 +370,13 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
               </p>
             </div>
             <div className="space-y-3 pt-2">
-              <button 
+              <button
                 onClick={() => setHandoffStep("DETAILS")}
                 className="w-full h-12 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white font-semibold rounded-[14px] hover:shadow-lg hover:shadow-teal-500/25 transition-all"
               >
                 Continue to live support
               </button>
-              <button 
+              <button
                 onClick={cancelHandoff}
                 className="w-full h-12 bg-slate-100 text-slate-600 font-semibold rounded-[14px] hover:bg-slate-200 transition-colors"
               >
@@ -398,29 +398,29 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">I am a</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'candidate'})} className={`h-8.5 text-xs font-semibold rounded-xl border transition-all ${visitorDetails.type === 'candidate' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Job Seeker</button>
-                  <button onClick={() => setVisitorDetails({...visitorDetails, type: 'employer'})} className={`h-8.5 text-xs font-semibold rounded-xl border transition-all ${visitorDetails.type === 'employer' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Employer</button>
+                  <button onClick={() => setVisitorDetails({ ...visitorDetails, type: 'candidate' })} className={`h-8.5 text-xs font-semibold rounded-xl border transition-all ${visitorDetails.type === 'candidate' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Job Seeker</button>
+                  <button onClick={() => setVisitorDetails({ ...visitorDetails, type: 'employer' })} className={`h-8.5 text-xs font-semibold rounded-xl border transition-all ${visitorDetails.type === 'employer' ? 'border-[#02695e] bg-teal-50 text-[#02695e]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>Employer</button>
                 </div>
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">Name *</label>
-                <input type="text" value={visitorDetails.name} onChange={e => setVisitorDetails({...visitorDetails, name: e.target.value})} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="Your full name" />
+                <input type="text" value={visitorDetails.name} onChange={e => setVisitorDetails({ ...visitorDetails, name: e.target.value })} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="Your full name" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">Email *</label>
-                <input type="email" value={visitorDetails.email} onChange={e => setVisitorDetails({...visitorDetails, email: e.target.value})} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="you@example.com" />
+                <input type="email" value={visitorDetails.email} onChange={e => setVisitorDetails({ ...visitorDetails, email: e.target.value })} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="you@example.com" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">Phone (optional)</label>
-                <input type="tel" value={visitorDetails.phone} onChange={e => setVisitorDetails({...visitorDetails, phone: e.target.value})} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="+94 77 ..." />
+                <input type="tel" value={visitorDetails.phone} onChange={e => setVisitorDetails({ ...visitorDetails, phone: e.target.value })} className="w-full h-8.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all" placeholder="+94 77 ..." />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 mb-0.5 uppercase tracking-wider">How can we help?</label>
-                <textarea value={visitorDetails.reason} onChange={e => setVisitorDetails({...visitorDetails, reason: e.target.value})} className="w-full h-14 p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none" placeholder="Briefly describe what you need..." />
+                <textarea value={visitorDetails.reason} onChange={e => setVisitorDetails({ ...visitorDetails, reason: e.target.value })} className="w-full h-14 p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#02695e]/20 focus:border-[#02695e] transition-all resize-none" placeholder="Briefly describe what you need..." />
               </div>
             </div>
             <div className="pt-2 shrink-0">
-              <button 
+              <button
                 disabled={!visitorDetails.name || !visitorDetails.email}
                 onClick={proceedToTawk}
                 className="w-full h-10 bg-gradient-to-r from-[#02695e] to-[#04a891] text-white text-xs font-semibold rounded-xl hover:shadow-lg hover:shadow-teal-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
@@ -509,7 +509,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   if (isMinimized) {
     return (
       <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
-        <button 
+        <button
           onClick={() => {
             setIsMinimized(false);
             if (mode === "TAWK_HANDOFF") {
@@ -537,7 +537,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -605,7 +605,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
       </div>
 
       {/* Messages list */}
-      <div 
+      <div
         ref={chatContainerRef}
         data-lenis-prevent
         onWheel={(e) => e.stopPropagation()}
@@ -644,7 +644,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                 I can help you explore vacancies, submit your CV, request staff, or answer questions about our recruitment services.
               </p>
             </div>
-            
+
             <div className="flex flex-wrap justify-center gap-2 pt-2">
               <button onClick={() => handleSendText("Find a job")} className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[12px] font-semibold text-slate-600 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all hover:shadow-md">🔍 Find a job</button>
               <button onClick={() => handleSendText("Submit my CV")} className="px-4 py-2 bg-white border border-slate-200 rounded-full text-[12px] font-semibold text-slate-600 hover:border-[#02695e] hover:text-[#02695e] shadow-sm transition-all hover:shadow-md">📄 Submit my CV</button>
@@ -659,28 +659,27 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
             <div key={m.id} className={`flex items-end gap-2.5 ${m.senderType === "USER" ? "flex-row-reverse" : ""}`}>
               {m.senderType !== "USER" && (
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${m.senderType === "ADMIN" ? "bg-gradient-to-br from-[#02695e] to-[#04a891]" : "bg-gradient-to-br from-[#02695e] to-[#04a891]"}`}>
-                   {m.senderType === "ADMIN" ? <User size={12} className="text-white" /> : <img src="/logo/favicon-mark.png" alt="AI" className="w-4 h-4 object-contain rounded" />}
+                  {m.senderType === "ADMIN" ? <User size={12} className="text-white" /> : <img src="/logo/favicon-mark.png" alt="AI" className="w-4 h-4 object-contain rounded" />}
                 </div>
               )}
-              
+
               <div className="max-w-[75%] space-y-1">
                 {m.senderType === "SYSTEM" ? (
-                   <div className="text-center w-full px-4 text-xs font-medium text-slate-400 my-2 italic">{m.content}</div>
+                  <div className="text-center w-full px-4 text-xs font-medium text-slate-400 my-2 italic">{m.content}</div>
                 ) : (
-                  <div className={`px-4 py-2.5 text-[13px] leading-relaxed font-medium overflow-wrap-anywhere ${
-                    m.senderType === "USER" 
-                      ? "bg-gradient-to-br from-[#02695e] to-[#04a891] text-white rounded-[18px] rounded-br-[6px] shadow-sm" 
-                      : m.senderType === "ADMIN"
+                  <div className={`px-4 py-2.5 text-[13px] leading-relaxed font-medium overflow-wrap-anywhere ${m.senderType === "USER"
+                    ? "bg-gradient-to-br from-[#02695e] to-[#04a891] text-white rounded-[18px] rounded-br-[6px] shadow-sm"
+                    : m.senderType === "ADMIN"
                       ? "bg-[#04a891] text-white rounded-[18px] rounded-bl-[6px] shadow-sm"
                       : "bg-white border border-slate-100 text-slate-800 rounded-[18px] rounded-bl-[6px] shadow-sm prose prose-sm prose-slate max-w-none"
-                  }`}>
+                    }`}>
                     {m.senderType === "USER" ? (
                       <span className="whitespace-pre-wrap">{m.content}</span>
                     ) : (
                       <ReactMarkdown
                         allowedElements={['p', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'br', 'code', 'pre']}
                         components={{
-                          a: ({ node, ...props }) => {
+                          a: ({ node: any, ...props }) => {
                             const href = props.href || '';
                             // Block dangerous protocols
                             if (/^(javascript:|data:|file:|vbscript:)/i.test(href)) {
@@ -697,7 +696,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
                             return <span>{props.children}</span>;
                           },
                           code: ({ node, ...props }) => <code {...props} className="bg-slate-50 text-[#02695e] px-1 py-0.5 rounded text-[11px] break-words" />,
-                          p: ({ node, ...props }) => <p {...props} className="mb-2 last:mb-0" />
+                          p: ({ node: any, ...props }) => <p {...props} className="mb-2 last:mb-0" />
                         }}
                       >
                         {m.content}
@@ -718,7 +717,7 @@ export function Chatbot({ onClose, inline }: { onClose?: () => void, inline?: bo
         {isTyping && (
           <div className="flex items-end gap-2.5">
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#02695e] to-[#04a891] flex items-center justify-center shrink-0">
-               <img src="/logo/favicon-mark.png" alt="AI" className="w-4 h-4 object-contain rounded" />
+              <img src="/logo/favicon-mark.png" alt="AI" className="w-4 h-4 object-contain rounded" />
             </div>
             <div className="px-4 py-3 bg-white border border-slate-100 rounded-[18px] rounded-bl-[6px] shadow-sm">
               <span className="flex gap-1.5 items-center">

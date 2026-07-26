@@ -14,18 +14,33 @@ exports.adminConversationsRouter = (0, express_1.Router)();
 exports.adminConversationsRouter.use(auth_1.requireAuth);
 exports.adminConversationsRouter.get('/', async (req, res) => {
     try {
+        // Fetch all non-resolved conversations
         const convs = await db_1.db.select()
             .from(schema_1.conversation)
-            .where((0, drizzle_orm_1.inArray)(schema_1.conversation.status, ['BOT_ACTIVE', 'HUMAN_ACTIVE']))
             .orderBy((0, drizzle_orm_1.desc)(schema_1.conversation.updatedAt));
-        const convIds = convs.map(c => c.id);
+        // Filter: show active conversations only (exclude RESOLVED/CLOSED ones)
+        const activeConvs = convs.filter(c => {
+            if (c.chatStatus === 'RESOLVED' || c.status === 'CLOSED')
+                return false;
+            return true;
+        });
+        const convIds = activeConvs.map(c => c.id);
         const allMessages = convIds.length > 0
             ? await db_1.db.select().from(schema_1.message).where((0, drizzle_orm_1.inArray)(schema_1.message.conversationId, convIds)).orderBy((0, drizzle_orm_1.asc)(schema_1.message.createdAt))
             : [];
-        const formattedConvs = convs.map(c => ({
+        const formattedConvs = activeConvs
+            .map(c => ({
             ...c,
             messages: allMessages.filter(m => m.conversationId === c.id)
-        }));
+        }))
+            .filter(c => {
+            // Exclude abandoned visitor sessions where only the initial bot greeting exists
+            // and no human assistance was requested
+            if (c.mode === 'AI' && c.messages.length <= 1 && !c.needsHuman && c.chatStatus !== 'WAITING_FOR_ADMIN') {
+                return false;
+            }
+            return true;
+        });
         return res.json(formattedConvs);
     }
     catch (error) {
@@ -84,12 +99,21 @@ exports.adminConversationsRouter.put('/:id/status', async (req, res) => {
         const updateData = { updatedAt: new Date() };
         if (status !== undefined) {
             updateData.status = status;
+            // Sync new schema fields with legacy status
             if (status === 'HUMAN_ACTIVE') {
                 updateData.chatStatus = 'ADMIN_JOINED';
+                updateData.mode = 'HUMAN';
+                updateData.needsHuman = false;
             }
-            else if (status === 'BOT_ACTIVE' || status === 'CLOSED') {
+            else if (status === 'BOT_ACTIVE') {
                 updateData.chatStatus = 'OPEN';
                 updateData.mode = 'AI';
+            }
+            else if (status === 'CLOSED') {
+                updateData.chatStatus = 'RESOLVED';
+                updateData.mode = 'AI';
+                updateData.needsHuman = false;
+                updateData.takenBy = null;
             }
         }
         if (takenBy !== undefined)
@@ -101,6 +125,18 @@ exports.adminConversationsRouter.put('/:id/status', async (req, res) => {
     }
     catch (error) {
         console.error('Failed to update status:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+exports.adminConversationsRouter.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db_1.db.delete(schema_1.message).where((0, drizzle_orm_1.eq)(schema_1.message.conversationId, id));
+        await db_1.db.delete(schema_1.conversation).where((0, drizzle_orm_1.eq)(schema_1.conversation.id, id));
+        return res.json({ success: true });
+    }
+    catch (error) {
+        console.error('Failed to delete conversation:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });

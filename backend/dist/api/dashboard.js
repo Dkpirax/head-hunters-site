@@ -9,25 +9,35 @@ const auth_1 = require("../middleware/auth");
 exports.dashboardRouter = (0, express_1.Router)();
 exports.dashboardRouter.get('/', auth_1.requireAuth, async (req, res) => {
     try {
-        const [openJobsCountRes, totalEnquiriesCountRes, unreadEnquiriesCountRes, cvsCountRes, recentEnquiriesRes, recentChatsRes, allConversationsRes,] = await Promise.all([
+        const [openJobsCountRes, totalEnquiriesCountRes, unreadEnquiriesCountRes, cvsCountRes, recentEnquiriesRes, allConversationsRes,] = await Promise.all([
             db_1.db.select({ count: (0, drizzle_orm_1.sql) `count(*)` }).from(schema_1.job).where((0, drizzle_orm_1.eq)(schema_1.job.status, "ACTIVE")),
             db_1.db.select({ count: (0, drizzle_orm_1.sql) `count(*)` }).from(schema_1.enquiry),
             db_1.db.select({ count: (0, drizzle_orm_1.sql) `count(*)` }).from(schema_1.enquiry).where((0, drizzle_orm_1.eq)(schema_1.enquiry.status, "NEW")),
             db_1.db.select({ count: (0, drizzle_orm_1.sql) `count(*)` }).from(schema_1.enquiry).where((0, drizzle_orm_1.eq)(schema_1.enquiry.type, "CANDIDATE")),
             db_1.db.select().from(schema_1.enquiry).orderBy((0, drizzle_orm_1.desc)(schema_1.enquiry.createdAt)).limit(4),
-            db_1.db.select().from(schema_1.conversation).where((0, drizzle_orm_1.inArray)(schema_1.conversation.status, ["BOT_ACTIVE", "HUMAN_ACTIVE"])).orderBy((0, drizzle_orm_1.desc)(schema_1.conversation.updatedAt)).limit(4),
-            // All conversations with messages to compute avg response time
             db_1.db.select().from(schema_1.conversation).limit(100),
         ]);
         const openJobsCount = Number(openJobsCountRes[0].count);
         const totalEnquiriesCount = Number(totalEnquiriesCountRes[0].count);
         const unreadEnquiriesCount = Number(unreadEnquiriesCountRes[0].count);
         const cvsCount = Number(cvsCountRes[0].count);
-        // Fetch latest message for each recent chat
-        const recentChats = await Promise.all(recentChatsRes.map(async (c) => {
-            const msgs = await db_1.db.select().from(schema_1.message).where((0, drizzle_orm_1.eq)(schema_1.message.conversationId, c.id)).orderBy((0, drizzle_orm_1.desc)(schema_1.message.createdAt)).limit(1);
+        // Fetch recent active conversations (excluding abandoned bot-only sessions and resolved chats)
+        const allRecentConvs = await db_1.db.select().from(schema_1.conversation).orderBy((0, drizzle_orm_1.desc)(schema_1.conversation.updatedAt)).limit(20);
+        const recentChatsWithMsgs = await Promise.all(allRecentConvs.map(async (c) => {
+            const msgs = await db_1.db.select().from(schema_1.message).where((0, drizzle_orm_1.eq)(schema_1.message.conversationId, c.id)).orderBy((0, drizzle_orm_1.asc)(schema_1.message.createdAt));
             return { ...c, messages: msgs };
         }));
+        const recentChats = recentChatsWithMsgs
+            .filter((c) => {
+            if (c.chatStatus === 'RESOLVED' || c.mode === 'CLOSED')
+                return false;
+            // Exclude single-greeting abandoned bot chats
+            if ((c.mode === 'AI' || c.status === 'BOT_ACTIVE') && c.messages.length <= 1 && !c.needsHuman && c.chatStatus !== 'WAITING_FOR_ADMIN') {
+                return false;
+            }
+            return true;
+        })
+            .slice(0, 4);
         // Calculate avg response time like the old site
         let avgResponseMin = 0;
         let avgResponseText = "Under 5m";

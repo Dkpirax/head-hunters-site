@@ -49,9 +49,26 @@ const envPath = fs_1.default.existsSync(path_1.default.join(__dirname, '.env'))
     ? path_1.default.join(__dirname, '.env')
     : path_1.default.join(__dirname, '../../.env');
 dotenv_1.default.config({ path: envPath });
+if (process.env.NODE_ENV === 'production') {
+    if (!process.env.VISITOR_TOKEN_SECRET || process.env.VISITOR_TOKEN_SECRET.length < 32) {
+        console.error("FATAL: VISITOR_TOKEN_SECRET is missing or weak in production. Must be at least 32 characters.");
+        process.exit(1);
+    }
+}
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3001;
-app.use((0, cors_1.default)());
+const allowedOrigins = process.env.NEXT_PUBLIC_SITE_URL ? [process.env.NEXT_PUBLIC_SITE_URL] : ['http://localhost:3000'];
+app.use((0, cors_1.default)({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+}));
 app.use(express_1.default.json());
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const auth_1 = __importDefault(require("./api/auth"));
@@ -63,8 +80,11 @@ const articles_1 = require("./api/admin/articles");
 const enquiries_1 = require("./api/admin/enquiries");
 const users_1 = require("./api/admin/users");
 const notifications_1 = require("./api/admin/notifications");
+const ai_settings_1 = require("./api/admin/ai-settings");
+const knowledge_1 = require("./api/admin/knowledge");
 const enquiries_2 = require("./api/enquiries");
 const chat_1 = require("./api/chat");
+const candidates_1 = __importDefault(require("./api/candidates"));
 // Serve static frontend files
 app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
 app.use((0, cookie_parser_1.default)());
@@ -73,6 +93,7 @@ app.use('/api/auth', auth_1.default);
 app.use('/api/settings', settings_1.settingsRouter);
 app.use('/api/enquiries', enquiries_2.enquiriesRouter);
 app.use('/api/chat', chat_1.chatRouter);
+app.use('/api/candidates', candidates_1.default);
 // Protected Admin Routes
 app.use('/api/admin/dashboard', dashboard_1.dashboardRouter);
 app.use('/api/admin/jobs', jobs_1.default);
@@ -81,6 +102,8 @@ app.use('/api/admin/articles', articles_1.adminArticlesRouter);
 app.use('/api/admin/enquiries', enquiries_1.adminEnquiriesRouter);
 app.use('/api/admin/users', users_1.adminUsersRouter);
 app.use('/api/admin/notifications', notifications_1.adminNotificationsRouter);
+app.use('/api/admin/ai-settings', ai_settings_1.aiSettingsRouter);
+app.use('/api/admin/knowledge', knowledge_1.knowledgeRouter);
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {
     try {

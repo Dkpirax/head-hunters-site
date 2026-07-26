@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userPermissionRelations = exports.permissionRelations = exports.adminUserRelations = exports.messageRelations = exports.conversationRelations = exports.passwordResetToken = exports.userPermission = exports.permission = exports.employer = exports.candidate = exports.adminUser = exports.message = exports.conversation = exports.knowledgeChunk = exports.knowledgeDocument = exports.article = exports.content = exports.enquiry = exports.job = void 0;
+exports.userPermissionRelations = exports.permissionRelations = exports.adminUserRelations = exports.messageRelations = exports.conversationRelations = exports.passwordResetToken = exports.userPermission = exports.permission = exports.employer = exports.jobApplication = exports.candidateConsent = exports.candidate = exports.adminUser = exports.message = exports.conversation = exports.knowledgeChunk = exports.knowledgeDocument = exports.article = exports.content = exports.enquiry = exports.job = void 0;
 const mysql_core_1 = require("drizzle-orm/mysql-core");
 const drizzle_orm_1 = require("drizzle-orm");
 const crypto_1 = __importDefault(require("crypto"));
@@ -101,13 +101,18 @@ exports.conversation = (0, mysql_core_1.mysqlTable)('Conversation', {
     aiModel: (0, mysql_core_1.varchar)('aiModel', { length: 191 }),
     knowledgeDocumentVersion: (0, mysql_core_1.varchar)('knowledgeDocumentVersion', { length: 191 }),
     lastRetrievalScore: (0, mysql_core_1.float)('lastRetrievalScore'),
-    handoffReason: (0, mysql_core_1.text)('handoffReason'),
+    handoffReason: (0, mysql_core_1.text)('handoffReason'), // Reason visitor requested human support (DO NOT repurpose)
     humanSupportProvider: (0, mysql_core_1.varchar)('humanSupportProvider', { length: 191 }).default('INTERNAL'),
     handoffRequestedAt: utcTimestamp('handoffRequestedAt'),
     tawkOpenedAt: utcTimestamp('tawkOpenedAt'),
     agentJoinedAt: utcTimestamp('agentJoinedAt'),
     handoffCompletedAt: utcTimestamp('handoffCompletedAt'),
     handoffFailureReason: (0, mysql_core_1.text)('handoffFailureReason'),
+    // --- Workflow state machine (added in migration 0004) ---
+    workflowType: (0, mysql_core_1.varchar)('workflowType', { length: 50 }).default('NONE'), // NONE | CANDIDATE | EMPLOYER | JOB_APPLICATION | HUMAN_HANDOFF
+    workflowState: (0, mysql_core_1.varchar)('workflowState', { length: 100 }).default('IDLE'), // e.g. IDLE | EMPLOYER_COLLECTING_NAME | ...
+    workflowData: (0, mysql_core_1.text)('workflowData'), // JSON-serialised collected data (stored as text for broad MySQL compat)
+    workflowUpdatedAt: utcTimestamp('workflowUpdatedAt'),
 }, (table) => {
     return {
         statusIdx: (0, mysql_core_1.index)('conversation_status_idx').on(table.status),
@@ -152,13 +157,57 @@ exports.candidate = (0, mysql_core_1.mysqlTable)('Candidate', {
     email: (0, mysql_core_1.varchar)('email', { length: 191 }).notNull().unique(),
     name: (0, mysql_core_1.varchar)('name', { length: 191 }),
     phone: (0, mysql_core_1.varchar)('phone', { length: 191 }),
+    phoneNormalized: (0, mysql_core_1.varchar)('phoneNormalized', { length: 191 }),
+    whatsapp: (0, mysql_core_1.varchar)('whatsapp', { length: 191 }),
+    whatsappNormalized: (0, mysql_core_1.varchar)('whatsappNormalized', { length: 191 }),
+    location: (0, mysql_core_1.varchar)('location', { length: 191 }),
+    status: (0, mysql_core_1.varchar)('status', { length: 191 }).default('ACTIVE'), // ACTIVE, INCOMPLETE, ARCHIVED
+    source: (0, mysql_core_1.varchar)('source', { length: 191 }).default('WEBSITE'), // AI_CHAT, WEBSITE
     interestedJobs: (0, mysql_core_1.text)('interestedJobs'),
     cvFileName: (0, mysql_core_1.varchar)('cvFileName', { length: 191 }),
+    originalCvFileName: (0, mysql_core_1.varchar)('originalCvFileName', { length: 191 }),
+    consentAccepted: (0, mysql_core_1.boolean)('consentAccepted').notNull().default(false),
+    consentTimestamp: utcTimestamp('consentTimestamp'),
+    privacyPolicyVersion: (0, mysql_core_1.varchar)('privacyPolicyVersion', { length: 50 }).default('1.0'),
+    consentConversationId: (0, mysql_core_1.varchar)('consentConversationId', { length: 191 }),
     createdAt: utcTimestamp('createdAt').notNull().defaultNow(),
     updatedAt: utcTimestamp('updatedAt').notNull().defaultNow().$onUpdateFn(() => new Date()),
 }, (table) => {
     return {
         emailIdx: (0, mysql_core_1.index)('candidate_email_idx').on(table.email),
+        phoneIdx: (0, mysql_core_1.index)('candidate_phone_idx').on(table.phone),
+        phoneNormalizedIdx: (0, mysql_core_1.index)('candidate_phone_normalized_idx').on(table.phoneNormalized),
+        whatsappIdx: (0, mysql_core_1.index)('candidate_whatsapp_idx').on(table.whatsapp),
+        whatsappNormalizedIdx: (0, mysql_core_1.index)('candidate_whatsapp_normalized_idx').on(table.whatsappNormalized),
+    };
+});
+exports.candidateConsent = (0, mysql_core_1.mysqlTable)('CandidateConsent', {
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
+    candidateId: (0, mysql_core_1.varchar)('candidateId', { length: 191 }).notNull(),
+    conversationId: (0, mysql_core_1.varchar)('conversationId', { length: 191 }),
+    privacyPolicyVersion: (0, mysql_core_1.varchar)('privacyPolicyVersion', { length: 50 }).notNull().default('1.0'),
+    consentType: (0, mysql_core_1.varchar)('consentType', { length: 100 }).notNull().default('CANDIDATE_PROFILE_AND_CV'),
+    accepted: (0, mysql_core_1.boolean)('accepted').notNull().default(true),
+    acceptedAt: utcTimestamp('acceptedAt').notNull().defaultNow(),
+    source: (0, mysql_core_1.varchar)('source', { length: 50 }).notNull().default('AI_CHAT'),
+}, (table) => {
+    return {
+        candidateConsentIdx: (0, mysql_core_1.index)('candidate_consent_candidate_idx').on(table.candidateId),
+    };
+});
+exports.jobApplication = (0, mysql_core_1.mysqlTable)('JobApplication', {
+    id: (0, mysql_core_1.varchar)('id', { length: 191 }).primaryKey().$defaultFn(() => crypto_1.default.randomUUID()),
+    candidateId: (0, mysql_core_1.varchar)('candidateId', { length: 191 }).notNull(),
+    jobId: (0, mysql_core_1.varchar)('jobId', { length: 191 }).notNull(),
+    applicationStatus: (0, mysql_core_1.varchar)('applicationStatus', { length: 191 }).notNull().default('SUBMITTED'), // SUBMITTED, REVIEWING, SHORTLISTED, REJECTED
+    source: (0, mysql_core_1.varchar)('source', { length: 191 }).notNull().default('AI_CHAT'),
+    conversationId: (0, mysql_core_1.varchar)('conversationId', { length: 191 }),
+    appliedAt: utcTimestamp('appliedAt').notNull().defaultNow(),
+}, (table) => {
+    return {
+        candidateIdIdx: (0, mysql_core_1.index)('job_application_candidate_id_idx').on(table.candidateId),
+        jobIdIdx: (0, mysql_core_1.index)('job_application_job_id_idx').on(table.jobId),
+        candidateJobUnique: (0, mysql_core_1.uniqueIndex)('job_application_candidate_job_unique').on(table.candidateId, table.jobId),
     };
 });
 exports.employer = (0, mysql_core_1.mysqlTable)('Employer', {

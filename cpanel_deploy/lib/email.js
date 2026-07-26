@@ -10,8 +10,8 @@ const resend_1 = require("resend");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config({ path: '../.env' });
 const resend = process.env.RESEND_API_KEY ? new resend_1.Resend(process.env.RESEND_API_KEY) : null;
-const emailFrom = process.env.EMAIL_FROM_ADDRESS || 'Head Hunters <hello@headhunters.com.au>';
-const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.EMAIL_TO || 'hello@headhunters.com.au';
+const emailFrom = process.env.EMAIL_FROM_ADDRESS || 'Head Hunters <info@headhunters.lk>';
+const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.EMAIL_TO || 'info@headhunters.lk';
 const siteUrl = process.env.PUBLIC_SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
 async function sendEnquiryNotification(data) {
     if (!resend) {
