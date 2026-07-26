@@ -43,15 +43,14 @@ import authRouter from './api/auth';
 import { settingsRouter } from './api/settings';
 import { dashboardRouter } from './api/dashboard';
 import adminJobsRouter from './api/admin/jobs';
-import { adminConversationsRouter } from './api/admin/conversations';
+// adminConversationsRouter is imported dynamically when AI_CHAT_ENABLED=true (avoids conversation DB queries)
 import { adminArticlesRouter } from './api/admin/articles';
 import { adminEnquiriesRouter } from './api/admin/enquiries';
 import { adminUsersRouter } from './api/admin/users';
 import { adminNotificationsRouter } from './api/admin/notifications';
-import { aiSettingsRouter } from './api/admin/ai-settings';
-import { knowledgeRouter } from './api/admin/knowledge';
+// chat, knowledge, and ai-settings routers are imported dynamically below
+import { tawkSettingsRouter, publicTawkSettingsRouter } from './api/admin/tawk-settings';
 import { enquiriesRouter } from './api/enquiries';
-import { chatRouter } from './api/chat';
 import candidatesRouter from './api/candidates';
 
 // Serve static frontend files
@@ -61,20 +60,48 @@ app.use(cookieParser());
 // Public routes
 app.use('/api/auth', authRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/tawk-settings', publicTawkSettingsRouter);
 app.use('/api/enquiries', enquiriesRouter);
-app.use('/api/chat', chatRouter);
 app.use('/api/candidates', candidatesRouter);
 
-// Protected Admin Routes
+// AI Chat Feature Flag — strict comparison, never truthy on "false"
+const aiChatEnabled = process.env.AI_CHAT_ENABLED?.trim().toLowerCase() === "true";
+
+// Disabled-chat fallback performs ZERO database queries
+const chatDisabledFallback = (req: any, res: any) => {
+  res.status(503).json({ error: 'AI chat is temporarily disabled' });
+};
+
+if (aiChatEnabled) {
+  // Dynamically import chat modules — no static import means zero initialisation overhead when disabled
+  Promise.all([
+    import('./api/chat'),
+    import('./api/admin/conversations'),
+    import('./api/admin/ai-settings'),
+    import('./api/admin/knowledge')
+  ]).then(([{ chatRouter }, { adminConversationsRouter }, { aiSettingsRouter }, { knowledgeRouter }]) => {
+    app.use('/api/chat', chatRouter);
+    app.use('/api/admin/conversations', adminConversationsRouter);
+    app.use('/api/admin/ai-settings', aiSettingsRouter);
+    app.use('/api/admin/knowledge', knowledgeRouter);
+  }).catch(console.error);
+} else {
+  // All chatbot routes return 503 before any auth, session or DB middleware
+  app.use('/api/chat', chatDisabledFallback);
+  app.use('/api/conversations', chatDisabledFallback);
+  app.use('/api/admin/conversations', chatDisabledFallback);
+  app.use('/api/admin/ai-settings', chatDisabledFallback);
+  app.use('/api/admin/knowledge', chatDisabledFallback);
+}
+
+// Protected Admin Routes (always mounted — no chat dependency)
 app.use('/api/admin/dashboard', dashboardRouter);
 app.use('/api/admin/jobs', adminJobsRouter);
-app.use('/api/admin/conversations', adminConversationsRouter);
 app.use('/api/admin/articles', adminArticlesRouter);
 app.use('/api/admin/enquiries', adminEnquiriesRouter);
 app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/admin/notifications', adminNotificationsRouter);
-app.use('/api/admin/ai-settings', aiSettingsRouter);
-app.use('/api/admin/knowledge', knowledgeRouter);
+app.use('/api/admin/tawk-settings', tawkSettingsRouter);
 
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {

@@ -5,17 +5,20 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
 
+const aiChatEnabled = import.meta.env.VITE_ENABLE_AI_CHAT === "true";
+
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/jobs", label: "Job Listings", icon: Briefcase },
   { href: "/admin/insights", label: "Insights", icon: FileText },
   { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
-  { href: "/admin/chat", label: "Chats", icon: MessageSquare },
+  ...(aiChatEnabled ? [{ href: "/admin/chat", label: "Chats", icon: MessageSquare }] : []),
   { href: "/admin/candidates", label: "Candidates", icon: UserCheck },
-  { href: "/admin/knowledge", label: "Knowledge Base", icon: Database },
+  ...(aiChatEnabled ? [{ href: "/admin/knowledge", label: "Knowledge Base", icon: Database }] : []),
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },
-  { href: "/admin/ai-settings", label: "AI Settings", icon: Cpu },
+  ...(aiChatEnabled ? [{ href: "/admin/ai-settings", label: "AI Settings", icon: Cpu }] : []),
+  { href: "/admin/tawk-settings", label: "Tawk.to Settings", icon: MessageSquare },
 ];
 
 export function AdminLayout() {

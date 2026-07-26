@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { TawkAPI } from '../lib/tawk';
 
+const aiChatEnabled = import.meta.env.VITE_ENABLE_AI_CHAT === "true";
+
 interface UseTawkOptions {
   propertyId?: string;
   widgetId?: string;
@@ -24,7 +26,9 @@ export function useTawk({ propertyId, widgetId, enabled }: UseTawkOptions) {
       const currentStatus = window.Tawk_API?.getStatus();
       if (currentStatus) setStatus(currentStatus);
       try {
-        window.Tawk_API?.hideWidget();
+        if (aiChatEnabled) {
+          window.Tawk_API?.hideWidget();
+        }
       } catch (e) {}
     };
 
@@ -56,7 +60,9 @@ export function useTawk({ propertyId, widgetId, enabled }: UseTawkOptions) {
     if (window.Tawk_API) {
       try {
         window.Tawk_API.minimize();
-        window.Tawk_API.hideWidget();
+        if (aiChatEnabled) {
+          window.Tawk_API.hideWidget();
+        }
       } catch (e) {}
     }
   }, []);

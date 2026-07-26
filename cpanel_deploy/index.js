@@ -75,15 +75,14 @@ const auth_1 = __importDefault(require("./api/auth"));
 const settings_1 = require("./api/settings");
 const dashboard_1 = require("./api/dashboard");
 const jobs_1 = __importDefault(require("./api/admin/jobs"));
-const conversations_1 = require("./api/admin/conversations");
+// adminConversationsRouter is imported dynamically when AI_CHAT_ENABLED=true (avoids conversation DB queries)
 const articles_1 = require("./api/admin/articles");
 const enquiries_1 = require("./api/admin/enquiries");
 const users_1 = require("./api/admin/users");
 const notifications_1 = require("./api/admin/notifications");
-const ai_settings_1 = require("./api/admin/ai-settings");
-const knowledge_1 = require("./api/admin/knowledge");
+// chat, knowledge, and ai-settings routers are imported dynamically below
+const tawk_settings_1 = require("./api/admin/tawk-settings");
 const enquiries_2 = require("./api/enquiries");
-const chat_1 = require("./api/chat");
 const candidates_1 = __importDefault(require("./api/candidates"));
 // Serve static frontend files
 app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
@@ -91,19 +90,45 @@ app.use((0, cookie_parser_1.default)());
 // Public routes
 app.use('/api/auth', auth_1.default);
 app.use('/api/settings', settings_1.settingsRouter);
+app.use('/api/tawk-settings', tawk_settings_1.publicTawkSettingsRouter);
 app.use('/api/enquiries', enquiries_2.enquiriesRouter);
-app.use('/api/chat', chat_1.chatRouter);
 app.use('/api/candidates', candidates_1.default);
-// Protected Admin Routes
+// AI Chat Feature Flag — strict comparison, never truthy on "false"
+const aiChatEnabled = process.env.AI_CHAT_ENABLED?.trim().toLowerCase() === "true";
+// Disabled-chat fallback performs ZERO database queries
+const chatDisabledFallback = (req, res) => {
+    res.status(503).json({ error: 'AI chat is temporarily disabled' });
+};
+if (aiChatEnabled) {
+    // Dynamically import chat modules — no static import means zero initialisation overhead when disabled
+    Promise.all([
+        Promise.resolve().then(() => __importStar(require('./api/chat'))),
+        Promise.resolve().then(() => __importStar(require('./api/admin/conversations'))),
+        Promise.resolve().then(() => __importStar(require('./api/admin/ai-settings'))),
+        Promise.resolve().then(() => __importStar(require('./api/admin/knowledge')))
+    ]).then(([{ chatRouter }, { adminConversationsRouter }, { aiSettingsRouter }, { knowledgeRouter }]) => {
+        app.use('/api/chat', chatRouter);
+        app.use('/api/admin/conversations', adminConversationsRouter);
+        app.use('/api/admin/ai-settings', aiSettingsRouter);
+        app.use('/api/admin/knowledge', knowledgeRouter);
+    }).catch(console.error);
+}
+else {
+    // All chatbot routes return 503 before any auth, session or DB middleware
+    app.use('/api/chat', chatDisabledFallback);
+    app.use('/api/conversations', chatDisabledFallback);
+    app.use('/api/admin/conversations', chatDisabledFallback);
+    app.use('/api/admin/ai-settings', chatDisabledFallback);
+    app.use('/api/admin/knowledge', chatDisabledFallback);
+}
+// Protected Admin Routes (always mounted — no chat dependency)
 app.use('/api/admin/dashboard', dashboard_1.dashboardRouter);
 app.use('/api/admin/jobs', jobs_1.default);
-app.use('/api/admin/conversations', conversations_1.adminConversationsRouter);
 app.use('/api/admin/articles', articles_1.adminArticlesRouter);
 app.use('/api/admin/enquiries', enquiries_1.adminEnquiriesRouter);
 app.use('/api/admin/users', users_1.adminUsersRouter);
 app.use('/api/admin/notifications', notifications_1.adminNotificationsRouter);
-app.use('/api/admin/ai-settings', ai_settings_1.aiSettingsRouter);
-app.use('/api/admin/knowledge', knowledge_1.knowledgeRouter);
+app.use('/api/admin/tawk-settings', tawk_settings_1.tawkSettingsRouter);
 // Endpoint: Get latest 3 active jobs for homepage
 app.get('/api/jobs/latest', async (req, res) => {
     try {

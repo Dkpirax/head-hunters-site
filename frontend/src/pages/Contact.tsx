@@ -5,7 +5,7 @@ import { Footer } from '../components/layout/Footer';
 import { Button } from '../components/ui/Button';
 import { Send, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Chatbot } from '../components/chatbot/Chatbot';
+
 import { apiClient } from '../lib/api';
 
 type Tab = "Hiring" | "Candidate" | "General";
@@ -55,7 +55,7 @@ export function ContactPage() {
           </p>
         </div>
         
-        <div className="px-5 max-w-[1200px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+        <div className="px-5 max-w-2xl mx-auto items-start">
           
           {/* Left: Form */}
           <div className="flex flex-col gap-4">
@@ -144,14 +144,7 @@ export function ContactPage() {
             </motion.div>
           </div>
 
-          {/* Right: Chatbot */}
-          <div className="flex flex-col gap-4 h-full">
-            <h3 className="text-xl font-semibold">Live Assistant</h3>
-            <p className="text-sm text-white/50 mb-2">Our AI assistant can answer most common questions instantly. You can also request a human consultant.</p>
-            <div className="relative z-10 w-full h-[600px] max-w-full">
-              <Chatbot inline={true} />
-            </div>
-          </div>
+
 
         </div>
       </main>

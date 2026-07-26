@@ -372,23 +372,14 @@ export function AdminSettingsPage() {
                 <div className="space-y-5">
                   <h3 className="text-sm font-bold text-white mb-2">General Configurations</h3>
 
-                  {/* Site Name & Chatbot settings */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Site Name settings */}
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Site Name</label>
                       <input
                         type="text"
                         value={formData.site_name}
                         onChange={(e) => setFormData((prev: any) => ({ ...prev, site_name: e.target.value }))}
-                        className="w-full h-10 px-4 rounded-[10px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Chatbot Greeting Message</label>
-                      <input
-                        type="text"
-                        value={formData.chatbot_greeting}
-                        onChange={(e) => setFormData((prev: any) => ({ ...prev, chatbot_greeting: e.target.value }))}
                         className="w-full h-10 px-4 rounded-[10px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
                       />
                     </div>
@@ -399,8 +390,6 @@ export function AdminSettingsPage() {
                     <h4 className="text-xs font-bold text-white mb-3 uppercase tracking-wider">Feature Flags</h4>
                     <div className="grid sm:grid-cols-2 gap-3">
                       {[
-                        { key: "flag_chatbot_enabled" as const, label: "Chatbot Enabled" },
-                        { key: "flag_hybrid_chat_enabled" as const, label: "Hybrid Chat (Human Takeover)" },
                         { key: "flag_rate_limiting_enabled" as const, label: "Rate Limiting Enabled" },
                         { key: "flag_live_jobs_enabled" as const, label: "Live Jobs (Bullhorn API)" },
                       ].map((item) => (
@@ -436,31 +425,6 @@ export function AdminSettingsPage() {
                           type="email"
                           value={formData.email_from_address}
                           onChange={(e) => setFormData((prev: any) => ({ ...prev, email_from_address: e.target.value }))}
-                          className="w-full h-10 px-4 rounded-[10px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Chatbot specific configurations */}
-                  <div className="border-t border-white/6 pt-4 mt-2">
-                    <h4 className="text-xs font-bold text-white mb-3 uppercase tracking-wider">Chat Assistant Details</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Auto-Reply Delay (ms)</label>
-                        <input
-                          type="number"
-                          value={formData.auto_reply_delay}
-                          onChange={(e) => setFormData((prev: any) => ({ ...prev, auto_reply_delay: e.target.value }))}
-                          className="w-full h-10 px-4 rounded-[10px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Offline Message</label>
-                        <input
-                          type="text"
-                          value={formData.offline_message}
-                          onChange={(e) => setFormData((prev: any) => ({ ...prev, offline_message: e.target.value }))}
                           className="w-full h-10 px-4 rounded-[10px] border border-white/8 bg-white/5 text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
                         />
                       </div>
@@ -615,20 +579,8 @@ export function AdminSettingsPage() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 pt-1">
-                          <div className="space-y-1">
-                            <label className="text-[9px] font-bold text-white/40 uppercase tracking-wider">AI Model (Chatbot)</label>
-                            <select
-                              value={formData.ai_chatbot_model}
-                              onChange={(e) => setFormData((prev: any) => ({ ...prev, ai_chatbot_model: e.target.value }))}
-                              className="w-full h-8.5 px-2.5 rounded-[8px] border border-white/8 bg-[#181a19] text-white text-xs focus:border-[#04a891]/50 outline-none transition-all"
-                            >
-                              <option value="gpt-4o-mini">GPT-4o Mini (Default)</option>
-                              <option value="gpt-4o">GPT-4o (High Quality)</option>
-                              <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-                            </select>
-                          </div>
-                          <div className="flex items-center justify-between p-2.5 border border-white/8 rounded-[10px] bg-white/2 self-end h-8.5">
+                        <div className="grid grid-cols-1 gap-4 pt-1">
+                          <div className="flex items-center justify-between p-2.5 border border-white/8 rounded-[10px] bg-white/2 self-start h-8.5">
                             <span className="text-[10px] font-bold text-white">AI Job Matching</span>
                             <input
                               type="checkbox"

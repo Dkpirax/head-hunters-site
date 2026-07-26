@@ -100,18 +100,23 @@ import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { SmoothScroll } from "./components/layout/SmoothScroll";
 import { FloatingButtons } from "./components/layout/FloatingButtons";
+import TawkToWidget from "./components/TawkToWidget";
+
+const aiChatEnabled = import.meta.env.VITE_ENABLE_AI_CHAT === "true";
 
 // Lazy-loaded pages
 const LoginPage = lazy(() => import('./pages/Login').then(module => ({ default: module.LoginPage })));
 const AdminJobsPage = lazy(() => import('./pages/admin/Jobs').then(module => ({ default: module.AdminJobsPage })));
 const AdminSettingsPage = lazy(() => import('./pages/admin/Settings').then(module => ({ default: module.AdminSettingsPage })));
 const AdminDashboardPage = lazy(() => import('./pages/admin/Dashboard').then(module => ({ default: module.AdminDashboardPage })));
-const AdminChatPage = lazy(() => import('./pages/admin/Chat').then(module => ({ default: module.AdminChatPage })));
 const AdminInsightsPage = lazy(() => import('./pages/admin/Insights').then(module => ({ default: module.AdminInsightsPage })));
 const AdminUsersPage = lazy(() => import('./pages/admin/Users').then(module => ({ default: module.AdminUsersPage })));
 const AdminEnquiriesPage = lazy(() => import('./pages/admin/Enquiries').then(module => ({ default: module.AdminEnquiriesPage })));
-const AdminAISettingsPage = lazy(() => import('./pages/admin/AISettings').then(module => ({ default: module.AdminAISettingsPage })));
-const AdminKnowledgePage = lazy(() => import('./pages/admin/Knowledge').then(module => ({ default: module.AdminKnowledgePage })));
+
+const AdminChatPage = aiChatEnabled ? lazy(() => import('./pages/admin/Chat').then(module => ({ default: module.AdminChatPage }))) : null;
+const AdminAISettingsPage = aiChatEnabled ? lazy(() => import('./pages/admin/AISettings').then(module => ({ default: module.AdminAISettingsPage }))) : null;
+const AdminKnowledgePage = aiChatEnabled ? lazy(() => import('./pages/admin/Knowledge').then(module => ({ default: module.AdminKnowledgePage }))) : null;
+const AdminTawkSettingsPage = lazy(() => import('./pages/admin/TawkSettings').then(module => ({ default: module.AdminTawkSettingsPage })));
 const AdminNotFound = lazy(() => import('./pages/admin/NotFound').then(module => ({ default: module.AdminNotFound })));
 const AdminCandidatesPage = lazy(() => import('./pages/admin/Candidates').then(module => ({ default: module.AdminCandidatesPage })));
 
@@ -163,17 +168,19 @@ function App() {
               <Route path="jobs" element={<AdminJobsPage />} />
               <Route path="insights" element={<AdminInsightsPage />} />
               <Route path="enquiries" element={<AdminEnquiriesPage />} />
-              <Route path="chat" element={<AdminChatPage />} />
+              {aiChatEnabled && AdminChatPage && <Route path="chat" element={<AdminChatPage />} />}
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="candidates" element={<AdminCandidatesPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
-              <Route path="ai-settings" element={<AdminAISettingsPage />} />
-              <Route path="knowledge" element={<AdminKnowledgePage />} />
+              <Route path="tawk-settings" element={<AdminTawkSettingsPage />} />
+              {aiChatEnabled && AdminAISettingsPage && <Route path="ai-settings" element={<AdminAISettingsPage />} />}
+              {aiChatEnabled && AdminKnowledgePage && <Route path="knowledge" element={<AdminKnowledgePage />} />}
               <Route path="*" element={<AdminNotFound />} />
             </Route>
           </Routes>
         </Suspense>
-        <FloatingButtons chatbotEnabled={true} />
+        <FloatingButtons chatbotEnabled={false} />
+        <TawkToWidget />
       </BrowserRouter>
     </SmoothScroll>
   );
