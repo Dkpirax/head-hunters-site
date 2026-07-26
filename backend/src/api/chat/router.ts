@@ -306,7 +306,7 @@ export async function processChatIntent(
     return {
       intent: 'HUMAN_HANDOFF',
       confidence,
-      response: "Would you like me to connect you with a HeadHunters recruitment consultant?",
+      response: "Would you like me to connect you with a HeadHunters recruitment consultant?\n\n[Connect to Consultant](#action-live-support)",
       cardType: 'HANDOFF_PROMPT',
       nextWorkflowType: 'HUMAN_HANDOFF',
       nextWorkflowState: 'HANDOFF_CONFIRMATION',
