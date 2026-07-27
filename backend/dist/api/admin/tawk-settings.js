@@ -63,8 +63,13 @@ async function resolvePublicSettings() {
     try {
         const dbSettings = await getTawkSettingsFromDb();
         if (dbSettings) {
+            const hasCredentials = !!(dbSettings.tawkPropertyId && dbSettings.tawkWidgetId);
+            // If the DB has credentials but enabled=false, allow TAWK_ENABLED env var to activate them.
+            // This handles the case where the admin never explicitly toggled Tawk on in the old AI settings page.
+            const envEnabled = process.env.TAWK_ENABLED?.trim().toLowerCase() === 'true';
+            const enabled = !!dbSettings.tawkEnabled || (hasCredentials && envEnabled);
             publicCache = {
-                enabled: !!dbSettings.tawkEnabled,
+                enabled,
                 propertyId: dbSettings.tawkPropertyId || '',
                 widgetId: dbSettings.tawkWidgetId || '',
                 expiresAt: Date.now() + CACHE_TTL_MS,
