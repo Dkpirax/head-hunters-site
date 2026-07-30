@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 
 const TIMELINE = [
-  { year: "OUR FOUNDATION", event: "Headhunters (Pvt) Ltd was launched by Digital Cherry, Switzerland, to deliver professional talent solutions in Sri Lanka." },
+  { year: "OUR FOUNDATION", event: "Headhunters (Pvt) Ltd was launched by Digital Marketing Solutions, Switzerland, to deliver professional talent solutions in Sri Lanka." },
   { year: "OUR BELIEF", event: "We believe every successful business begins with the right people. Exceptional talent creates lasting business value." },
   { year: "BEYOND RECRUITMENT", event: "Alongside recruitment, we provide Digital Marketing and Branding Solutions to help businesses strengthen their market presence." },
   { year: "YOUR BUSINESS PARTNER", event: "Whether you need one key professional or an entire workforce, we become your trusted business partner—not just your recruitment agency." },

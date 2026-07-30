@@ -223,7 +223,7 @@ export function ServicesBento({ settings }: { settings?: any }) {
           <BentoCard className="flex flex-col h-full bg-gradient-to-br from-[#12161b] to-[#0a0c0f] border-white/5">
             <div className="mb-6 flex items-center justify-between">
               <a href={DIGITAL_CHERRY_URL} target="_blank" rel="noopener noreferrer" className="relative z-10 inline-block transition-transform hover:scale-105">
-                <img src="/logo/Digital_Cherry_logo.png" alt="Digital Cherry" className="h-14 object-contain" />
+                <span className="text-xl font-bold text-white tracking-wide">Digital Marketing Solutions</span>
               </a>
               <span className="text-[10px] uppercase font-bold tracking-widest text-[#04a891] bg-[#04a891]/10 px-3 py-1 rounded-full">
                 Digital Marketing Solutions
@@ -235,7 +235,7 @@ export function ServicesBento({ settings }: { settings?: any }) {
             </h3>
             
             <p className="text-white/70 text-sm leading-relaxed mb-6">
-              Increase visibility and generate leads with data-driven marketing.
+              Our Digital Marketing Solutions team helps businesses increase visibility, generate quality leads, and build meaningful customer relationships through practical, data-driven strategies.
             </p>
             
             <div className="flex flex-wrap gap-2 mb-8 flex-1 content-start">
@@ -253,7 +253,7 @@ export function ServicesBento({ settings }: { settings?: any }) {
                 rel="noopener noreferrer"
                 className="relative z-10 inline-flex items-center gap-2 text-white hover:text-[#04a891] text-sm font-semibold transition-colors duration-200"
               >
-                Visit Digital Cherry <ExternalLink size={14} />
+                Visit Digital Marketing Solutions <ExternalLink size={14} />
               </a>
             </div>
           </BentoCard>
