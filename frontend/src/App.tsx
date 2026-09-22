@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 
-// Components
+// Layout & Home Components
 import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
 import { ProofStrip } from "./components/home/ProofStrip";
@@ -16,6 +16,28 @@ import { EmployerSection } from "./components/home/EmployerSection";
 import { JobsSection } from "./components/home/JobsSection";
 import { ContactSection } from "./components/home/ContactSection";
 import { WorkforceAnimation } from "./components/home/WorkforceAnimation";
+
+// Dedicated Pages
+import { EmployersPage } from "./pages/EmployersPage";
+import { CandidatesPage } from "./pages/CandidatesPage";
+import { ExecutiveSearchPage } from "./pages/ExecutiveSearchPage";
+import { ConfidentialRecruitmentPage } from "./pages/ConfidentialRecruitmentPage";
+import { SectorRecruitmentPage } from "./pages/SectorRecruitmentPage";
+import { JobsPage } from "./pages/JobsPage";
+import { JobDetailPage } from "./pages/JobDetailPage";
+import { ContactPage } from "./pages/ContactPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+
+// Admin & Auth Pages
+import { LoginPage } from "./pages/Login";
+import { ProtectedRoute } from "./components/layout/ProtectedRoute";
+import { AdminLayout } from "./components/layout/AdminLayout";
+import { AdminJobsPage } from "./pages/admin/Jobs";
+import { AdminSettingsPage } from "./pages/admin/Settings";
+import { AdminUsersPage } from "./pages/admin/Users";
+import { AdminEnquiriesPage } from "./pages/admin/Enquiries";
+import { AdminInsightsPage } from "./pages/admin/Insights";
+import { AdminChatPage } from "./pages/admin/Chat";
 
 function HomePage() {
   const [settings, setSettings] = useState<any>(null);
@@ -96,25 +118,32 @@ function HomePage() {
   );
 }
 
-import { LoginPage } from "./pages/Login";
-import { ProtectedRoute } from "./components/layout/ProtectedRoute";
-import { AdminLayout } from "./components/layout/AdminLayout";
-
-import { AdminJobsPage } from "./pages/admin/Jobs";
-import { AdminSettingsPage } from "./pages/admin/Settings";
-import { AdminUsersPage } from "./pages/admin/Users";
-import { AdminEnquiriesPage } from "./pages/admin/Enquiries";
-import { AdminInsightsPage } from "./pages/admin/Insights";
-import { AdminChatPage } from "./pages/admin/Chat";
-
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Commercial & Information Pages */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/employers" element={<EmployersPage />} />
+        <Route path="/candidates" element={<CandidatesPage />} />
+        <Route path="/executive-search-sri-lanka" element={<ExecutiveSearchPage />} />
+        <Route path="/confidential-recruitment-sri-lanka" element={<ConfidentialRecruitmentPage />} />
         
-        {/* Admin Routes */}
+        {/* Sector Specialized Pages */}
+        <Route path="/ceo-recruitment-sri-lanka" element={<SectorRecruitmentPage sectorKey="ceo-recruitment-sri-lanka" />} />
+        <Route path="/finance-recruitment-sri-lanka" element={<SectorRecruitmentPage sectorKey="finance-recruitment-sri-lanka" />} />
+        <Route path="/internal-audit-recruitment-sri-lanka" element={<SectorRecruitmentPage sectorKey="internal-audit-recruitment-sri-lanka" />} />
+        <Route path="/legal-recruitment-sri-lanka" element={<SectorRecruitmentPage sectorKey="legal-recruitment-sri-lanka" />} />
+        <Route path="/hr-recruitment-sri-lanka" element={<SectorRecruitmentPage sectorKey="hr-recruitment-sri-lanka" />} />
+        <Route path="/fmcg-recruitment-sri-lanka" element={<SectorRecruitmentPage sectorKey="fmcg-recruitment-sri-lanka" />} />
+
+        {/* Jobs & Inquiries */}
+        <Route path="/jobs" element={<JobsPage />} />
+        <Route path="/jobs/:slugWithId" element={<JobDetailPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+
+        {/* Auth & Admin */}
+        <Route path="/login" element={<LoginPage />} />
         <Route 
           path="/admin" 
           element={
@@ -136,6 +165,9 @@ function App() {
           <Route path="insights" element={<AdminInsightsPage />} />
           <Route path="chat" element={<AdminChatPage />} />
         </Route>
+
+        {/* Catch-all 404 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

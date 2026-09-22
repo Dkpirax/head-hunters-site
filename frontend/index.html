@@ -7,16 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Primary SEO -->
-    <title>Head Hunters | Recruitment Agency & Executive Search — Sri Lanka</title>
-    <meta name="description" content="Head Hunters is a Sri Lankan recruitment agency and executive-search firm based in Colombo. We provide permanent recruitment, confidential senior appointments, executive search, and workforce solutions across Sri Lanka, Australia, and New Zealand." />
+    <title>Head Hunters | Recruitment & Executive Search Sri Lanka</title>
+    <meta name="description" content="Head Hunters is a Sri Lankan recruitment agency and executive-search firm based in Colombo. We provide permanent recruitment, confidential senior appointments, executive search, and strategic workforce solutions across Sri Lanka." />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <link rel="canonical" href="https://www.headhunters.lk/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Head Hunters" />
-    <meta property="og:title" content="Head Hunters | Recruitment Agency & Executive Search — Sri Lanka" />
-    <meta property="og:description" content="Sri Lanka's recruitment agency and executive-search firm. Permanent recruitment, confidential senior appointments, and workforce solutions in Colombo and beyond." />
+    <meta property="og:title" content="Head Hunters | Recruitment & Executive Search Sri Lanka" />
+    <meta property="og:description" content="Head Hunters is a Sri Lankan recruitment agency and executive-search firm based in Colombo. Permanent recruitment, confidential senior appointments, and workforce solutions across Sri Lanka." />
     <meta property="og:url" content="https://www.headhunters.lk/" />
     <meta property="og:image" content="https://www.headhunters.lk/og-image.png" />
     <meta property="og:locale" content="en_LK" />
@@ -37,8 +37,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <!-- Organization + EmploymentAgency JSON-LD
-         NOTE: Update telephone once primary number is confirmed.
-         NOTE: Update sameAs once LinkedIn/Facebook URLs are confirmed. -->
+         REQUIRED BEFORE DEPLOY:
+         - Confirm primary telephone and add:  "telephone": "+94 XX XXX XXXX"
+         - Confirm full address (street number) and update streetAddress
+         - Confirm LinkedIn URL and add to sameAs array
+         - Confirm Facebook URL and add to sameAs array
+         - Confirm whether Head Hunters genuinely serves AU/NZ before adding areaServed -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -59,11 +63,10 @@
         "postalCode": "00600",
         "addressCountry": "LK"
       },
-      "areaServed": [
-        { "@type": "Country", "name": "Sri Lanka" },
-        { "@type": "Country", "name": "Australia" },
-        { "@type": "Country", "name": "New Zealand" }
-      ],
+      "areaServed": {
+        "@type": "Country",
+        "name": "Sri Lanka"
+      },
       "knowsAbout": [
         "Recruitment",
         "Executive Search",

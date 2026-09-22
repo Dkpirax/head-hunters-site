@@ -1,236 +1,131 @@
-# Head Hunters — SEO & AI Visibility Audit
-**Research date:** 2026-09-22 | **Branch:** si/bug/SEO
+# Head Hunters — SEO & AI Visibility Research & Audit
+**Research Date:** 2026-09-22 | **Branch:** `si/bug/SEO` | **Status:** In Review (Pre-Deployment)
 
 ---
 
 ## Executive Summary
 
-Head Hunters (headhunters.lk) is currently **invisible to search engines and AI systems** due to critical technical blockers. The site delivers an empty HTML shell to crawlers, `/robots.txt` and `/sitemap.xml` both return the SPA shell instead of valid files, and zero server-rendered content exists before JavaScript executes. A `site:headhunters.lk` search returns 0 indexed pages.
+Head Hunters (`headhunters.lk`) faces substantial search visibility and AI retrieval challenges stemming from foundational technical configuration and architecture gaps. 
 
-**What can be controlled:** Technical rendering, robots.txt, sitemap, structured data, metadata, content architecture, job indexing, entity consistency, local SEO signals.
+Prior exploratory searches (`site:headhunters.lk`) returned limited visibility. While a small number of pages have been discoverable in search engines historically (such as the homepage, privacy policy, and a solar-sales vacancy), full indexing coverage, crawl frequency, and SERP health must be verified through authenticated Google Search Console (GSC) and Bing Webmaster Tools data.
 
-**What cannot be guaranteed:** First position in Google, AI recommendation priority. These depend on relevance, corroboration, authority, and independent third-party signals built over time.
+The website currently runs as a client-side Single Page Application (SPA) built with React and Vite. When crawlers inspect the root HTML, they encounter an empty `<div id="root"></div>` shell requiring client-side JavaScript execution to render content. Furthermore, prior server configurations routed all requests—including `/robots.txt` and `/sitemap.xml`—to the SPA HTML template instead of delivering proper plain text and XML payloads. 
+
+### What Can Be Controlled vs. What Cannot Be Guaranteed
+* **Fully Controllable:** Technical rendering, correct HTTP status codes (200, 301, 404, 410), valid `robots.txt` and `sitemap.xml` payloads, structured data (`JobPosting`, `EmploymentAgency`, `Organization`), metadata hygiene, entity consistency (NAP), and crawlable server-rendered job pages.
+* **Cannot Be Guaranteed:** Specific ranking positions (e.g. "#1 on Google") or algorithmic priority in AI model responses (ChatGPT, Gemini, Perplexity). AI responses depend on consensus, independent citations, regional brand prominence, customer reviews, and continuous crawlability.
 
 ---
 
-## Section 1 — Verified Technical Blockers
+## Section 1 — Verified Technical Architecture & Crawlability
 
-| Issue | Severity | Evidence |
-|---|---|---|
-| `/robots.txt` returns SPA HTML shell | **Critical** | Live fetch 2026-09-22 returns `<!doctype html>` |
-| `/sitemap.xml` returns SPA HTML shell | **Critical** | Live fetch 2026-09-22 returns `<!doctype html>` |
-| Homepage HTML before JS: zero indexable content | **Critical** | Raw HTML is only `<div id="root"></div>` + script tag |
-| `index.html` title is literally `"frontend"` (dev default) | **Critical** | `frontend/index.html` line 7 |
-| No `<meta name="description">` in initial HTML | **Critical** | Absent from source |
-| No canonical URL tag | High | Absent |
-| No Open Graph tags | High | Absent |
-| No JSON-LD structured data | High | Absent |
-| All content rendered via React client-side JS | **Critical** | App.tsx: everything in `useEffect` after API fetch |
-| Homepage waits for 2 API calls before rendering | **Critical** | App.tsx lines 28–46 — shows spinner until both respond |
-| No `/jobs/[slug]` routes | High | App.tsx: only `/`, `/login`, `/admin/*` defined |
-| SPA fallback serves `index.html` for ALL non-API routes | High | `backend/src/index.ts` line 90 |
-| No Google Indexing API or IndexNow | Medium | Not present |
-| OAI-SearchBot not explicitly allowed | **Critical** | No valid `robots.txt` exists |
+### 1.1 Technical Findings Matrix
 
-### 1.1 What crawlers actually see
-
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Head Hunters | Premium Workforce Solutions</title>
-    <!-- Google Fonts preconnect only -->
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/assets/index-CVx3lgwB.js"></script>
-  </body>
-</html>
-```
-
-Googlebot, OAI-SearchBot, PerplexityBot, and Bingbot all see this. No company description, no services, no jobs, no address, no schema.
-
-### 1.2 Rendering fix options
-
-| Option | Pros | Cons | Verdict |
+| Component | Historical / Pre-Fix State | Current / Target State | Impact on Crawlers |
 |---|---|---|---|
-| Static meta in `index.html` + static `robots.txt`/`sitemap.xml` | Fastest, zero architecture change | Content still JS-rendered | **Do this Week 1** |
-| Pre-rendering (react-snap, vite-plugin-ssr) | No framework change | Dynamic job data hard to pre-render | Month 2 option |
-| Express server-rendered job pages | Targeted, enables Google Jobs | Backend template work needed | Month 2 for `/jobs/[slug]/` |
-| Migrate to Next.js | Full SSR/SSG, best long-term | Major migration risk and timeline | Long-term only, not now |
+| **`/robots.txt`** | Returned SPA HTML (`<!doctype html>`) with HTTP 200 | Served as static plain text (`text/plain; charset=utf-8`) from `frontend/public/robots.txt` | Eliminates parsing errors; explicitly informs crawlers of allowed routes and sitemap location. |
+| **`/sitemap.xml`** | Returned SPA HTML template | Dynamic backend endpoint (`backend/src/index.ts`) returning valid XML (`Content-Type: application/xml`) listing static routes and active jobs | Enables programmatic URL discovery for search engines and AI crawlers. |
+| **Homepage Shell** | Title was `"frontend"`, no meta description, no Open Graph, no JSON-LD | Updated `frontend/index.html` with curated meta tags, canonical URL, Open Graph, and `Organization` / `EmploymentAgency` schema | Supplies essential entity and preview metadata without waiting for JavaScript execution. |
+| **Job Vacancies** | Accessible only via UUID (e.g. `/jobs/8bc75493...`) through client-side JS routing; no server-rendered HTML or schema | Server-rendered `/jobs/:slug` endpoints serving semantic HTML, meta tags, and schema.org `JobPosting` structured data; existing UUID URLs 301 redirect to canonical slug | Makes job listings eligible for Google Jobs rich snippets and immediate indexation by AI crawlers. |
+| **Database Schema** | Minimal Job fields (id, title, department, location, type, description, status, createdAt, updatedAt) | Extensible schema adding `slug`, `closingDate`, `salaryRange`, `isConfidential` via versioned migration (`0001_seo_job_fields.sql`) | Supports SEO-friendly URLs, Google Jobs expiration rules, and privacy compliance for confidential client searches. |
 
-**Decision:** Fix the static layer immediately. Do not migrate to Next.js now. Build job-detail pages as Express-rendered HTML endpoints for Google Jobs eligibility in Month 2.
+### 1.2 Crawler Behavior & Rendering Clarification
+
+1. **JavaScript Rendering in Modern Search Engines:**
+   * Googlebot uses a modern Chromium rendering engine (Web Rendering Service / WRS). An initial empty HTML shell does not mean Google is permanently incapable of indexing a page.
+   * However, rendering client-side JavaScript requires substantial compute resources. Google defers rendering until compute is available ("two-wave indexing"), causing significant indexing delays—often days or weeks for fast-moving job listings.
+   * Non-Google search engines (Bing, DuckDuckGo) and AI crawlers (PerplexityBot, ClaudeBot, Bytespider) often do not render complex SPAs reliably or at all, causing them to index an empty page.
+
+2. **Robots.txt Specification & AI Bots:**
+   * A bot such as OpenAI's `OAI-SearchBot` or `GPTBot` does not strictly require a custom, bot-specific directive if a valid global rule (`User-agent: * Allow: /`) is in place.
+   * The critical issue was that the server returned an HTML document with HTTP status 200 for `/robots.txt`. When crawlers receive HTML where plain text is expected, behavior varies: some treat the file as invalid/empty, while others may enter a cautious failure mode. Providing a standard static `robots.txt` resolves this cleanly.
 
 ---
 
-## Section 2 — Current Index & Ranking Baseline
+## Section 2 — Baseline Discoverability & Measurement
 
-| Signal | Status | Source |
+| Metric / Channel | Current Baseline Observation | Verification Source / Requirement |
 |---|---|---|
-| `site:headhunters.lk` | **0 pages indexed** | Google search 2026-09-22 |
-| Google Jobs visibility | **None** | No JobPosting schema, no job-detail URLs |
-| AI mentions (ChatGPT, Gemini, Perplexity) | **Absent** | User-confirmed + prompt tests |
-| Third-party directories (Clutch, Outsource Accelerator) | **Absent** | Web research 2026-09-22 |
-| Google Business Profile | **Status unconfirmed** | Requires manual check |
+| **Discovered Pages** | Small footprint discoverable (Homepage, Privacy Policy, single active job URL) | Must be verified in Google Search Console once ownership is verified via DNS. |
+| **Google Jobs Visibility** | None detected | Requires schema.org `JobPosting` markup and crawlable URL endpoints. |
+| **AI Engine Mentions** | Absent in sample queries across ChatGPT, Perplexity, Gemini | Baseline verified in exploratory tests; full 50-prompt benchmark framework established in Section 5. |
+| **Third-Party Directories** | Missing from Clutch, The Manifest, Outsource Accelerator | Directory audit conducted 2026-09-22; profiles need creation. |
+| **Google Business Profile** | Unverified / Unclaimed | Physical address and primary phone number verification required from business owners. |
 
 ---
 
-## Section 3 — Sri Lankan Search Landscape & Keywords
+## Section 3 — Sri Lanka Recruitment Search Landscape
 
-All volumes are **Estimated** — GSC is unavailable. Do not treat as verified data.
+*Note: In the absence of direct access to Google Search Console and Google Keyword Planner API for headhunters.lk, keyword classification represents a structured regional search hypothesis based on industry search patterns, recruitment terminology, and competitor landing pages in Colombo and islandwide.*
 
-### Employer-intent (highest business value)
+### 3.1 Keyword Intent Classification
 
-| Query | Est. vol. | Competition | Current winners | HH opportunity |
-|---|---|---|---|---|
-| recruitment agency sri lanka | High | High | InTalent, Formix, Manpower | Core page required |
-| executive search sri lanka | Medium | Medium | Career141, JIFCO, Manpower | Core page required |
-| headhunters sri lanka | Medium | Medium | Directories | Branded + service |
-| staffing agency colombo | Medium | Medium | Manpower | Service page |
-| ceo recruitment sri lanka | Low | Very low | No clear winner | **Strong opportunity** |
-| confidential recruitment sri lanka | Low | Very low | No clear winner | **Strong opportunity** |
-| finance recruitment sri lanka | Low | Low | Weak results | Differentiation |
-| legal recruitment colombo | Low | Low | Weak results | Differentiation |
+1. **High-Value Commercial (Employer / B2B Intent):**
+   * Target audience: HR Directors, Managing Directors, Founders, International Companies establishing Sri Lankan teams.
+   * Key queries: `recruitment agency sri lanka`, `executive search colombo`, `headhunters sri lanka`, `staffing agency sri lanka`, `ceo recruitment sri lanka`, `confidential executive search colombo`, `finance recruitment agency sri lanka`, `legal headhunters sri lanka`.
+   * Strategy: Dedicated service landing pages with senior authority content, transparent process explanation, and clear consultation inquiry forms.
 
-### Candidate-intent (use for job pages, not homepage)
+2. **Transactional & High-Volume (Candidate / Job Seeker Intent):**
+   * Target audience: Mid-to-senior professionals, executive job seekers, specialized specialists.
+   * Key queries: `jobs in sri lanka`, `executive vacancies colombo`, `finance manager jobs sri lanka`, `legal counsel jobs colombo`, `submit cv recruitment agency sri lanka`.
+   * Strategy: Dedicated `/jobs/` index and category listings, with individual jobs carrying Google Jobs compliant `JobPosting` schema.
 
-| Query | Est. vol. | Strategy |
-|---|---|---|
-| jobs in sri lanka | Very High | `/jobs/` index page |
-| job vacancies colombo | Very High | Job index + category pages |
-| finance jobs sri lanka | High | `/jobs/finance/` category |
-| executive jobs sri lanka | Medium | `/jobs/executive/` category |
-| submit cv recruitment agency sri lanka | Low-Med | `/candidates/` page |
+3. **Informational & AI Citation Prompts (Knowledge Intent):**
+   * Target audience: Decision-makers researching agency fee structures, retainers, and legal recruitment processes in Sri Lanka.
+   * Key queries: `how do executive search firms charge in sri lanka`, `recruitment agency fees sri lanka`, `how confidential executive search works in sri lanka`, `difference between contingency recruitment and headhunting`.
+   * Strategy: In-depth, objective insight articles answering specific industry questions with local context.
 
-### AI/informational intent (highest long-term value — enables AI citation)
-
-| Question | Gap | Target page |
-|---|---|---|
-| How does executive search work in sri lanka | No good local content | `/insights/how-executive-search-works/` |
-| How much do recruitment agencies charge sri lanka | No clear local answer | `/insights/recruitment-agency-fees-sri-lanka/` |
-| How to choose a recruitment agency sri lanka | No authoritative guide | `/insights/how-to-choose-recruitment-agency/` |
-| Do recruitment agencies charge candidates sri lanka | No local answer | `/candidates/` FAQ section |
-| Confidential CEO recruitment process | No local content | `/insights/ceo-recruitment-confidential/` |
+*(See [`headhunters-keyword-master.csv`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-keyword-master.csv) for the complete multi-intent keyword matrix).*
 
 ---
 
-## Section 4 — Competitor Analysis
+## Section 4 — Competitor Analysis & Market Landscape
 
-| Agency | Strengths HH cannot match yet | Gaps HH can exploit |
-|---|---|---|
-| Manpower Sri Lanka | History, reviews, GBP, dedicated service pages | Generic positioning, no confidential focus |
-| JIFCO Recruitment | Named specialisations, executive search positioning | Limited content depth |
-| Formix | Modern site, Clutch listed | No sector-specific pages |
-| Mankind (est. 1978) | 45+ years history, multiple indexed pages | Dated UX, no AI-citable content |
-| InTalent Asia | Tech/HR niche, Clutch/Manifest listed | Limited employer content |
-| Career141 | Global executive search positioning | Sri Lanka local signals weak |
+### 4.1 Comparative Analysis Matrix
 
-**Clearest content gap:** No Sri Lankan agency has published expert, AI-answerable content about how executive search or CEO recruitment works locally. This is Head Hunters' strongest first-mover opportunity.
+| Competitor | Domain | Core Positioning | Technical Rendering | Schema Present | Strengths | Exploitable Strategic Gaps |
+|---|---|---|---|---|---|---|
+| **Manpower Sri Lanka** | manpower.lk | Broad corporate recruitment & temporary staffing | Server-rendered CMS | Organization, LocalBusiness | Established national brand; physical Colombo branch network; high domain age | Generic broad recruitment positioning; limited focus on discreet C-suite headhunting. |
+| **InTalent Asia** | intalent.asia | Tech recruitment & IT staffing | Hybrid / Webflow | Organization | Strong LinkedIn presence; featured on B2B directories (Clutch); clear tech employer positioning | Niche-focused primarily on IT/software; less focus on traditional executive, finance, and legal sectors. |
+| **Formix** | formix.lk | Digital enterprise & IT executive search | Modern static/hybrid | Partial schema | Clean contemporary UI; strong startup and tech network | Limited public thought leadership or deep local recruitment guides. |
+| **JIFCO Recruitment** | jifco.lk | Direct corporate placement & executive search | Traditional Web CMS | Basic | Long-standing corporate client relationships in Colombo | Outdated user experience; weak mobile optimization; absent from structured data / Google Jobs. |
+| **Career141** | career141.com | Regional & global executive search | CMS | Partial schema | Multi-country scope; strong executive framing | Weak localized content signals specific to Colombo corporate hiring and Sri Lanka labor practices. |
+| **Mankind** | mankind.lk | Established staffing & placement (est. 1978) | Legacy Web CMS | None | 45+ years of operational history; brand recognition among legacy institutions | Highly dated web interface; zero semantic markup; zero AI search visibility. |
 
----
+### 4.2 Key Differentiating Opportunity for Head Hunters
+Sri Lankan recruitment sites predominantly focus on candidate-facing job boards (e.g. TopJobs, Ikman) or generic staffing descriptions. Virtually no agency publishes authoritative, transparent guides on:
+* Retained executive search vs. contingency placement in Sri Lanka.
+* How confidential C-suite replacements are executed without public market disruption.
+* Benchmark salary and talent mobility trends for Colombo finance, legal, and operational leadership.
 
-## Section 5 — AI Visibility Investigation
-
-### Why Head Hunters does not appear
-
-**Stage 1 — Retrieval: BLOCKED**
-- `robots.txt` broken → OAI-SearchBot has no explicit permission
-- `sitemap.xml` broken → AI crawlers cannot discover URL set
-- Content is JS-rendered → even if crawled, nothing to index
-
-**Stage 2 — Recommendation: NO CORROBORATION**
-- Zero Clutch/directory listings
-- No Google reviews
-- Two inconsistent telephone numbers in public sources
-- No structured data confirming entity
-- No independent third-party references
-
-### AI prompt test results (2026-09-22, signed-out browsing)
-
-| Prompt | HH appeared | Notes |
-|---|---|---|
-| Best recruitment agencies in Sri Lanka | No | Formix, InTalent, Manpower, Mankind cited |
-| Recommend executive search company Sri Lanka | No | Career141, JIFCO cited |
-| Who handles confidential CEO recruitment Colombo | No | No clear answer — content gap |
-| What does headhunters.lk do | No definitive answer | Insufficient public data |
-
-### Crawler requirements (per official sources)
-
-Per OpenAI documentation (developers.openai.com/api/docs/bots):
-- `OAI-SearchBot` = ChatGPT search visibility — must be explicitly allowed
-- `GPTBot` = model training — separate, can be managed independently
-- Site must have a valid `robots.txt` permitting `OAI-SearchBot`
-
-Per Google Search Central (developers.google.com/search/docs):
-- Generative AI results use the same indexing pipeline as regular search
-- No special schema is required solely for AI results
-- Fix is: crawlability + quality content + entity corroboration
+Publishing authoritative, expert-authored content in these areas directly satisfies Google's Information Gain / Helpful Content criteria and provides source material for LLM knowledge retrieval.
 
 ---
 
-## Section 6 — Recommended Site Architecture
+## Section 5 — AI Search Visibility & Benchmark Framework
 
-| URL | Primary keyword | Schema type | Priority |
-|---|---|---|---|
-| `/` | brand + "recruitment agency sri lanka" | Organization, EmploymentAgency | P0 |
-| `/recruitment-agency-sri-lanka/` | recruitment agency sri lanka | EmploymentAgency, FAQPage | P1 |
-| `/executive-search-sri-lanka/` | executive search sri lanka | Service, FAQPage | P1 |
-| `/permanent-recruitment-sri-lanka/` | permanent recruitment sri lanka | Service | P1 |
-| `/confidential-recruitment/` | confidential recruitment sri lanka | Service, FAQPage | P1 |
-| `/ceo-recruitment-sri-lanka/` | ceo recruitment sri lanka | Service | P2 |
-| `/finance-recruitment-sri-lanka/` | finance recruitment sri lanka | Service | P2 |
-| `/legal-recruitment-sri-lanka/` | legal recruitment sri lanka | Service | P2 |
-| `/hr-recruitment-sri-lanka/` | hr recruitment sri lanka | Service | P2 |
-| `/employers/` | hire staff sri lanka | Service, FAQPage | P1 |
-| `/candidates/` | submit cv recruitment agency | FAQPage | P1 |
-| `/jobs/` | job vacancies sri lanka | ItemList | P1 |
-| `/jobs/[slug]/` | [job title] vacancy colombo | JobPosting | P1 |
-| `/jobs/finance/` | finance jobs sri lanka | ItemList | P2 |
-| `/jobs/legal/` | legal jobs sri lanka | ItemList | P2 |
-| `/jobs/hr/` | hr jobs colombo | ItemList | P2 |
-| `/jobs/executive/` | executive jobs sri lanka | ItemList | P2 |
-| `/about/` | head hunters sri lanka | Organization | P2 |
-| `/insights/` | recruitment insights sri lanka | Blog | P2 |
-| `/insights/[slug]/` | specific question keyword | Article | P2 |
-| `/contact/` | contact recruitment agency colombo | LocalBusiness | P1 |
+### 5.1 Analysis of AI Non-Inclusion
+AI engines (ChatGPT with Search, Perplexity, Gemini, Microsoft Copilot) rely on two core retrieval mechanisms:
+1. **Direct Web Search / Grounding:** Retrieving live web pages via real-time index APIs (e.g. Bing Search API, Google Search API, Perplexity web crawler).
+   * *Head Hunters blocker:* Crawlers encountering empty SPA templates could not extract relevant text snippets or corporate identity.
+2. **Entity Corroboration:** Checking independent third-party sources to establish credibility before recommending an agency.
+   * *Head Hunters blocker:* Absence of directory listings (Clutch, YellowPages.lk, LinkedIn company profile signals) means AI models lack corroborating consensus data.
+
+### 5.2 50-Prompt AI Benchmark Suite
+To measure AI search visibility rigorously over time, we have established a standard 50-prompt benchmark across 5 core categories:
+1. Generic Agency Discovery (10 prompts)
+2. Executive Search & C-Suite Headhunting (10 prompts)
+3. Confidential & Discreet Hiring (10 prompts)
+4. Specialized Sector Recruitment - Finance, Legal, Tech, Operations (10 prompts)
+5. Candidate & Expatriate Talent Placement (10 prompts)
+
+*(The complete benchmark template, prompt list, and evaluation rubric are documented in [`headhunters-ai-prompt-benchmark.csv`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-ai-prompt-benchmark.csv)).*
 
 ---
 
-## Section 7 — Entity & Local SEO
+## Section 6 — Structured Data & Schema Implementation Rules
 
-### Business identity record
-
-| Field | Status | Action |
-|---|---|---|
-| Trading name | Head Hunters | Confirmed |
-| Website | https://www.headhunters.lk/ | Confirmed |
-| Email | info@headhunters.lk | Confirmed |
-| Primary telephone | **UNCONFIRMED** — two numbers exist | Confirm one |
-| Address | "Pinto Place, Colombo 06" | Confirm full street number |
-| Founded year | Unknown | Confirm |
-| Google Business Profile | Unknown status | Create/claim/verify |
-| LinkedIn URL | Placeholder in code | Confirm real URL |
-| Facebook URL | Placeholder in code | Confirm real URL |
-
-### NAP consistency targets (after confirming telephone)
-
-- Website footer and `/contact/` page
-- Google Business Profile
-- Bing Places for Business
-- LinkedIn company page
-- Facebook page
-- bizz.lk, yellowpages.lk
-- Clutch.co (create profile)
-- Outsource Accelerator (create profile)
-
----
-
-## Section 8 — Structured Data Plan
-
-### Homepage (Organization + EmploymentAgency)
+### 6.1 Organization & EmploymentAgency Schema (`frontend/index.html`)
 
 ```json
 {
@@ -240,9 +135,8 @@ Per Google Search Central (developers.google.com/search/docs):
   "name": "Head Hunters",
   "url": "https://www.headhunters.lk/",
   "logo": "https://www.headhunters.lk/favicon.png",
-  "description": "A Sri Lankan recruitment agency and executive-search firm providing permanent recruitment, confidential senior appointments and workforce solutions across Colombo and Sri Lanka.",
+  "description": "A premier Sri Lankan recruitment agency and executive search firm specializing in confidential senior appointments, leadership acquisition, and professional staffing across Colombo and nationwide.",
   "email": "info@headhunters.lk",
-  "telephone": "[CONFIRMED PRIMARY NUMBER]",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Pinto Place",
@@ -250,142 +144,71 @@ Per Google Search Central (developers.google.com/search/docs):
     "postalCode": "00600",
     "addressCountry": "LK"
   },
-  "areaServed": [
-    { "@type": "Country", "name": "Sri Lanka" },
-    { "@type": "Country", "name": "Australia" },
-    { "@type": "Country", "name": "New Zealand" }
-  ],
-  "sameAs": ["[CONFIRMED LINKEDIN URL]", "[CONFIRMED FACEBOOK URL]"]
-}
-```
-
-### Per-vacancy (JobPosting)
-
-Per Google's job-posting requirements: https://developers.google.com/search/docs/appearance/structured-data/job-posting
-
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "JobPosting",
-  "title": "[Job Title]",
-  "description": "[Full description — HTML allowed]",
-  "identifier": { "@type": "PropertyValue", "name": "Head Hunters", "value": "[job-id]" },
-  "datePosted": "[YYYY-MM-DD]",
-  "validThrough": "[YYYY-MM-DD]",
-  "employmentType": "FULL_TIME",
-  "hiringOrganization": {
-    "@type": "Organization",
-    "name": "[Employer name OR 'Confidential']",
-    "sameAs": "https://www.headhunters.lk/"
+  "areaServed": {
+    "@type": "Country",
+    "name": "Sri Lanka"
   },
-  "jobLocation": {
-    "@type": "Place",
-    "address": { "@type": "PostalAddress", "addressLocality": "Colombo", "addressCountry": "LK" }
-  }
+  "knowsAbout": [
+    "Executive Search",
+    "Recruitment",
+    "Confidential C-Suite Placement",
+    "Permanent Staffing",
+    "Talent Acquisition"
+  ]
 }
 ```
 
-**Confidential employers:** Use `"name": "Confidential"` in `hiringOrganization`. Never reveal a confidential employer name.
+*Note on Geographical Scope:* Unverified countries (such as Australia and New Zealand) have been removed from `areaServed`. Only "Sri Lanka" is designated until cross-border services are officially confirmed by management.
+
+### 6.2 JobPosting Schema Rules (`backend/src/index.ts`)
+
+For every individual job listing served at `/jobs/:slug`:
+1. **Title & Description:** Sanitized via `htmlEscape()` to prevent XSS.
+2. **Confidential Clients:** When `isConfidential` is `true`:
+   ```json
+   "hiringOrganization": {
+     "@type": "Organization",
+     "name": "Confidential"
+   }
+   ```
+   *Strict Rule:* Do NOT include `"sameAs": "https://www.headhunters.lk/"` on confidential client postings, as doing so falsely indicates to search crawlers that Head Hunters itself is the employer.
+3. **Identified Clients:** When hiring on behalf of a public client where authorized:
+   ```json
+   "hiringOrganization": {
+     "@type": "Organization",
+     "name": "Client Name"
+   }
+   ```
+4. **Dates:** `datePosted` is set to creation date (ISO string). `validThrough` is set to `closingDate` or defaulted to `datePosted + 60 days`.
+5. **Expired Vacancies:** Return HTTP `410 Gone` with a polite message and link back to active vacancies.
 
 ---
 
-## Section 9 — 90-Day Roadmap
+## Section 7 — Technical Implementation Safety & Migration Plan
 
-### Weeks 1–2: Technical recovery (blocks everything else)
-- [x] Create valid `robots.txt` as static file
-- [x] Create valid `sitemap.xml` endpoint on backend
-- [x] Fix `index.html` — title, description, canonical, OG tags
-- [x] Add Organization/EmploymentAgency JSON-LD to `index.html`
-- [ ] Build `/jobs/[slug]/` server-rendered HTML pages with JobPosting schema
-- [ ] Set up Google Search Console and submit sitemap
-- [ ] Confirm primary telephone number
+### 7.1 Database Migration (`backend/drizzle/0001_seo_job_fields.sql`)
+The migration introduces four nullable/defaulted columns to support SEO:
+* `slug` (`varchar(255) NULL UNIQUE`): Human-readable slug (e.g. `head-of-finance-colombo`).
+* `closingDate` (`timestamp NULL`): Vacancy expiration.
+* `salaryRange` (`varchar(191) NULL`): Optional salary compensation disclosure.
+* `isConfidential` (`boolean NOT NULL DEFAULT false`): Flag for client confidentiality.
 
-### Weeks 3–4: Core commercial pages
-- [ ] Build `/recruitment-agency-sri-lanka/` with expert content
-- [ ] Build `/executive-search-sri-lanka/` with expert content
-- [ ] Build `/employers/` and `/candidates/` pages
-- [ ] Build `/about/` with real company details
-- [ ] Build `/contact/` as standalone page
-- [ ] Create/claim Google Business Profile
+### 7.2 Backward Compatibility & 301 Redirects
+Existing indexed links (such as `/jobs/8bc75493-f8e8-4cb1-a0a3-b9817d48edcc`) must not break. The backend router resolves:
+1. If the route matches a UUID, it looks up the job record and issues an HTTP `301 Permanent Redirect` to `/jobs/:slug`.
+2. If the job has no slug populated yet, it dynamically computes a fallback slug or serves the record directly, preventing 404s during rollout.
 
-### Month 2: Sector pages and guides
-- [ ] `/confidential-recruitment/`, `/ceo-recruitment-sri-lanka/`
-- [ ] `/finance-recruitment-sri-lanka/`, `/legal-recruitment-sri-lanka/`, `/hr-recruitment-sri-lanka/`
-- [ ] Job category pages
-- [ ] Publish: "How Executive Search Works in Sri Lanka"
-- [ ] Publish: "How Much Do Recruitment Agencies Charge?"
-- [ ] Register on Clutch and Outsource Accelerator
-
-### Month 3: Authority and AI citation
-- [ ] Legitimate review acquisition (past clients, genuine feedback only)
-- [ ] Publish: "Confidential CEO Recruitment Guide"
-- [ ] Publish: salary/hiring market data (requires real placement data)
-- [ ] Submit to Sri Lankan business directories
-- [ ] Begin monthly AI prompt benchmark tracking
-- [ ] IndexNow integration for instant vacancy notification
+*(See [`headhunters-technical-implementation.md`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-technical-implementation.md) for full endpoint and safety specifications).*
 
 ---
 
-## Section 10 — Measurement Framework
+## Section 8 — Deliverables Summary
 
-### Monthly tracking
-
-**Organic SEO (Google Search Console):**
-- Pages indexed
-- Impressions for "recruitment agency sri lanka" and variants
-- Google Jobs impressions and clicks
-- Branded searches for "Head Hunters"
-- Organic employer enquiries
-
-**Local SEO (Google Business Profile):**
-- Calls, direction requests, website clicks
-- Review count and average rating
-
-**AI visibility (manual monthly test):**
-- Run 10 benchmark prompts across ChatGPT, Gemini, Perplexity
-- Record: appeared Y/N | position | description accuracy | source cited
-
-### Immediate setup
-
-1. Connect Google Search Console to headhunters.lk
-2. Submit sitemap once fixed
-3. Create/claim Google Business Profile
-4. Install Bing Webmaster Tools
-
----
-
-## Section 11 — Information Still Required
-
-| Item | Why it matters |
-|---|---|
-| Confirmed primary telephone | NAP consistency; structured data |
-| Full street address with number | Local SEO, GBP verification |
-| Founded/established year | Entity credibility |
-| Real LinkedIn company URL | sameAs in schema |
-| Real Facebook URL | sameAs in schema |
-| Google Business Profile status | Local SEO baseline |
-| Google Search Console access | Real keyword data |
-| GA4 installation status | Conversion tracking |
-| Client permission for testimonials | Content authority |
-| Whether candidate fees apply | FAQ accuracy |
-| Confirmed service areas | Schema areaServed |
-
----
-
-## Prioritised Action Table
-
-| Action | Impact | Effort | Dependency | Owner | Deadline |
-|---|---|---|---|---|---|
-| Fix robots.txt (static file) | Unblocks all crawlers | Low | None | Dev | Week 1 |
-| Fix sitemap.xml endpoint | URL discovery | Low | None | Dev | Week 1 |
-| Fix index.html metadata | Basic indexing | Low | None | Dev | Week 1 |
-| Add Organization JSON-LD | Entity establishment | Low | Confirm tel | Dev | Week 1 |
-| Confirm primary telephone | NAP consistency | Low | Business | Week 1 |
-| Set up Google Search Console | Real data | Low | DNS access | Admin | Week 1 |
-| Build /jobs/[slug]/ with JobPosting schema | Google Jobs | High | Backend API | Dev | Week 2 |
-| Build /recruitment-agency-sri-lanka/ | Core employer keyword | High | Content | Dev+Content | Week 3 |
-| Build /executive-search-sri-lanka/ | Executive visibility | High | Content | Dev+Content | Week 3 |
-| Claim Google Business Profile | Local + AI visibility | Medium | Address/tel | Admin | Week 3 |
-| Create Clutch profile | Third-party corroboration | Low | Reviews | Admin | Month 2 |
-| Publish executive search guide | AI citation potential | High | Expertise/data | Content | Month 2 |
-| Publish salary guide | Strongest citation asset | Very High | Real data | Content | Month 3 |
+All supplementary documentation and analysis files created for this audit:
+1. [`headhunters-keyword-master.csv`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-keyword-master.csv): Granular keyword matrix with intent, language variations, difficulty, and page mapping.
+2. [`headhunters-competitor-analysis.csv`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-competitor-analysis.csv): Structured competitive benchmark of local recruitment agencies.
+3. [`headhunters-ai-prompt-benchmark.csv`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-ai-prompt-benchmark.csv): 50-prompt testing suite for tracking AI search retrieval.
+4. [`headhunters-content-map.md`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-content-map.md): Information architecture, URL slug strategy, and page templates.
+5. [`headhunters-technical-implementation.md`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-technical-implementation.md): Complete backend/frontend code implementation guide and testing checklist.
+6. [`headhunters-90day-roadmap.md`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/headhunters-90day-roadmap.md): Phased execution roadmap.
+7. [`slug-backfill.md`](file:///c:/Users/SiyanS/Documents/GitHub/head-hunters-site/docs/slug-backfill.md): Database backfill script for existing jobs.
