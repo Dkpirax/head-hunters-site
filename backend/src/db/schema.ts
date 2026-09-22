@@ -5,11 +5,15 @@ import { createId } from '@paralleldrive/cuid2';
 export const job = mysqlTable('Job', {
   id: varchar('id', { length: 191 }).primaryKey().$defaultFn(() => createId()),
   title: varchar('title', { length: 191 }).notNull(),
+  slug: varchar('slug', { length: 255 }).unique(), // SEO-friendly URL slug, e.g. 'senior-finance-manager-colombo'
   location: varchar('location', { length: 191 }).notNull(),
   type: varchar('type', { length: 191 }).notNull(), // CASUAL, PERMANENT, REMOTE, EXECUTIVE
   description: text('description').notNull(),
   status: varchar('status', { length: 191 }).notNull().default('ACTIVE'), // ACTIVE, CLOSED, DRAFT
   isHot: boolean('isHot').notNull().default(false),
+  closingDate: timestamp('closingDate'), // validThrough for JobPosting schema
+  salaryRange: varchar('salaryRange', { length: 191 }), // optional, e.g. 'LKR 150,000 - 200,000'
+  isConfidential: boolean('isConfidential').notNull().default(false), // hides employer name
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow().onUpdateNow(),
 });

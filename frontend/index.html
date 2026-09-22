@@ -2,11 +2,110 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+
+    <!-- Primary SEO -->
+    <title>Head Hunters | Recruitment Agency & Executive Search — Sri Lanka</title>
+    <meta name="description" content="Head Hunters is a Sri Lankan recruitment agency and executive-search firm based in Colombo. We provide permanent recruitment, confidential senior appointments, executive search, and workforce solutions across Sri Lanka, Australia, and New Zealand." />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <link rel="canonical" href="https://www.headhunters.lk/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Head Hunters" />
+    <meta property="og:title" content="Head Hunters | Recruitment Agency & Executive Search — Sri Lanka" />
+    <meta property="og:description" content="Sri Lanka's recruitment agency and executive-search firm. Permanent recruitment, confidential senior appointments, and workforce solutions in Colombo and beyond." />
+    <meta property="og:url" content="https://www.headhunters.lk/" />
+    <meta property="og:image" content="https://www.headhunters.lk/og-image.png" />
+    <meta property="og:locale" content="en_LK" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Head Hunters | Recruitment Agency & Executive Search — Sri Lanka" />
+    <meta name="twitter:description" content="Sri Lanka's recruitment agency and executive-search firm. Permanent recruitment, confidential senior appointments, and workforce solutions." />
+    <meta name="twitter:image" content="https://www.headhunters.lk/og-image.png" />
+
+    <!-- Geo / Language -->
+    <meta name="geo.region" content="LK-11" />
+    <meta name="geo.placename" content="Colombo, Sri Lanka" />
+    <meta name="language" content="English" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Organization + EmploymentAgency JSON-LD
+         NOTE: Update telephone once primary number is confirmed.
+         NOTE: Update sameAs once LinkedIn/Facebook URLs are confirmed. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["Organization", "EmploymentAgency"],
+      "@id": "https://www.headhunters.lk/#organization",
+      "name": "Head Hunters",
+      "url": "https://www.headhunters.lk/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.headhunters.lk/favicon.png"
+      },
+      "description": "A Sri Lankan recruitment agency and executive-search firm providing permanent recruitment, confidential senior appointments, executive search and workforce solutions across Colombo and Sri Lanka.",
+      "email": "info@headhunters.lk",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Pinto Place",
+        "addressLocality": "Colombo",
+        "postalCode": "00600",
+        "addressCountry": "LK"
+      },
+      "areaServed": [
+        { "@type": "Country", "name": "Sri Lanka" },
+        { "@type": "Country", "name": "Australia" },
+        { "@type": "Country", "name": "New Zealand" }
+      ],
+      "knowsAbout": [
+        "Recruitment",
+        "Executive Search",
+        "Permanent Recruitment",
+        "Confidential Recruitment",
+        "CEO Recruitment",
+        "Finance Recruitment",
+        "Legal Recruitment",
+        "HR Recruitment",
+        "Workforce Solutions",
+        "Sri Lanka Employment"
+      ]
+    }
+    </script>
+
+    <!-- WebSite JSON-LD (enables Sitelinks Search Box in future) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://www.headhunters.lk/#website",
+      "url": "https://www.headhunters.lk/",
+      "name": "Head Hunters",
+      "description": "Recruitment agency and executive search firm in Colombo, Sri Lanka",
+      "publisher": { "@id": "https://www.headhunters.lk/#organization" },
+      "inLanguage": "en-LK"
+    }
+    </script>
   </head>
   <body>
+    <!-- Accessible noscript fallback with key business information -->
+    <noscript>
+      <div style="font-family:sans-serif;max-width:700px;margin:40px auto;padding:20px;line-height:1.6">
+        <h1>Head Hunters — Recruitment Agency &amp; Executive Search, Sri Lanka</h1>
+        <p>Head Hunters is a recruitment agency and executive-search firm based in Colombo 06, Sri Lanka. We provide permanent recruitment, executive search, confidential senior appointments, and workforce solutions across Sri Lanka, Australia, and New Zealand.</p>
+        <p><strong>Services:</strong> Permanent Recruitment &middot; Executive Search &middot; Confidential Senior Appointments &middot; Labour Hire &middot; Remote Staffing &middot; Payroll &amp; Bookkeeping</p>
+        <p><strong>Location:</strong> Pinto Place, Colombo 06, Sri Lanka</p>
+        <p><strong>Email:</strong> <a href="mailto:info@headhunters.lk">info@headhunters.lk</a></p>
+        <p>JavaScript is required for the full experience. Please enable JavaScript to view job listings, submit enquiries, and browse our services.</p>
+      </div>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
