@@ -8,12 +8,12 @@ import { LinkButton } from "@/components/ui/Button";
 import { NavLogo } from "@/components/ui/Logo";
 
 const navLinks = [
-  { label: "For Employers", href: "/employers" },
-  { label: "Executive Search", href: "/executive-search-sri-lanka" },
-  { label: "Confidential Search", href: "/confidential-recruitment-sri-lanka" },
-  { label: "For Candidates", href: "/candidates" },
+  { label: "For Employers", href: "/#staff" },
+  { label: "For Candidates", href: "/#jobs" },
+  { label: "Services", href: "/#services" },
+  { label: "Our Story", href: "/#story" },
+  { label: "Insights", href: "/insights" },
   { label: "Jobs", href: "/jobs" },
-  { label: "Contact", href: "/contact" },
 ];
 
 export function Header() {
@@ -53,20 +53,20 @@ export function Header() {
         {/* Desktop nav */}
         <nav aria-label="Primary navigation" className="hidden lg:flex items-center justify-center gap-7">
           {navLinks.map((link) => (
-            <Link
+            <a
               key={link.href}
-              to={link.href}
+              href={link.href}
               className="text-[13px] text-white/60 hover:text-white transition-colors duration-200 font-medium"
             >
               {link.label}
-            </Link>
+            </a>
           ))}
         </nav>
 
         {/* Desktop CTAs */}
         <div className="hidden lg:flex items-center gap-2">
-          <LinkButton href="/candidates" variant="ghost" size="sm">Submit CV</LinkButton>
-          <LinkButton href="/contact" variant="solid" size="sm">
+          <LinkButton href="/#jobs" variant="ghost" size="sm">Submit CV</LinkButton>
+          <LinkButton href="/#contact" variant="solid" size="sm">
             Talk to a consultant <ArrowRight size={13} />
           </LinkButton>
         </div>

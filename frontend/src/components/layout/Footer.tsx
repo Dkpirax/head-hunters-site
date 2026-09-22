@@ -3,37 +3,35 @@ import { Mail, MessageCircle, CalendarDays, ArrowUpRight } from "lucide-react";
 import { NavLogo } from "@/components/ui/Logo";
 
 const footerLinks = {
-  Disciplines: [
-    { label: "Executive Search", href: "/executive-search-sri-lanka" },
-    { label: "Confidential Search", href: "/confidential-recruitment-sri-lanka" },
-    { label: "CEO & C-Suite", href: "/ceo-recruitment-sri-lanka" },
-    { label: "Finance & Accounting", href: "/finance-recruitment-sri-lanka" },
-    { label: "Internal Audit", href: "/internal-audit-recruitment-sri-lanka" },
-    { label: "Legal Recruitment", href: "/legal-recruitment-sri-lanka" },
-    { label: "HR Recruitment", href: "/hr-recruitment-sri-lanka" },
-    { label: "FMCG & Manufacturing", href: "/fmcg-recruitment-sri-lanka" },
+  Services: [
+    { label: "Executive Search", href: "/#services" },
+    { label: "Permanent Placements", href: "/#services" },
+    { label: "Labour Hire", href: "/#services" },
+    { label: "Remote Staffing", href: "/#services" },
+    { label: "Payroll & Bookkeeping", href: "/#services" },
   ],
   Pathways: [
-    { label: "Employer Solutions", href: "/employers" },
-    { label: "Candidate Career Hub", href: "/candidates" },
-    { label: "Current Vacancies", href: "/jobs" },
-    { label: "Contact Us", href: "/contact" },
+    { label: "Looking for Staff", href: "/#staff" },
+    { label: "Looking for a Job", href: "/jobs" },
+    { label: "Submit Your CV", href: "/#jobs" },
+    { label: "Contact Us", href: "/#contact" },
   ],
-  Governance: [
+  Trust: [
     { label: "Service Standards", href: "/#standards" },
-    { label: "Confidentiality Policy", href: "/confidential-recruitment-sri-lanka" },
-    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Job Scam Awareness", href: "/#resources" },
+    { label: "FAQs", href: "/#faq" },
+    { label: "Insights", href: "/#resources" },
   ],
 };
 
 const defaultFooterSettings = {
-  notifyEmails: "info@headhunters.lk",
+  notifyEmails: "hello@headhunters.com.au",
   whatsappNumber: "",
   calendlyLink: "",
-  linkedin_url: "",
-  twitter_url: "",
-  facebook_url: "",
-  copyright_text: "© 2026 Head Hunters Sri Lanka. All rights reserved.",
+  linkedin_url: "https://linkedin.com/company/headhunters",
+  twitter_url: "https://twitter.com/headhunters",
+  facebook_url: "https://facebook.com/headhunters",
+  copyright_text: "© 2026 Head Hunters. All rights reserved.",
   ios_app_url: "",
   android_app_url: "",
 };

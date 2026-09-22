@@ -259,7 +259,7 @@ function render410Page(jobTitle = 'Vacancy'): string {
 </html>`;
 }
 
-// ── Defined Commercial & Core Route Registry ─────────────────────────────────
+// ── Defined Core Route Registry (Technical SEO metadata) ─────────────────────
 interface RouteMetadata {
   title: string;
   h1: string;
@@ -268,74 +268,9 @@ interface RouteMetadata {
 
 const DEFINED_ROUTES: Record<string, RouteMetadata> = {
   '/': {
-    title: 'Head Hunters | Recruitment & Executive Search Sri Lanka',
-    h1: 'Recruitment and Executive Search in Sri Lanka',
-    description: 'Head Hunters is a leading recruitment agency and executive search consultancy in Sri Lanka. Connecting forward-thinking enterprises with exceptional leadership and professional talent across Colombo.',
-  },
-  '/employers': {
-    title: 'Recruitment Services for Employers | Head Hunters Sri Lanka',
-    h1: 'Find the Right People for Critical Roles',
-    description: 'Comprehensive recruitment, headhunting, and staffing solutions for Sri Lankan employers and multinational organizations in Colombo.',
-  },
-  '/executive-search-sri-lanka': {
-    title: 'Executive Search Sri Lanka | Head Hunters',
-    h1: 'Executive Search for Senior and Leadership Roles',
-    description: 'Retained executive search firm in Colombo. Identifying, assessing, and securing transformational CEOs, directors, and functional leaders across Sri Lanka.',
-  },
-  '/confidential-recruitment-sri-lanka': {
-    title: 'Confidential Recruitment Sri Lanka | Head Hunters',
-    h1: 'Confidential Recruitment for Sensitive Appointments',
-    description: 'Discreet, NDA-protected executive search for sensitive leadership succession, incumbent replacement, and unannounced expansion in Sri Lanka.',
-  },
-  '/ceo-recruitment-sri-lanka': {
-    title: 'CEO Recruitment Sri Lanka | Head Hunters',
-    h1: 'CEO and C-Suite Recruitment',
-    description: 'Appointing visionary Chief Executive Officers, Managing Directors, and board leadership for Sri Lankan corporations and conglomerates.',
-  },
-  '/finance-recruitment-sri-lanka': {
-    title: 'Finance & Accounting Recruitment Sri Lanka | Head Hunters',
-    h1: 'Finance and Accounting Recruitment',
-    description: 'Specialized recruitment for Chief Financial Officers, Financial Controllers, Treasury Managers, and senior chartered accountants across Sri Lanka.',
-  },
-  '/internal-audit-recruitment-sri-lanka': {
-    title: 'Internal Audit Recruitment Sri Lanka | Head Hunters',
-    h1: 'Internal Audit Recruitment',
-    description: 'Connecting boards and audit committees with Heads of Internal Audit, Risk Managers, and Compliance Directors in Colombo and nationwide.',
-  },
-  '/legal-recruitment-sri-lanka': {
-    title: 'Legal Recruitment Sri Lanka | Head Hunters',
-    h1: 'Legal Recruitment',
-    description: 'Placing General Counsels, In-House Legal Officers, and corporate legal specialists with leading enterprises and firms across Sri Lanka.',
-  },
-  '/hr-recruitment-sri-lanka': {
-    title: 'HR Recruitment Sri Lanka | Head Hunters',
-    h1: 'HR Recruitment',
-    description: 'Strategic recruitment for Chief People Officers, HR Directors, Talent Acquisition heads, and industrial relations specialists in Sri Lanka.',
-  },
-  '/fmcg-recruitment-sri-lanka': {
-    title: 'FMCG Recruitment Sri Lanka | Head Hunters',
-    h1: 'FMCG and Manufacturing Recruitment',
-    description: 'Securing plant directors, supply chain leaders, and national sales managers for Sri Lanka’s FMCG and industrial manufacturing sectors.',
-  },
-  '/candidates': {
-    title: 'Find Recruitment Opportunities | Head Hunters Sri Lanka',
-    h1: 'Explore Career Opportunities',
-    description: 'Take the next step in your professional career. Submit your confidential CV to Head Hunters Sri Lanka to be matched against premier leadership roles.',
-  },
-  '/jobs': {
-    title: 'Current Job Vacancies in Sri Lanka | Head Hunters',
-    h1: 'Current Opportunities',
-    description: 'Browse active executive, management, and professional vacancies in Colombo and across Sri Lanka. Apply confidentially with Head Hunters.',
-  },
-  '/contact': {
-    title: 'Contact Head Hunters Sri Lanka',
-    h1: 'Talk to Our Recruitment Team',
-    description: 'Contact our executive search and recruitment consultants in Colombo, Sri Lanka. Submit an employer hiring brief or general inquiry.',
-  },
-  '/privacy-policy': {
-    title: 'Privacy Policy | Head Hunters Sri Lanka',
-    h1: 'Privacy Policy',
-    description: 'Head Hunters Sri Lanka privacy policy regarding client non-disclosure, candidate data protection, and executive recruitment ethics.',
+    title: 'Head Hunters | Precision Hiring Platform',
+    h1: 'Precision hiring for modern businesses.',
+    description: 'Head Hunters is a recruitment agency and executive search firm in Colombo, Sri Lanka connecting forward-thinking enterprises with professional talent.',
   },
 };
 
@@ -359,7 +294,8 @@ app.get('/sitemap.xml', async (req, res) => {
   try {
     let activeJobs: any[] = [];
     try {
-      activeJobs = await db.select().from(job).where(eq(job.status, 'ACTIVE'));
+      const allJobs = await fetchAllJobsSafe();
+      activeJobs = allJobs.filter((j) => j.status === 'ACTIVE');
     } catch (dbErr) {
       console.warn('Database unavailable in /sitemap.xml, serving static routes:', dbErr);
     }
@@ -367,30 +303,14 @@ app.get('/sitemap.xml', async (req, res) => {
 
     const staticRoutes = [
       { path: '/', priority: '1.0', changefreq: 'weekly' },
-      { path: '/employers/', priority: '0.9', changefreq: 'weekly' },
-      { path: '/executive-search-sri-lanka/', priority: '0.9', changefreq: 'monthly' },
-      { path: '/confidential-recruitment-sri-lanka/', priority: '0.9', changefreq: 'monthly' },
-      { path: '/ceo-recruitment-sri-lanka/', priority: '0.8', changefreq: 'monthly' },
-      { path: '/finance-recruitment-sri-lanka/', priority: '0.8', changefreq: 'monthly' },
-      { path: '/internal-audit-recruitment-sri-lanka/', priority: '0.8', changefreq: 'monthly' },
-      { path: '/legal-recruitment-sri-lanka/', priority: '0.8', changefreq: 'monthly' },
-      { path: '/hr-recruitment-sri-lanka/', priority: '0.8', changefreq: 'monthly' },
-      { path: '/fmcg-recruitment-sri-lanka/', priority: '0.8', changefreq: 'monthly' },
-      { path: '/candidates/', priority: '0.8', changefreq: 'weekly' },
-      { path: '/jobs/', priority: '0.9', changefreq: 'daily' },
-      { path: '/contact/', priority: '0.8', changefreq: 'monthly' },
-      { path: '/privacy-policy/', priority: '0.5', changefreq: 'yearly' },
     ];
 
-    const jobRoutes = activeJobs.map((j) => {
-      const canonicalSlug = `${toSlug(j.title)}--${j.id}`;
-      return {
-        path: `/jobs/${canonicalSlug}`,
-        lastmod: j.updatedAt ? j.updatedAt.toISOString().split('T')[0] : today,
-        priority: '0.8',
-        changefreq: 'weekly',
-      };
-    });
+    const jobRoutes = activeJobs.map((j) => ({
+      path: `/jobs/${j.id}`,
+      lastmod: j.updatedAt ? new Date(j.updatedAt).toISOString().split('T')[0] : today,
+      priority: '0.8',
+      changefreq: 'weekly',
+    }));
 
     const allUrls = [
       ...staticRoutes.map((r) => ({ ...r, lastmod: today })),
@@ -416,88 +336,34 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
-// ── Canonical Job Detail Endpoint (`/jobs/:identifier`) ──────────────────────
+// ── Existing Job Detail Endpoint (`/jobs/:identifier`) ───────────────────────
 app.get(['/jobs/:identifier', '/jobs/:identifier/'], async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rawParam = String(req.params.identifier || '');
-    let allJobs: any[] = await fetchAllJobsSafe();
+    const rawParam = String(req.params.identifier || '').trim();
+    const allJobs: any[] = await fetchAllJobsSafe();
 
-    let targetJob: any = null;
+    // Match existing job by ID
+    const targetJob = allJobs.find((j) => j.id === rawParam);
 
-    // Pattern 1: Canonical /jobs/[title-slug]--[uuid]
-    if (rawParam.includes('--')) {
-      const parts = rawParam.split('--');
-      const uuidPart = parts[parts.length - 1];
-      targetJob = allJobs.find((j) => j.id === uuidPart);
-
-      if (!targetJob) {
-        return res.status(404).type('html').send(render404Page('Job Vacancy'));
-      }
-
-      // Check if job is expired/closed
-      if (targetJob.status !== 'ACTIVE') {
-        return res.status(410).type('html').send(render410Page(targetJob.title));
-      }
-
-      // Ensure slug matches expected title slug
-      const expectedSlug = `${toSlug(targetJob.title)}--${targetJob.id}`;
-      if (rawParam !== expectedSlug) {
-        return res.redirect(301, `${BASE_URL}/jobs/${expectedSlug}`);
-      }
-    }
-    // Pattern 2: Legacy UUID /jobs/[uuid]
-    else if (UUID_RE.test(rawParam)) {
-      targetJob = allJobs.find((j) => j.id === rawParam);
-
-      if (!targetJob) {
-        return res.status(404).type('html').send(render404Page('Job Vacancy'));
-      }
-
-      if (targetJob.status !== 'ACTIVE') {
-        return res.status(410).type('html').send(render410Page(targetJob.title));
-      }
-
-      // Permanent 301 Redirect from legacy UUID URL to canonical format
-      const canonicalSlug = `${toSlug(targetJob.title)}--${targetJob.id}`;
-      return res.redirect(301, `${BASE_URL}/jobs/${canonicalSlug}`);
-    }
-    // Pattern 3: Old slug format or custom query
-    else {
-      targetJob = allJobs.find((j) => j.slug === rawParam || toSlug(j.title) === rawParam);
-      if (targetJob) {
-        if (targetJob.status !== 'ACTIVE') {
-          return res.status(410).type('html').send(render410Page(targetJob.title));
-        }
-        const canonicalSlug = `${toSlug(targetJob.title)}--${targetJob.id}`;
-        return res.redirect(301, `${BASE_URL}/jobs/${canonicalSlug}`);
-      }
+    if (!targetJob) {
       return res.status(404).type('html').send(render404Page('Job Vacancy'));
     }
 
+    // Check if job is expired or closed
+    if (targetJob.status !== 'ACTIVE') {
+      return res.status(410).type('html').send(render410Page(targetJob.title));
+    }
+
     // ── Build Server-Rendered Job Detail HTML ────────────────────────────────
-    const canonicalUrl = `${BASE_URL}/jobs/${toSlug(targetJob.title)}--${targetJob.id}`;
+    const canonicalUrl = `${BASE_URL}/jobs/${targetJob.id}`;
     const safeTitle = htmlEscape(targetJob.title);
     const safeLocation = htmlEscape(targetJob.location || 'Colombo, Sri Lanka');
     const safeType = htmlEscape(targetJob.type);
-    const datePosted = targetJob.createdAt ? targetJob.createdAt.toISOString().split('T')[0] : '';
-    const validThrough = targetJob.closingDate
-      ? targetJob.closingDate.toISOString().split('T')[0]
-      : new Date(targetJob.createdAt.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const datePosted = targetJob.createdAt ? new Date(targetJob.createdAt).toISOString().split('T')[0] : '';
+    const validThrough = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    const plainDesc = targetJob.description.replace(/<[^>]*>/g, '');
+    const plainDesc = (targetJob.description || '').replace(/<[^>]*>/g, '');
     const metaDesc = `${safeTitle} vacancy in ${safeLocation}. ${htmlEscape(plainDesc.slice(0, 140))}...`;
-
-    // JobPosting Schema per Google Search Central Guidelines
-    const hiringOrg = targetJob.isConfidential
-      ? {
-          '@type': 'Organization',
-          'name': 'confidential', // Google official requirement for anonymous employers
-        }
-      : {
-          '@type': 'Organization',
-          'name': 'Head Hunters',
-          'sameAs': BASE_URL,
-        };
 
     const typeMap: Record<string, string> = {
       PERMANENT: 'FULL_TIME',
@@ -510,7 +376,7 @@ app.get(['/jobs/:identifier', '/jobs/:identifier/'], async (req: Request, res: R
       '@context': 'https://schema.org',
       '@type': 'JobPosting',
       'title': targetJob.title,
-      'description': targetJob.description.startsWith('<')
+      'description': targetJob.description && targetJob.description.startsWith('<')
         ? targetJob.description
         : `<p>${htmlEscape(plainDesc).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`,
       'identifier': {
@@ -521,7 +387,11 @@ app.get(['/jobs/:identifier', '/jobs/:identifier/'], async (req: Request, res: R
       'datePosted': datePosted,
       'validThrough': `${validThrough}T23:59:59`,
       'employmentType': typeMap[targetJob.type] || 'FULL_TIME',
-      'hiringOrganization': hiringOrg,
+      'hiringOrganization': {
+        '@type': 'Organization',
+        'name': 'Head Hunters',
+        'sameAs': BASE_URL,
+      },
       'jobLocation': {
         '@type': 'Place',
         'address': {
@@ -537,18 +407,6 @@ app.get(['/jobs/:identifier', '/jobs/:identifier/'], async (req: Request, res: R
       jobPostingSchema['applicantLocationRequirements'] = { '@type': 'Country', 'name': 'Sri Lanka' };
     }
 
-    if (targetJob.salaryRange && targetJob.salaryRange.trim()) {
-      jobPostingSchema['baseSalary'] = {
-        '@type': 'MonetaryAmount',
-        'currency': 'LKR',
-        'value': {
-          '@type': 'QuantitativeValue',
-          'value': targetJob.salaryRange,
-          'unitText': 'MONTH',
-        },
-      };
-    }
-
     const jobHtml = renderPageWithMetadata({
       title: `${safeTitle} — ${safeLocation} | Head Hunters`,
       description: metaDesc,
@@ -557,7 +415,7 @@ app.get(['/jobs/:identifier', '/jobs/:identifier/'], async (req: Request, res: R
       introHtml: `
         <p><strong>Location:</strong> ${safeLocation} | <strong>Type:</strong> ${safeType} | <strong>Posted:</strong> ${datePosted}</p>
         <div>${htmlEscape(plainDesc).replace(/\n/g, '<br>')}</div>
-        <p style="margin-top:20px;">To apply confidentially, email <a href="mailto:info@headhunters.lk" style="color:#04a891;">info@headhunters.lk</a> with Ref: ${targetJob.id}.</p>
+        <p style="margin-top:20px;">To apply, contact <a href="mailto:info@headhunters.lk" style="color:#04a891;">info@headhunters.lk</a> with Reference: ${targetJob.id}.</p>
       `,
       schemaJson: JSON.stringify(jobPostingSchema),
     });
@@ -576,47 +434,35 @@ const FALLBACK_JOBS: any[] = [
   {
     id: '8bc75493-f8e8-4cb1-a0a3-b9817d48edcc',
     title: 'Executive - Business Development - Solar Sales',
-    slug: 'executive-business-development-solar-sales',
     location: 'Sri Lanka',
     type: 'PERMANENT',
     description: 'Lead commercial and industrial solar PV sales initiatives across Sri Lanka. Proven track record in B2B clean energy solutions and client relationship management required.',
     status: 'ACTIVE',
     isHot: true,
-    isConfidential: false,
-    salaryRange: 'LKR 80,000 - 150,000',
     createdAt: new Date('2026-07-18T15:16:26.000Z'),
     updatedAt: new Date('2026-07-18T15:16:26.000Z'),
-    closingDate: new Date('2026-10-31T23:59:59.000Z'),
   },
   {
     id: 'c0a80123-1111-2222-3333-444455556666',
     title: 'Chief Executive Officer',
-    slug: 'chief-executive-officer',
     location: 'Colombo',
     type: 'EXECUTIVE',
-    description: 'Confidential executive appointment for an established Sri Lankan conglomerate. Seeking visionary leadership for market expansion, digital acceleration, and governance.',
+    description: 'Executive appointment for an established Sri Lankan conglomerate. Seeking visionary leadership for market expansion, digital acceleration, and governance.',
     status: 'ACTIVE',
     isHot: true,
-    isConfidential: true,
-    salaryRange: null,
     createdAt: new Date('2026-08-10T09:00:00.000Z'),
     updatedAt: new Date('2026-08-10T09:00:00.000Z'),
-    closingDate: null,
   },
   {
     id: 'd0b90456-5555-6666-7777-888899990000',
     title: 'Senior Financial Controller',
-    slug: 'senior-financial-controller',
     location: 'Colombo',
     type: 'PERMANENT',
     description: 'Oversee corporate finance, IFRS compliance, statutory reporting, and treasury operations across group business units in Sri Lanka.',
     status: 'ACTIVE',
     isHot: false,
-    isConfidential: false,
-    salaryRange: null,
     createdAt: new Date('2026-09-01T12:00:00.000Z'),
     updatedAt: new Date('2026-09-01T12:00:00.000Z'),
-    closingDate: new Date('2026-11-15T23:59:59.000Z'),
   },
 ];
 
@@ -630,26 +476,6 @@ async function fetchAllJobsSafe(): Promise<any[]> {
     return FALLBACK_JOBS;
   }
 }
-
-// ── Public API: Get single job by slug or ID (for React SPA) ─────────────────
-app.get('/api/jobs/by-slug/:slug', async (req, res) => {
-  try {
-    const rawParam = String(req.params.slug || '');
-    const id = rawParam.includes('--') ? rawParam.split('--').pop() : rawParam;
-    const allJobs = await fetchAllJobsSafe();
-    const found = allJobs.find(
-      (j) => j.id === id || j.slug === rawParam || j.id === rawParam
-    );
-
-    if (!found) return res.status(404).json({ error: 'Job not found' });
-    if (found.status !== 'ACTIVE') return res.status(410).json({ error: 'Job is closed or expired' });
-
-    res.json(found);
-  } catch (error) {
-    console.error('Error in /api/jobs/by-slug:', error);
-    res.status(500).json({ error: 'Failed to retrieve job' });
-  }
-});
 
 // ── Public API: Get all active jobs ──────────────────────────────────────────
 app.get('/api/jobs', async (req, res) => {
