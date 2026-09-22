@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { LogOut, X } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function SignOutLink() {
   const [showConfirm, setShowConfirm] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: "/login" });
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Logout error", e);
+    }
+    navigate("/login");
   };
 
   return (

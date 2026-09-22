@@ -44,3 +44,13 @@ next-env.d.ts
 /spaceship_deploy/
 /spaceship_deploy.zip
 /host/
+
+# build output
+/backend/dist/
+/frontend/dist/
+/cpanel_deploy/
+
+# nested node_modules
+/backend/node_modules/
+/frontend/node_modules/
+/client/node_modules/
