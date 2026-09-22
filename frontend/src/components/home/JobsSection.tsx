@@ -8,9 +8,19 @@ import { useState } from "react";
 
 
 
+function toSlug(str: string): string {
+  return String(str || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 export function JobsSection({ recentJobs = [] }: { recentJobs?: any[] }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const safeJobs = Array.isArray(recentJobs) ? recentJobs : [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,12 +91,12 @@ export function JobsSection({ recentJobs = [] }: { recentJobs?: any[] }) {
 
             {/* Job cards */}
             <div className="space-y-3">
-              {recentJobs.length === 0 ? (
+              {safeJobs.length === 0 ? (
                 <div className="py-10 text-center border border-black/10 border-dashed rounded-[16px]">
                   <p className="text-[#111413]/40 text-sm">No recent roles to display.</p>
                 </div>
               ) : (
-                recentJobs.map((job: any, i: number) => {
+                safeJobs.map((job: any, i: number) => {
                   const badge = job.isHot ? "Red Hot" : job.type;
                   const BADGE_STYLES: Record<string, string> = {
                     "Red Hot": "bg-orange-500 text-white",
@@ -95,12 +105,13 @@ export function JobsSection({ recentJobs = [] }: { recentJobs?: any[] }) {
                     "CASUAL": "bg-amber-600 text-white",
                     "EXECUTIVE": "bg-purple-600 text-white",
                   };
+                  const jobLink = `/jobs/${toSlug(job.title)}--${job.id}`;
                   return (
                     <motion.div
                       key={job.id}
                       initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }} transition={{ duration: 0.45, delay: i * 0.08 + 0.3 }}>
-                      <Link to={`/jobs/${job.id}`} className="block group bg-white rounded-[14px] border border-black/6 p-5 hover:border-[#02695e]/25 hover:shadow-[0_8px_28px_rgba(2,105,94,0.08)] transition-all duration-300 cursor-pointer">
+                      <Link to={jobLink} className="block group bg-white rounded-[14px] border border-black/6 p-5 hover:border-[#02695e]/25 hover:shadow-[0_8px_28px_rgba(2,105,94,0.08)] transition-all duration-300 cursor-pointer">
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
