@@ -224,7 +224,7 @@ function render404Page(resourceName = 'Page'): string {
     <p style="color:#04a891; font-weight:bold; letter-spacing:1px; text-transform:uppercase; font-size:13px;">Error 404</p>
     <h1>${resourceName} Not Found</h1>
     <p>The requested ${resourceName.toLowerCase()} does not exist, has been removed, or the link is invalid.</p>
-    <a href="${BASE_URL}/jobs/">Browse Current Vacancies</a>
+    <a href="${BASE_URL}/#jobs">Browse Current Vacancies</a>
     <p style="margin-top:20px; font-size:14px;"><a href="${BASE_URL}/" style="background:transparent; color:rgba(255,255,255,0.6); padding:0;">Return to Homepage</a></p>
   </div>
 </body>
@@ -253,7 +253,7 @@ function render410Page(jobTitle = 'Vacancy'): string {
     <p style="color:#f59e0b; font-weight:bold; letter-spacing:1px; text-transform:uppercase; font-size:13px;">Notice 410 Gone</p>
     <h1>This Vacancy Is Closed</h1>
     <p>The recruitment process for <strong>${htmlEscape(jobTitle)}</strong> has concluded and applications are no longer being accepted.</p>
-    <a href="${BASE_URL}/jobs/">Explore Active Career Opportunities</a>
+    <a href="${BASE_URL}/#jobs">Explore Active Career Opportunities</a>
   </div>
 </body>
 </html>`;
